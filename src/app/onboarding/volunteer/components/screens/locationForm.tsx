@@ -1,5 +1,5 @@
 import React from "react";
-import { FormProps } from "./types";
+import { FormProps } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,7 +12,7 @@ import {
 
 const LocationForm: React.FC<FormProps> = ({ formData, setFormData }) => {
   return (
-    <form className="space-y-6 max-w-6xl mx-auto">
+    <form className="space-y-6 pb-16 max-w-6xl mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">Location</h2>
         <p className="text-sm font-normal mt-1 text-[#161616]">

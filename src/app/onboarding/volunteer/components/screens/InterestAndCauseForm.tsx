@@ -52,7 +52,7 @@ const InterestAndCauseForm: React.FC = () => {
     : initialInterests;
 
   return (
-    <form className="space-y-6 max-w-6xl mx-auto">
+    <form className="space-y-6 max-w-6xl pb-16 mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">
           Interests and Causes
@@ -86,7 +86,7 @@ const InterestAndCauseForm: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowMore((prev) => !prev)}
-            className="text-sm text-[#21537B] font-medium hover:underline"
+            className="text-sm text-[#21537B] font-medium hover:underline cursor-pointer"
           >
             {showMore ? "Show less" : "Show more"}
           </button>

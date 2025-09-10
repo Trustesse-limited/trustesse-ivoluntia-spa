@@ -7,7 +7,7 @@ interface ProgressBarProps {
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ step, totalSteps }) => {
-  const progress = ((step + 1) / totalSteps) * 100;
+  const progress = ((step) / totalSteps) * 100;
 
   return (
     <div className="w-[90%] mx-auto bg-[#D9EDFD] h-2 rounded">
