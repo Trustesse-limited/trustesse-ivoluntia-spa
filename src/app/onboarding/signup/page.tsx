@@ -7,7 +7,7 @@ import Link from 'next/link'
 //usertypecard details
 const userType = [
     {'text':'Volunteer', 'img':'/Man.svg', 'alt':'Volunteer' , 'link':'/onboarding/signup/volunteer'},
-    {'text':'Organisation', 'img':'/People.svg', 'alt':'Organisation', 'link':'/onboarding/signup/organisation'}
+    {'text':'Organisation', 'img':'/People.svg', 'alt':'Organisation', 'link':'/onboarding/signup/org'}
 ]
 
 //for the styling of the volunteer and org text
@@ -30,7 +30,7 @@ const page = () => {
     ))}
    
             </div>
-        <p className='pt-[30px] text-[16px]'>Already have an account? <span className='text-primary font-[700]' ><Link href=''>Sign In</Link></span></p>
+        <p className='pt-[30px] text-[16px]'>Already have an account? <span className='text-primary font-[700]' ><Link href='/login'>Sign In</Link></span></p>
         <Image src='/user.svg' alt='illustration-svg' width={446} height={223} className='fixed bottom-0 z-[-1] sm:block hidden' />
    </>
   )
