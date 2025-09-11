@@ -1,4 +1,3 @@
-
 export interface VolunteerFormData {
   firstName: string;
   lastName: string;
@@ -10,6 +9,8 @@ export interface VolunteerFormData {
   city: string;
   zip: string;
   address: string;
+  bio?: string;
+  photo?: File | null; 
 }
 
 export interface FormProps {

@@ -1,5 +1,5 @@
 import React from "react";
-import { FormProps } from "./types";
+import { FormProps } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -32,6 +32,7 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
             id="firstName"
             placeholder="First Name"
             className="w-full"
+            required
             value={formData.firstName}
             onChange={(e) =>
               setFormData({ ...formData, firstName: e.target.value })
@@ -50,6 +51,7 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
             id="lastName"
             className="w-full"
             placeholder="Last Name"
+            required
             value={formData.lastName}
             onChange={(e) =>
               setFormData({ ...formData, lastName: e.target.value })
