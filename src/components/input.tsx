@@ -21,7 +21,7 @@ import { useState } from "react";
       htmlFor,
       type = "text",
       value,
-       onChange,
+       onChange ,
     }: InputComponentProps) {
       const [showPassword, setShowPassword] = useState(false);
       const isPassword = type === "password";
@@ -38,6 +38,8 @@ import { useState } from "react";
               placeholder={placeholder}
               type={isPassword && showPassword ? "text" : type}
               className={`${isPassword ? "pr-10" : ""} rounded-[5px] flex-1 w-full`}
+              value={value}
+               onChange={onChange}
             />
             {isPassword && (
               <button
