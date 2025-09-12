@@ -5,7 +5,7 @@ import { InputComponent } from '@/components/input';
 import Button from '@/components/button';
 import Image from 'next/image';
 
-const page = () => {
+const Page = () => {
 
     const [form, setForm] = useState({
         newPassword: "",
@@ -51,4 +51,4 @@ const page = () => {
   )
 }
 
-export default page
+export default Page
