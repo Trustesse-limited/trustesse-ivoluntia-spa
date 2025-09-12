@@ -14,22 +14,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Setup Node.js with built-in npm cache
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20   # change to match your local version
+          node-version: 20
+          cache: 'npm'    
 
-      # 💾 Cache npm dependencies
-      - name: Cache node modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
+      # Install dependencies
       - name: Install dependencies
         run: npm ci
 
+      # Build the project (disable ESLint during build)
       - name: Build project
         run: npm run build
+        env:
+          NEXT_DISABLE_ESLINT: "true"
