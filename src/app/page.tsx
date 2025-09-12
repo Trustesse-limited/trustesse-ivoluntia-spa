@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import BioDataForm from "./onboarding/volunteer/components/bioDataForm";
-import LocationForm from "./onboarding/volunteer/components/locationForm";
-import { VolunteerFormData } from "./onboarding/volunteer/components/types";
+import BioDataForm from "./onboarding/volunteer/components/screens/bioDataForm";
+import LocationForm from "./onboarding/volunteer/components/screens/locationForm";
+import { VolunteerFormData } from "@/types";
 import Layout from "./onboarding/volunteer/components/layout";
-import InterestAndCauseForm from "./onboarding/volunteer/components/InterestAndCauseForm";
-import SkillsAndStrengthForm from "./onboarding/volunteer/components/SkillsAndStrengthForm";
+import InterestAndCauseForm from "./onboarding/volunteer/components/screens/InterestAndCauseForm";
+import SkillsAndStrengthForm from "./onboarding/volunteer/components/screens/SkillsAndStrengthForm";
 
 const VolunteerOnboarding: React.FC = () => {
   const [step, setStep] = useState<number>(0);
