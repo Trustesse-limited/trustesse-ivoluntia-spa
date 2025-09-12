@@ -5,8 +5,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { InputComponent } from "@/components/input";
 import { Checkbox } from "@/components/ui/checkbox"
+import SocialLogin from '@/components/SocialLogin';
+import Button from '@/components/button'
 
-const OrganisationPage = () => {
+const VolunteerPage = () => {
 
   //for the social icons login
   const socialIcons = [
@@ -39,7 +41,7 @@ const OrganisationPage = () => {
 
       <form onSubmit={handleSubmit} className='md:w-119 w-70 flex flex-col gap-[24px] mt-9'>
         <InputComponent
-          label="Email"
+          label="Email Address"
           placeholder="Enter your email address"
           name="email"
           htmlFor="email"
@@ -72,13 +74,7 @@ const OrganisationPage = () => {
             I agree to the <span className='text-[#163752]'><Link href='/'>Terms & Conditions</Link></span>
           </label>
         </div>
-
-        <button
-          type='submit'
-          className='bg-[#0E68DC] text-white rounded-2xl py-4 font-[600] md:text-2xl text-xl cursor-pointer'
-        >
-          Sign up
-        </button>
+     <Button text='Sign up' href='/onboarding/signup/volunteer/verify' />
       </form>
 
       <div className="flex items-center md:w-115 w-70 mt-4">
@@ -87,16 +83,10 @@ const OrganisationPage = () => {
         <div className="flex-grow border-t-2 border-black"></div>
       </div>
 
-      <div className='flex  gap-5 mt-4 mb-8 justify-center align-center'>
-        {socialIcons.map((icons, index) => (
-          <Link href={icons.link} key={index}>
-            <Image src={icons.img} alt={icons.alt} width={60} height={60} className='cursor-pointer' />
-          </Link>
-        ))}
-      </div>
-
+     
+<SocialLogin icons={socialIcons}/>
       <p className='pt-2 pb-3 text-center'>
-        Registered already? <span className='cursor-pointer text-[#2C6EA3] pl-1.5 font-medium'>Sign In</span>
+        Registered already? <span className='cursor-pointer text-[#2C6EA3] pl-1.5 font-medium'><Link href='/login'>Sign In</Link></span>
       </p>
 
       <Image src='/pep.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 z-[-1] sm:block hidden' />
@@ -104,4 +94,4 @@ const OrganisationPage = () => {
   )
 }
 
-export default OrganisationPage
+export default VolunteerPage
