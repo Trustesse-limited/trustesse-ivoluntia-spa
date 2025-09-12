@@ -1,7 +1,7 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import ImageUpload from "../../../components/ImageUpload";
-import { VolunteerFormData } from "@/types"; // adjust path as needed
+import { VolunteerFormData } from "@/types"; 
 
 interface ProfileFormProps {
   formData: VolunteerFormData;
