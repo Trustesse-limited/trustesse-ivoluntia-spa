@@ -6,7 +6,7 @@ import Button from '@/components/button'
 import { useState } from 'react'
 
 
-const page = () => {
+const Page = () => {
 
     const [form, setForm] = useState({
         email: "",
@@ -42,4 +42,4 @@ const page = () => {
   )
 }
 
-export default page
+export default Page
