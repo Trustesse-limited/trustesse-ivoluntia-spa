@@ -10,7 +10,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 
 
-const page = () => {
+const Page = () => {
 
   //for the social icons login
   const socialIcons = [
@@ -82,4 +82,4 @@ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
   )
 }
 
-export default page
+export default Page
