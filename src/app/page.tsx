@@ -31,7 +31,7 @@ const page = () => {
       <p className="pt-[6px] sm:text-[20px] text-[13px] text-center">
         Please select the category that aligns with your goals
       </p>
-      <div className="flex gap-[22px] ">
+      <div className="flex gap-[22px]">
         {userType.map((user, index) => (
           <Link href={user.link} key={index}>
             <UserTypeCard key={index}>

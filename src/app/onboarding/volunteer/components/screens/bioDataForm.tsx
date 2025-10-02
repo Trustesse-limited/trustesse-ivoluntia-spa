@@ -12,7 +12,7 @@ import {
 
 const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
   return (
-    <form className="space-y-6 max-w-6xl mx-auto">
+    <form className="space-y-6 max-w-6xl pb-8 mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">Bio Data</h2>
         <p className="text-sm font-normal mt-1 text-[#161616]">
@@ -115,7 +115,7 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
               onChange={(e) =>
                 setFormData({ ...formData, dob: e.target.value })
               }
-              className="w-full"
+              className="w-full placeholder:text-sm"
             />
           </div>
         </div>
