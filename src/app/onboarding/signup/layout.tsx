@@ -1,12 +1,11 @@
-
+import { BRAND_NAME } from '@/app/data';
 import React from 'react'
 
 
 
 export const metadata = {
-  title: "Ivoluntia | Signup",
-  description:
-    "Ivoluntia signup page",
+  title: `${BRAND_NAME} | Signup`,
+  description: `${BRAND_NAME}  signup page`,
 };
 
 

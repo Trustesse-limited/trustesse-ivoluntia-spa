@@ -12,8 +12,8 @@ export default function Congratulations() {
           width={200}
           className="mb-2"
         />
-        <b className="font-bold text-4xl text-[#2C2C2C]">Congratulations</b>
-        <p className="text-center font-semibold text-[#818181] text-lg">
+        <b className="font-bold text-3xl md:text-4xl text-[#2C2C2C]">Congratulations</b>
+        <p className="text-center font-semibold text-[#818181] text-base sm:text-lg">
           You have completed onboarding, your account is under review. Go ahead
           and explore {BRAND_NAME}
         </p>
