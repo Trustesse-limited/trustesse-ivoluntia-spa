@@ -61,7 +61,7 @@ export default function DashboardLayout({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 border-[#A9A7A7]">
+        <main className="flex-1  border-[#A9A7A7]">
           {children}
         </main>
       </div>
