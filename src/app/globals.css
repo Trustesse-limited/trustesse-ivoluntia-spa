@@ -126,3 +126,32 @@
 .transition-class{
   transition: all 0.4s ease-in-out;
 }
+
+/* GLOBAL SCROLLBAR STYLING */
+
+/* Chrome, Safari, Edge */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f5f5; /* Light background for track */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #c0c0c0; /* Subtle thumb color */
+  border-radius: 10px;
+  border: 1px solid #e0e0e0; /* Optional contrast */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a0a0a0; /* Slightly darker on hover */
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c0c0c0 #f5f5f5;
+}
+
