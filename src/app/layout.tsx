@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={openSans.variable}>
       <body className="antialiased font-sans">
-        <div className="max-w-[1538px] font-openSans min-h-screen flex flex-col justify-start items-center relative  px-2  w-[100%]">
+        <div className="max-w-[1538px] font-openSans min-h-screen flex flex-col justify-start items-center relative w-[100%]">
           {children}
         </div>
       </body>

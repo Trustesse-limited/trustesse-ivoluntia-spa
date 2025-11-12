@@ -1,166 +1,127 @@
-'use client'
-import React from "react";
-import { useState } from "react";
-import DashboardLayout from "./DashboardLayout";
+"use client";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  FiHome,
-  FiUsers,
-  FiCalendar,
-  FiCast,
-  FiStar,
-  FiHelpCircle,
-  FiSettings,
-} from "react-icons/fi";
-import { FaHandHoldingUsd } from "react-icons/fa"; 
-import { MdWifiTethering } from "react-icons/md";
-import { title } from "process";
+import ProgramTable from "../components/programTable";
+import { ProgramItem } from "@/types";
+import { programs } from "@/lib/mockData";
 
+type TabKey = "pending" | "active" | "history";
 
-const navLinks = [
-  {
-    label: "Dashboard",
-    href: "/org/dashboard",
-    icon: <FiHome className="text-black" />,
-  },
-  {
-    label: "Programs",
-    href: "/org/programs",
-    icon: <FiCalendar className="text-black" />,
-  },
-  {
-    label: "Volunteers",
-    href: "/org/volunteers",
-    icon: <FiUsers className="text-black" />,
-  },
-  {
-    label: "Donations",
-    href: "/org/donations",
-    icon: <FaHandHoldingUsd className="text-black" />,
-  },
-  {
-    label: "Broadcast",
-    href: "/org/broadcast",
-    icon: <MdWifiTethering className="text-black" />,
-  },
-  {
-    label: "Reviews",
-    href: "/org/reviews",
-    icon: <FiStar className="text-black" />,
-  },
-  {
-    label: "Help & Support",
-    href: "/org/help",
-    icon: <FiHelpCircle className="text-black" />,
-  },
-  {
-    label: "Settings",
-    href: "/org/settings",
-    icon: <FiSettings className="text-black" />,
-  },
+const programStats = [
+  { title: "Total Programs", value: 0, color: "bg-blue-500" },
+  { title: "Active Programs", value: 0, color: "bg-green-500" },
+  { title: "Pending Programs", value: 0, color: "bg-yellow-500" },
 ];
 
-    // Dummy data for program statistics
-   const programStats = [
-    { title: 'Total Programs', value: 0, color: 'bg-blue-500' },
-    { title: 'Active Programs', value: 0, color: 'bg-green-500' },
-    { title: 'Pending Programs', value: 0, color: 'bg-yellow-500' },
-  ];
-
-  
-
-
-
 export default function ProgramsPage() {
-
   const router = useRouter();
-  
-  //for tabs
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState<TabKey>("pending");
 
-  // Example data — could come from API later
-  const programData = {
+  const programData: Record<TabKey, ProgramItem[]> = {
     pending: [],
     active: [],
-    history: [],
+    history: 
+      programs
+    ,
   };
 
   const tabs = [
-    { key: 'pending', label: 'Pending Programs' },
-    { key: 'active', label: 'Active Programs' },
-    { key: 'history', label: 'History' },
+    { key: "pending", label: "Pending Programs" },
+    { key: "active", label: "Active Programs" },
+    { key: "history", label: "History" },
   ];
 
-  // Helper to return the right empty message
-  const getEmptyMessage = () => {
-    if (activeTab === 'history') return 'No history yet';
-    return 'You do not have any Programs. Create a program to start engaging volunteers and make an impact';
-  };
+  const getEmptyMessage = () =>
+    activeTab === "history"
+      ? "No history yet"
+      : "You do not have any Programs. Create a program to start engaging volunteers and make an impact";
 
   return (
-    <DashboardLayout navLinks={navLinks}>
-    
-    <div>
-    <div className="flex items-center justify-between mb-6 w-full bg-white px-6 py-3">
-        <div>
-      <h1 className="text-2xl font-semibold mb-2">Programs Management</h1>
-      <p>Plan, publish and track programs in one place</p>
-      </div>
-      <button className='bg-[#0E68DC] text-white py-4 pl-6.5 rounded-md pr-7.5' onClick={() => router.push('/org/programs/create')} ><span className="pr-2"> +</span> Create New Program</button>
-      </div>
-      {/* page content */}
-      <div className='flex justify-start items-center gap-6 px-6 w-full flex-wrap'>
-      {
-        programStats.map((stat) => (
-          <div key={stat.title} className={`p-4 rounded-lg shadow-md w-[273px] bg-white text-white mb-4 `}>
-            <h2 className="text-sm font-semibold text-[#818181] mb-9">{stat.title}</h2>
-            <p className="text-[45px] font-semibold text-black">{stat.value}</p>
-          </div>
-      ))}
-
-       <div className="p-8 bg-white w-full min-h-[400px] ">
-      {/* --- TABS --- */}
-      <div className="flex space-x-8 border-b">
-        {tabs.map((tab) => (
+    <section className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 overflow-hidden">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold text-gray-900 break-words">
+            Programs Management
+          </h1>
+          <p className="text-sm text-gray-600 break-words">
+            Plan, publish and track programs in one place
+          </p>
+        </div>
+        <div className="flex justify-center sm:justify-end w-full sm:w-auto">
           <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`pb-2 text-sm font-medium ${
-              activeTab === tab.key
-                ? 'text-[#42A5F5] border-b-2 border-[#42A5F5]'
-                : 'text-[#818181] hover:text-[#42A5F5]'
-            }`}
+            onClick={() => router.push("/org/programs/create")}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--buttonPrimary)] text-sm text-white rounded-md hover:opacity-90 transition cursor-pointer"
           >
-            {tab.label}
+            <span className="text-lg font-bold">+</span> Create New Program
           </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {programStats.map((stat) => (
+          <div
+            key={stat.title}
+            className="bg-white rounded-lg shadow p-6 flex flex-col justify-between w-full"
+          >
+            <h2 className="text-sm font-medium text-gray-500">{stat.title}</h2>
+            <p className="text-4xl font-bold text-gray-900 mt-4">
+              {stat.value}
+            </p>
+          </div>
         ))}
       </div>
 
-      {/* --- CONTENT SECTION --- */}
-      <div className="mt-16 flex justify-center items-center  h-48 text-gray-400 italic text-center">
+      {/* Tabs */}
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        {/* Tabs Navigation */}
+        <div className="relative mb-6">
+          <div className="max-sm:w-[80vw] w-full relative">
+            <div className="flex w-full max-sm:gap-4 gap-6 border-b max-sm:overflow-x-auto scrollbar-hide whitespace-nowrap border-gray-200 px-4 sm:px-0">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as TabKey)}
+                  className={`pb-3 text-sm cursor-pointer font-medium transition border-b-2 w-fit ${
+                    activeTab === tab.key
+                      ? "text-[#0E68DC] border-[#42A5F5]"
+                      : "text-[#818181] border-transparent hover:text-[#0E68DC]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="pointer-events-none absolute top-0 right-0 h-full w-6 bg-gradient-to-l from-white to-transparent" />
+          </div>
+        </div>
+
+        {/* Tab Content */}
         {programData[activeTab].length === 0 ? (
-          <p>{getEmptyMessage()}</p>
+          <div className="text-center text-gray-400 italic py-12">
+            {getEmptyMessage()}
+          </div>
+        ) : activeTab === "history" ? (
+          <ProgramTable data={programData.history} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {programData[activeTab].map((program, index) => (
               <div
                 key={index}
-                className="p-4 bg-gray-100 rounded shadow text-gray-800"
+                className="bg-gray-50 rounded-lg p-4 shadow hover:shadow-md transition w-full"
               >
-                <h3 className="font-semibold">{program.title}</h3>
-                <p className="text-sm">{program.description}</p>
+                <h3 className="font-semibold text-gray-800 break-words">
+                  {program.title}
+                </h3>
+                <p className="text-sm text-[#818181] mt-1 break-words">
+                  {program.description}
+                </p>
               </div>
             ))}
           </div>
         )}
       </div>
-    </div>
-    </div>
-      </div>
-
-
-
-      
-    </DashboardLayout>
+    </section>
   );
 }

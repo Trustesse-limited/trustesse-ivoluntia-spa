@@ -17,3 +17,17 @@ export interface FormProps {
   formData: VolunteerFormData;
   setFormData: React.Dispatch<React.SetStateAction<VolunteerFormData>>;
 }
+
+export interface ProgramItem {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  donationTarget: number;
+  raised: number;
+  category: string;
+  goals: string;
+  description: string;
+  image?: string;
+};
