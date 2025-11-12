@@ -1,9 +1,9 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "../components/DashboardLayout";
-import { navLinks } from "../components/navlinks";
-import ProgramTable, { ProgramItem } from "../components/programTable";
+import ProgramTable from "../components/programTable";
+import { ProgramItem } from "@/types";
+import { programs } from "@/lib/mockData";
 
 type TabKey = "pending" | "active" | "history";
 
@@ -20,15 +20,9 @@ export default function ProgramsPage() {
   const programData: Record<TabKey, ProgramItem[]> = {
     pending: [],
     active: [],
-    history: [
-      {
-        title: "Community Tree Planting",
-        startDate: "15/03/2025",
-        endDate: "15/06/2025",
-        location: "Garki, Abuja",
-        donationTarget: "2,000,000",
-      },
-    ],
+    history: 
+      programs
+    ,
   };
 
   const tabs = [
@@ -43,95 +37,91 @@ export default function ProgramsPage() {
       : "You do not have any Programs. Create a program to start engaging volunteers and make an impact";
 
   return (
-    <DashboardLayout navLinks={navLinks} headerTitle="Organization Admin">
-      <section className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 overflow-hidden">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 break-words">
-              Programs Management
-            </h1>
-            <p className="text-sm text-gray-600 break-words">
-              Plan, publish and track programs in one place
+    <section className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 overflow-hidden">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold text-gray-900 break-words">
+            Programs Management
+          </h1>
+          <p className="text-sm text-gray-600 break-words">
+            Plan, publish and track programs in one place
+          </p>
+        </div>
+        <div className="flex justify-center sm:justify-end w-full sm:w-auto">
+          <button
+            onClick={() => router.push("/org/programs/create")}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--buttonPrimary)] text-sm text-white rounded-md hover:opacity-90 transition cursor-pointer"
+          >
+            <span className="text-lg font-bold">+</span> Create New Program
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {programStats.map((stat) => (
+          <div
+            key={stat.title}
+            className="bg-white rounded-lg shadow p-6 flex flex-col justify-between w-full"
+          >
+            <h2 className="text-sm font-medium text-gray-500">{stat.title}</h2>
+            <p className="text-4xl font-bold text-gray-900 mt-4">
+              {stat.value}
             </p>
           </div>
-          <div className="flex justify-center sm:justify-end w-full sm:w-auto">
-            <button
-              onClick={() => router.push("/org/programs/create")}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0E68DC] text-sm text-white rounded-md hover:opacity-90 transition cursor-pointer"
-            >
-              <span className="text-lg font-bold">+</span> Create New Program
-            </button>
-          </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {programStats.map((stat) => (
-            <div
-              key={stat.title}
-              className="bg-white rounded-lg shadow p-6 flex flex-col justify-between w-full"
-            >
-              <h2 className="text-sm font-medium text-gray-500">
-                {stat.title}
-              </h2>
-              <p className="text-4xl font-bold text-gray-900 mt-4">
-                {stat.value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-          {/* Tabs Navigation */}
-          <div className="relative mb-6">
-            <div className="max-sm:w-[80vw] w-full relative">
-              <div className="flex w-full max-sm:gap-4 gap-6 border-b max-sm:overflow-x-auto scrollbar-hide whitespace-nowrap border-gray-200 px-4 sm:px-0">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key as TabKey)}
-                    className={`pb-3 text-sm cursor-pointer font-medium transition border-b-2 w-fit ${
-                      activeTab === tab.key
-                        ? "text-[#0E68DC] border-[#42A5F5]"
-                        : "text-[#818181] border-transparent hover:text-[#0E68DC]"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              <div className="pointer-events-none absolute top-0 right-0 h-full w-6 bg-gradient-to-l from-white to-transparent" />
-            </div>
-          </div>
-
-          {/* Tab Content */}
-          {programData[activeTab].length === 0 ? (
-            <div className="text-center text-gray-400 italic py-12">
-              {getEmptyMessage()}
-            </div>
-          ) : activeTab === "history" ? (
-            <ProgramTable data={programData.history} />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {programData[activeTab].map((program, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 rounded-lg p-4 shadow hover:shadow-md transition w-full"
+      {/* Tabs */}
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        {/* Tabs Navigation */}
+        <div className="relative mb-6">
+          <div className="max-sm:w-[80vw] w-full relative">
+            <div className="flex w-full max-sm:gap-4 gap-6 border-b max-sm:overflow-x-auto scrollbar-hide whitespace-nowrap border-gray-200 px-4 sm:px-0">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as TabKey)}
+                  className={`pb-3 text-sm cursor-pointer font-medium transition border-b-2 w-fit ${
+                    activeTab === tab.key
+                      ? "text-[#0E68DC] border-[#42A5F5]"
+                      : "text-[#818181] border-transparent hover:text-[#0E68DC]"
+                  }`}
                 >
-                  <h3 className="font-semibold text-gray-800 break-words">
-                    {program.title}
-                  </h3>
-                  <p className="text-sm text-[#818181] mt-1 break-words">
-                    {program.description}
-                  </p>
-                </div>
+                  {tab.label}
+                </button>
               ))}
             </div>
-          )}
+            <div className="pointer-events-none absolute top-0 right-0 h-full w-6 bg-gradient-to-l from-white to-transparent" />
+          </div>
         </div>
-      </section>
-    </DashboardLayout>
+
+        {/* Tab Content */}
+        {programData[activeTab].length === 0 ? (
+          <div className="text-center text-gray-400 italic py-12">
+            {getEmptyMessage()}
+          </div>
+        ) : activeTab === "history" ? (
+          <ProgramTable data={programData.history} />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {programData[activeTab].map((program, index) => (
+              <div
+                key={index}
+                className="bg-gray-50 rounded-lg p-4 shadow hover:shadow-md transition w-full"
+              >
+                <h3 className="font-semibold text-gray-800 break-words">
+                  {program.title}
+                </h3>
+                <p className="text-sm text-[#818181] mt-1 break-words">
+                  {program.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

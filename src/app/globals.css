@@ -77,6 +77,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --buttonPrimary:#0E68DC;
 }
 
 .dark {
@@ -161,4 +162,14 @@
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+.rendered-list ul {
+  list-style-type: disc !important;
+  padding-left: 1.25rem; /* equivalent to Tailwind's pl-5 */
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rendered-list li {
+  margin-bottom: 0.25rem;
 }

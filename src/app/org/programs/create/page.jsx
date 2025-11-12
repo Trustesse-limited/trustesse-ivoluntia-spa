@@ -1,13 +1,12 @@
 'use client'
-import DashboardLayout from "./components/DashboardLayout";
 import ImageUpload from '@/app/org/programs/create/ImageUpload'
-import navLinks from "../components/navlinks";
+
 
 
 
 const page = () => {
   return (
-    <DashboardLayout  navLinks={navLinks}>
+    <>
         <div className='bg-white h-full'>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-2">Create a Program</h1>
@@ -71,7 +70,7 @@ const page = () => {
         </div>
       </form>
       </div>
-    </DashboardLayout>
+    </>
   )
 }
 

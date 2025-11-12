@@ -101,9 +101,9 @@ export default function DashboardLayout({
                           href={link.href}
                           className={`rounded-[8px] w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold ${
                             isActive
-                              ? "bg-[#0E68DC] text-[#FFFFFF]"
+                              ? "bg-[var(--buttonPrimary)] text-[#FFFFFF]"
                               : "text-black  bg-transparent"
-                          } hover:bg-[#0E68DC] hover:text-[#FFFFFF]`}
+                          } hover:bg-[var(--buttonPrimary)] hover:text-[#FFFFFF]`}
                           onClick={() => setIsMobileNavOpen(false)}
                         >
                           {link.icon && (
@@ -137,7 +137,7 @@ export default function DashboardLayout({
 
           {/* Header Actions */}
           <div className="flex items-center space-x-4">
-            <button className="hidden md:block bg-[#0E68DC] text-white text-sm font-semibold px-6 py-2 rounded-[8px] transition-class cursor-pointer hover:opacity-90">
+            <button className="hidden md:block bg-[var(--buttonPrimary)] text-white text-sm font-semibold px-6 py-2 rounded-[8px] transition-class cursor-pointer hover:opacity-90">
               Donate
             </button>
 
