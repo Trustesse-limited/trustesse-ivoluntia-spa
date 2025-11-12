@@ -16,7 +16,7 @@ type NavLink = {
 
 type DashboardLayoutProps = {
   navLinks: NavLink[];
-  children: React.ReactNode;
+  children?: React.ReactNode;
   headerTitle: string;
 };
 
@@ -124,9 +124,9 @@ export default function DashboardLayout({
       {/* Main Section */}
       <div className="flex flex-col flex-1 md:ml-52 h-full">
         {/* Unified Header */}
-        <header className="sticky top-0 z-30 bg-white h-20 flex items-center justify-between px-4 md:px-6 border-b-2 border-[#A9A7A7]">
+        <header className="sticky top-0 z-30 bg-white h-20 flex items-center justify-between gap-4 px-4 md:px-6 border-b sm:border-b-2 border-[#A9A7A7]">
           {/* Brand Name (Mobile Only) */}
-          <h1 className="text-lg md:hidden font-bold text-black max-w-[50%]">
+          <h1 className="text-lg md:hidden font-bold text-black w-fit">
             {BRAND_NAME}
           </h1>
 
@@ -154,7 +154,7 @@ export default function DashboardLayout({
                   height={32}
                 />
               </div>
-              <span className="text-sm font-semibold bg-gradient-to-r from-[#9161FD] to-[#06A3DA] bg-clip-text text-transparent">
+              <span className="hidden sm:inline text-sm font-semibold bg-gradient-to-r from-[#9161FD] to-[#06A3DA] bg-clip-text text-transparent">
                 Admin
               </span>
             </div>
@@ -162,7 +162,7 @@ export default function DashboardLayout({
             <button
               title="Open Menu"
               onClick={() => setIsMobileNavOpen(true)}
-              className="md:hidden"
+              className="md:hidden cursor-pointer"
             >
               <FiMenu className="text-2xl text-gray-700" />
             </button>
