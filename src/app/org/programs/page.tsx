@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import ProgramTable from "../components/programTable";
 import { ProgramItem } from "@/types";
 import { programs } from "@/lib/mockData";
+import { motion } from "framer-motion";
 
 type TabKey = "pending" | "active" | "history";
 
@@ -19,10 +20,8 @@ export default function ProgramsPage() {
 
   const programData: Record<TabKey, ProgramItem[]> = {
     pending: [],
-    active: [],
-    history: 
-      programs
-    ,
+    active: programs,
+    history: programs,
   };
 
   const tabs = [
@@ -37,7 +36,11 @@ export default function ProgramsPage() {
       : "You do not have any Programs. Create a program to start engaging volunteers and make an impact";
 
   return (
-    <section className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 overflow-hidden">
+    <motion.section
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }} className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -103,25 +106,13 @@ export default function ProgramsPage() {
             {getEmptyMessage()}
           </div>
         ) : activeTab === "history" ? (
-          <ProgramTable data={programData.history} />
+          <ProgramTable data={programData.history} showDeleteButton showStatus/>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {programData[activeTab].map((program, index) => (
-              <div
-                key={index}
-                className="bg-gray-50 rounded-lg p-4 shadow hover:shadow-md transition w-full"
-              >
-                <h3 className="font-semibold text-gray-800 break-words">
-                  {program.title}
-                </h3>
-                <p className="text-sm text-[#818181] mt-1 break-words">
-                  {program.description}
-                </p>
-              </div>
-            ))}
+            {<ProgramTable data={programData.history} />}
           </div>
         )}
       </div>
-    </section>
+    </motion.section>
   );
 }
