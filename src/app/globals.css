@@ -173,3 +173,15 @@
 .rendered-list li {
   margin-bottom: 0.25rem;
 }
+.scroll-shadow::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 1rem;
+  width: 30px;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(to left, white, transparent);
+  z-index: 10;
+}
+

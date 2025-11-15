@@ -30,4 +30,37 @@ export interface ProgramItem {
   goals: string;
   description: string;
   image?: string;
+  volunteers: number;
+  status:string;
+};
+export interface Volunteer {
+  name: string;
+  location: string;
+  email: string;
+  phone: string;
+  status: string;
+};
+
+
+export type Donor = {
+  name: string;
+  email: string;
+  amount: number;
+  date: string; 
+  paymentMethod: string;
+  status: string;
+  comment: string;
+  profilePic: string; 
+  location: string;
+};
+export type Donation = {
+  name: string;
+  email: string;
+  amount: number;
+  date: string;
+  paymentMethod: string;
+  status: string;
+  comment: string;
+  profilePic: string; 
+  location: string;
 };
