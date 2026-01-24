@@ -47,7 +47,7 @@ const Layout: React.FC<LayoutProps> = ({
       </div>
 
       {/* Progress Bar */}
-      <ProgressBar step={step} totalSteps={totalSteps - 1} />
+      <ProgressBar isOrg step={step} totalSteps={totalSteps - 1} />
 
       {/* Main Content with animation */}
       <AnimatePresence mode="wait">
