@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { programs, volunteers } from "@/lib/mockData";
 import { FiCalendar, FiMapPin, FiUsers } from "react-icons/fi";
 import Image from "next/image";
@@ -21,7 +21,8 @@ import DonorCommentModal from "../components/modals/DonorCommentModal";
 export default function ProgramDetailPage() {
   const { id } = useParams();
   const program = programs.find((_, index) => index.toString() === id);
-
+  const router = useRouter();
+  
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
@@ -115,7 +116,7 @@ export default function ProgramDetailPage() {
           >
             {isActive() ? "Active" : "Pending"}
           </span>
-          <button className="bg-[var(--buttonPrimary)] rounded-[8px] text-white text-sm font-medium ml-auto p-3 cursor-pointer hover:opacity-90 transition-class">
+          <button onClick={()=>router.push("/org/programs/edit")} className="bg-[var(--buttonPrimary)] rounded-[8px] text-white text-sm font-medium ml-auto p-3 cursor-pointer hover:opacity-90 transition-class">
             Edit Program
           </button>
         </div>

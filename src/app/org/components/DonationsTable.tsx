@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { Donor } from "@/types";
+import Image from "next/image";
 
 type DonationsTableProps = {
   data: Donor[];
@@ -42,8 +43,16 @@ export default function DonationsTable({
         <tbody className="bg-white divide-y divide-gray-200">
           {data.map((donor, index) => (
             <tr key={index}>
-              <td className="px-4 py-2 text-sm text-[#373737] whitespace-nowrap">
-                {donor.name}
+              <td className="px-4 py-2 text-sm text-[#373737] whitespace-nowrap flex-row flex gap-4 self-center items-center">
+                <span className="rounded-full h-6 w-6 bg-gray-300 relative">
+                  <Image
+                    src={donor.profilePic}
+                    alt="Donor"
+                    width={24}
+                    height={24}
+                  />
+                </span>
+                <span>{donor.name}</span>
               </td>
               <td className="px-4 py-2 text-sm text-[#373737] text-center whitespace-nowrap">
                 {donor.email}
@@ -63,8 +72,8 @@ export default function DonationsTable({
                     donor.status === "successful"
                       ? "text-[#66BB6A]"
                       : donor.status === "failed"
-                      ? "text-[#EF5350]"
-                      : "text-[#F7BA32]"
+                        ? "text-[#EF5350]"
+                        : "text-[#F7BA32]"
                   }
                 >
                   {donor.status.charAt(0).toUpperCase() + donor.status.slice(1)}

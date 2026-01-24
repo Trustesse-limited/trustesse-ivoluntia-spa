@@ -125,6 +125,24 @@ export const volunteers = [
 
 
 
+export const organizationCategories = [
+  "Non-Governmental Organization (NGO)",
+  "Community-Based Organization (CBO)",
+  "Faith-Based Organization (FBO)",
+  "Youth Organization",
+  "Women's Organization",
+  "Environmental Organization",
+  "Health & Wellness Organization",
+  "Education Foundation",
+  "Human Rights Organization",
+  "Social Enterprise",
+  "Charity Foundation",
+  "International NGO",
+  "Local Development Organization",
+  "Advocacy Group",
+  "Relief Organization",
+];
+
 export const donors = [
   {
     name: "Amaka Obi",
@@ -136,7 +154,7 @@ export const donors = [
     comment: "Happy to support this amazing cause!",
     location: "Calabar, Nigeria",
 
-    profilePic: "/images/donors/amaka.png",
+    profilePic: "/images/donor.png",
   },
   {
     name: "Tolu Adebayo",
@@ -147,8 +165,7 @@ export const donors = [
     status: "pending",
     comment: "Please confirm if my donation was received.",
     location: "Calabar, Nigeria",
-
-    profilePic: "/images/donors/tolu.png",
+    profilePic: "/images/donor.png",
   },
   {
     name: "Fatima Sani",
@@ -160,7 +177,7 @@ export const donors = [
     paymentMethod: "USSD",
     status: "successful",
     comment: "Wishing you all the best with this project!",
-    profilePic: "/images/donors/fatima.png",
+    profilePic: "/images/donor.png",
   },
   {
     name: "Chuka Nwosu",
@@ -172,7 +189,7 @@ export const donors = [
 
     status: "pending",
     comment: "Tried to donate but got an error. Will try again.",
-    profilePic: "/images/donors/chuka.png",
+    profilePic: "/images/donor.png",
   },
   {
     name: "Grace Etim",
@@ -184,7 +201,7 @@ export const donors = [
     location: "Calabar, Nigeria",
 
     comment: "Keep up the great work. Proud to be a donor!",
-    profilePic: "/images/donors/grace.png",
+    profilePic: "/images/donor.png",
   },
 ];
 
