@@ -34,7 +34,7 @@ const Layout: React.FC<LayoutProps> = ({
   }, [step]);
 
   return (
-    <div className="relative lg:max-w-7xl border-[4px] border-[#F0EEEE] my-4 mx-auto rounded-[20px] p-6 overflow-hidden">
+    <div className="relative w-full md:w-[calc(100%-2rem)] border-[4px] m-4 border-[#F0EEEE] rounded-[20px] p-6 overflow-hidden">
       {/* Header */}
       <div className="md:px-8 py-4">
         <h1 className="text-2xl md:text-3xl font-semibold mb-1 text-[#212121]">
@@ -57,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4 }}
-          className="pb-18 pt-8"
+          className="pb-18 pt-8  lg:max-w-7xl"
         >
           {children}
         </motion.div>

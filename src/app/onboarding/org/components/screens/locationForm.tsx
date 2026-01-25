@@ -1,5 +1,5 @@
 import React from "react";
-import { FormProps } from "@/types";
+import { OrganizationFormProps } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -10,7 +10,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const LocationForm: React.FC<FormProps> = ({ formData, setFormData }) => {
+const LocationForm: React.FC<OrganizationFormProps> = ({
+  formData,
+  setFormData,
+}) => {
   return (
     <form className="space-y-6 pb-16 sm:px-6 md:px-8 max-w-6xl mx-auto">
       <div className="mx-auto w-full text-center">
