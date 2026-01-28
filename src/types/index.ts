@@ -18,6 +18,26 @@ export interface FormProps {
   setFormData: React.Dispatch<React.SetStateAction<VolunteerFormData>>;
 }
 
+export interface OrganizationFormData {
+  name: string;
+  category: string;
+  website: string;
+  mission: string;
+  country: string;
+  state: string;
+  city: string;
+  zip: string;
+  address: string;
+  causes: string[];
+  logo?: File | null;
+  disclaimerAgreed: boolean;
+}
+
+export interface OrganizationFormProps {
+  formData: OrganizationFormData;
+  setFormData: React.Dispatch<React.SetStateAction<OrganizationFormData>>;
+}
+
 export interface ProgramItem {
   id: string;
   title: string;

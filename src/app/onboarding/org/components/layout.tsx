@@ -38,16 +38,16 @@ const Layout: React.FC<LayoutProps> = ({
       {/* Header */}
       <div className="md:px-8 py-4">
         <h1 className="text-2xl md:text-3xl font-semibold mb-1 text-[#212121]">
-          Volunteer Onboarding
+          Organization Onboarding
         </h1>
         <p className="text-[#2C2C2C] font-semibold text-sm mb-4">
-          Your gateway to meaningful impact. Let’s get to know you so we can
-          match you with the right opportunities.
+          We are excited to help you find passionate volunteers and donors who
+          align with your mission and vision
         </p>
       </div>
 
       {/* Progress Bar */}
-      <ProgressBar step={step} totalSteps={totalSteps - 1} />
+      <ProgressBar isOrg step={step} totalSteps={totalSteps - 1} />
 
       {/* Main Content with animation */}
       <AnimatePresence mode="wait">
@@ -57,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4 }}
-          className="pb-18 pt-8  lg:max-w-7xl"
+          className="pb-18 pt-8"
         >
           {children}
         </motion.div>

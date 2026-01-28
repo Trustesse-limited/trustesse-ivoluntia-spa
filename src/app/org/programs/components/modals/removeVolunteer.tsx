@@ -56,7 +56,7 @@ export default function RemoveVolunteerModal({
             onClick={onConfirm}
             className="px-8 py-2 bg-[#EF5350] text-white rounded text-sm font-semibold hover:opacity-90 transition-class cursor-pointer"
           >
-            Delete
+            Remove
           </button>
         </div>
       </div>
