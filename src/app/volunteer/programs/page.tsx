@@ -48,7 +48,7 @@ export default function ProgramsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">
             Programs
           </h1>
           <p className="text-gray-600 mt-1">Discover volunteer opportunities</p>
@@ -84,9 +84,9 @@ export default function ProgramsPage() {
               <div className={`w-12 h-12 ${stat.color} rounded-full flex items-center justify-center`}>
                 <FiFilter className="text-white text-xl" />
               </div>
-              <span className="text-3xl font-bold text-gray-900">{stat.value}</span>
+              <span className="text-3xl font-bold text-black">{stat.value}</span>
             </div>
-            <h3 className="text-sm font-medium text-gray-600">{stat.label}</h3>
+            <h3 className="text-sm font-medium text-black">{stat.label}</h3>
           </motion.div>
         ))}
       </div>

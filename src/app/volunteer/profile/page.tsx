@@ -31,6 +31,9 @@ export default function VolunteerProfilePage() {
   // Mock data
   const profile = {
     name: "Eva Johnson",
+    email: "eva.johnson@email.com",
+    location: "New York, NY",
+    memberSince: "January 2024",
     bio: "Passionate about environmental conservation and community development. Looking to make a positive impact through meaningful volunteer work.",
     totalDonations: 12500,
     totalHours: 156,
@@ -92,10 +95,10 @@ export default function VolunteerProfilePage() {
     >
       {/* Profile Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-black">Profile</h1>
         <Link href="/volunteer/profile/edit" className="flex items-center gap-2 px-4 py-2 bg-white border border-[#D9D9D9] rounded-lg text-[#0C59BB] hover:bg-gray-50 transition">
           <FiEdit2 className="text-lg" />
-          <span className="font-medium">Edit Profile</span>
+          <span className="font-medium text-black">Edit Profile</span>
         </Link>
       </div>
 
@@ -121,8 +124,8 @@ export default function VolunteerProfilePage() {
 
           {/* Profile Info */}
           <div className="flex-1 text-center lg:text-left">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{profile.name}</h1>
-            <p className="text-white/90 text-sm sm:text-base max-w-2xl">{profile.bio}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-black">{profile.name}</h1>
+            <p className="text-black text-sm sm:text-base max-w-2xl">{profile.bio}</p>
           </div>
 
           {/* Illustration */}
@@ -212,28 +215,28 @@ export default function VolunteerProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <FiUser className="text-gray-400" />
-                    <span>{profile.name}</span>
+                    <span className="text-black">{profile.name}</span>
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <FiEdit2 className="text-gray-400" />
-                    <span>eva.johnson@email.com</span>
+                    <span className="text-black">{profile.email}</span>
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <FiUser className="text-gray-400" />
-                    <span>New York, NY</span>
+                    <span className="text-black">{profile.location}</span>
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <FiClock className="text-gray-400" />
-                    <span>January 2024</span>
+                    <span className="text-black">January 2024</span>
                   </div>
                 </div>
               </div>
@@ -316,7 +319,7 @@ export default function VolunteerProfilePage() {
                     key={index}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full"
                   >
-                    <span className="text-sm font-medium">{skill}</span>
+                    <span className="text-black">{skill}</span>
                     <button
                       onClick={() => removeSkill(skill)}
                       className="text-red-500 hover:text-red-700"
@@ -359,7 +362,7 @@ export default function VolunteerProfilePage() {
                     className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-full text-gray-600 hover:border-[#0E68DC] hover:text-[#0E68DC]"
                   >
                     <FiPlus className="text-sm" />
-                    <span className="text-sm">Add More</span>
+                    <span className="text-black">Add More</span>
                   </button>
                 )}
               </div>

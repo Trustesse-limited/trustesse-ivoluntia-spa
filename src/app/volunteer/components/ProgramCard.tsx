@@ -40,7 +40,7 @@ export default function ProgramCard({ program, index }: ProgramCardProps) {
     <div className="bg-white border border-black rounded-[16px] p-4 hover:shadow-lg transition-shadow duration-300 cursor-pointer">
       {/* Header with favourite button */}
       <div className="flex justify-between items-start mb-3">
-        <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-2">
+        <h3 className="text-lg font-semibold text-black flex-1 mr-2">
           {program.title}
         </h3>
         <button
@@ -56,27 +56,27 @@ export default function ProgramCard({ program, index }: ProgramCardProps) {
 
       {/* Organization name */}
       <div className="mb-3">
-        <p className="text-sm text-blue-600 font-medium">
+        <p className="text-sm text-black font-medium">
           {program.category.charAt(0).toUpperCase() + program.category.slice(1)} Organization
         </p>
       </div>
 
       {/* Tags */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+        <div className="flex items-center gap-1 text-xs text-black bg-gray-100 px-2 py-1 rounded-full">
           <FiMapPin className="w-3 h-3" />
           <span>{program.location}</span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+        <div className="flex items-center gap-1 text-xs text-black bg-gray-100 px-2 py-1 rounded-full">
           <FiClock className="w-3 h-3" />
           <span>{program.startDate} - {program.endDate}</span>
         </div>
-        <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+        <div className="flex items-center gap-1 text-xs text-black bg-gray-100 px-2 py-1 rounded-full">
           <FiUsers className="w-3 h-3" />
           <span>{program.volunteers} Volunteers</span>
         </div>
         {program.donationTarget > 0 && (
-          <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+          <div className="flex items-center gap-1 text-xs text-black bg-gray-100 px-2 py-1 rounded-full">
             <FiDollarSign className="w-3 h-3" />
             <span>Donation</span>
           </div>
@@ -87,7 +87,7 @@ export default function ProgramCard({ program, index }: ProgramCardProps) {
       {program.donationTarget > 0 && (
         <div className="mb-4">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs text-gray-700 font-medium">Goal: {formatCurrency(program.donationTarget)}</span>
+            <span className="text-xs text-black font-medium">Goal: {formatCurrency(program.donationTarget)}</span>
           </div>
           <div className="relative">
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -97,7 +97,7 @@ export default function ProgramCard({ program, index }: ProgramCardProps) {
               />
             </div>
             <div className="mt-1">
-              <span className="text-xs text-gray-600">
+              <span className="text-xs text-black">
                 Raised: {formatCurrency(program.raised)}
               </span>
             </div>
@@ -107,7 +107,7 @@ export default function ProgramCard({ program, index }: ProgramCardProps) {
 
       {/* Description */}
       <div className="mb-4">
-        <p className="text-sm text-gray-600 line-clamp-2">
+        <p className="text-sm text-black line-clamp-2">
           {program.description}
         </p>
       </div>

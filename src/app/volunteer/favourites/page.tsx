@@ -87,9 +87,9 @@ export default function VolunteerFavouritesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-black flex items-center gap-2">
             <FiHeart className="text-red-500" />
-            Favourites
+            My Favourites
           </h1>
           <p className="text-gray-600 mt-1">Your saved volunteer opportunities</p>
         </div>
