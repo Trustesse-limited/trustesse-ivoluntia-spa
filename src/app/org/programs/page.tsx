@@ -47,7 +47,7 @@ export default function ProgramsPage() {
           <h1 className="text-2xl font-bold text-gray-900 break-words">
             Programs Management
           </h1>
-          <p className="text-sm text-gray-600 break-words">
+          <p className="text-sm text-black break-words">
             Plan, publish and track programs in one place
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function ProgramsPage() {
             key={stat.title}
             className="bg-white rounded-lg shadow p-6 flex flex-col justify-between w-full"
           >
-            <h2 className="text-sm font-medium text-gray-500">{stat.title}</h2>
+            <h2 className="text-sm font-medium text-black">{stat.title}</h2>
             <p className="text-4xl font-bold text-gray-900 mt-4">
               {stat.value}
             </p>
@@ -86,10 +86,10 @@ export default function ProgramsPage() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as TabKey)}
-                  className={`pb-3 text-sm cursor-pointer font-medium transition border-b-2 w-fit ${
+                  className={`pb-3 text-[14px] cursor-pointer font-medium transition border-b-2 w-fit ${
                     activeTab === tab.key
                       ? "text-[#0E68DC] border-[#42A5F5]"
-                      : "text-[#818181] border-transparent hover:text-[#0E68DC]"
+                      : "text-black border-transparent hover:text-[#0E68DC]"
                   }`}
                 >
                   {tab.label}

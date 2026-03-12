@@ -11,6 +11,7 @@ export const programs = [
     image: "/images/Frame 2147224302.png",
     category: "Community Development",
     status: "completed",
+    organization: "Green Earth Foundation",
     goals: `<ul>
       <li>Plant 1,000 Trees</li>
       <li>Engage 200 Volunteers</li>
@@ -33,6 +34,7 @@ export const programs = [
     image: "/images/Frame 2147224302.png",
     category: "Education & Empowerment",
     status: "forfeited",
+    organization: "Education First NGO",
     goals: `<ul>
       <li>Train 100 Youths in Digital Skills</li>
       <li>Host 5 Career Mentorship Sessions</li>
@@ -53,6 +55,7 @@ export const programs = [
     image: "/images/Frame 2147224302.png",
     category: "Health & Sanitation",
     status: "completed",
+    organization: "Healthcare Plus",
     goals: `<ul>
       <li>Install 10 Boreholes</li>
       <li>Train 50 Hygiene Ambassadors</li>
@@ -73,6 +76,7 @@ export const programs = [
     image: "/images/Frame 2147224302.png",
     category: "Education Infrastructure",
     status: "forfeited",
+    organization: "Community Helpers",
     goals: `<ul>
       <li>Renovate 5 Classrooms</li>
       <li>Provide 500 School Kits</li>

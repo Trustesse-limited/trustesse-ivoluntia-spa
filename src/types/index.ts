@@ -51,7 +51,11 @@ export interface ProgramItem {
   description: string;
   image?: string;
   volunteers: number;
-  status:string;
+  status: string;
+  organization: string;
+  isFavourited?: boolean;
+  duration?: string;
+  targetVolunteers?: number;
 };
 export interface Volunteer {
   name: string;

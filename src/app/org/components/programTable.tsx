@@ -51,27 +51,27 @@ export default function ProgramTable({
         <table className="min-w-full divide-y divide-gray-200 table-fixed">
           <thead className="bg-[#F7F7F7]">
             <tr>
-              <th className="w-[180px] px-4 py-3 text-left text-sm font-semibold text-[#818181] whitespace-nowrap">
+              <th className="w-[180px] px-4 py-3 text-left text-sm font-semibold text-[#000000] whitespace-nowrap">
                 Program Name
               </th>
-              <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+              <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#000000] whitespace-nowrap">
                 Start Date
               </th>
-              <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+              <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#000000] whitespace-nowrap">
                 End Date
               </th>
-              <th className="w-[160px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+              <th className="w-[160px] px-4 py-3 text-center text-sm font-semibold text-[#000000] whitespace-nowrap">
                 Location
               </th>
-              <th className="w-[140px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+              <th className="w-[140px] px-4 py-3 text-center text-sm font-semibold text-[#000000] whitespace-nowrap">
                 Donation Target
               </th>
               {showStatus && (
-                <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+                <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#000000] whitespace-nowrap">
                   Status
                 </th>
               )}
-              <th className="w-[160px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+              <th className="w-[160px] px-4 py-3 text-center text-sm font-semibold text-[#000000] whitespace-nowrap">
                 Action
               </th>
             </tr>
@@ -79,21 +79,21 @@ export default function ProgramTable({
           <tbody className="bg-white divide-y divide-gray-200">
             {data.map((program, index) => (
               <tr key={index}>
-                <td className="w-[180px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap overflow-hidden">
+                <td className="w-[180px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap overflow-hidden">
                   <span className="block truncate text-left w-50">
                     {program.title}
                   </span>
                 </td>
-                <td className="w-[120px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
+                <td className="w-[120px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
                   {program.startDate}
                 </td>
-                <td className="w-[120px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
+                <td className="w-[120px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
                   {program.endDate}
                 </td>
-                <td className="w-[160px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
+                <td className="w-[160px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
                   {program.location}
                 </td>
-                <td className="w-[140px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
+                <td className="w-[140px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
                   {formatNumberWithCommas(program.donationTarget)}
                 </td>
                 {showStatus && (
@@ -103,7 +103,7 @@ export default function ProgramTable({
                         program.status === "completed"
                           ? "text-[#66BB6A]"
                           : program.status === "forfeited"
-                          ? "text-[#818181]"
+                          ? "text-[#000000]"
                           : "text-[#F7BA32]"
                       }
                     >
