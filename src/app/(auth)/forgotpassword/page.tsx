@@ -35,7 +35,7 @@ const Page = () => {
                    value={form.email}
                 />
                 
-        <Button text='Send Link' />
+        <Button text='Send Link'  />
     </form>
     <Image src='/passwordbg.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 z-[-1] sm:block hidden' />
         </>

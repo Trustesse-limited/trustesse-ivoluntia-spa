@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 import ImageUpload from "@/app/org/programs/create/ImageUpload";
+import BackButton from "../../../../components/BackButton";
 
 export default function EditProgramPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <header className="mb-10">
-          <h1 className="text-3xl font-bold text-gray-900">Edit Program</h1>
+          <div className="flex items-center justify-start gap-4 mb-4">
+            <BackButton />
+            <h1 className="text-2xl font-bold text-gray-900">Edit Program</h1>
+          </div>
           <p className="text-lg text-gray-600 mt-1">Program Details</p>
         </header>
 

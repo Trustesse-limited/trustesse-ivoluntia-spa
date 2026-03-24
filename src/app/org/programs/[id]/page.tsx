@@ -15,6 +15,7 @@ import DonationsTable from "../../components/DonationsTable";
 import { donors } from "@/lib/mockData";
 import { Donor } from "@/types";
 import DonorCommentModal from "../components/modals/DonorCommentModal";
+import BackButton from "../../../../components/BackButton";
 
 
 
@@ -91,7 +92,9 @@ export default function ProgramDetailPage() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-full px-4 sm:px-6 lg:px-8 pt-6 pb-10 space-y-4 bg-white text-black"
       >
-        <h1 className="text-xl font-bold">Program Overview</h1>
+        <div className="flex items-center justify-start gap-4">
+       <BackButton /> <h1 className="text-xl font-bold">Program Overview</h1> 
+       </div>
 
         {/* Image */}
         <div className="w-full rounded-lg overflow-hidden">
@@ -106,6 +109,7 @@ export default function ProgramDetailPage() {
 
         {/* Title */}
         <div className="flex items-center justify-start gap-6 w-full flex-wrap">
+         
           <h2 className="text-xl font-bold">{program.title}</h2>
           <span
             className={`inline-block py-3 px-4 text-xs font-medium rounded-[8px] ${

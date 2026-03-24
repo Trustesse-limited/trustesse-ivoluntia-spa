@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ProgramItem } from "@/types";
 import { programs } from "@/lib/mockData";
 import { FiCalendar, FiMapPin, FiUsers, FiTarget, FiClock } from "react-icons/fi";
+import BackButton from "../../../../components/BackButton";
 
 export default function ProgramDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -19,12 +20,7 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Program Not Found</h2>
           <p className="text-gray-600 mb-4">The program you're looking for doesn't exist.</p>
-          <button
-            onClick={() => router.push("/volunteer/programs")}
-            className="px-4 py-2 bg-[#0E68DC] text-white rounded-md hover:opacity-90 transition"
-          >
-            Back to Programs
-          </button>
+          <BackButton />
         </div>
       </div>
     );
@@ -50,7 +46,10 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{program.title}</h1>
+            <div className="flex items-center justify-start gap-4 mb-4">
+              <BackButton />
+              <h1 className="text-3xl font-bold text-gray-900">{program.title}</h1>
+            </div>
             <p className="text-gray-600 leading-relaxed">{program.description}</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 lg:w-auto">
