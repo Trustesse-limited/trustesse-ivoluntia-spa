@@ -20,15 +20,15 @@ const userType = [
 ];
 
 //for the styling of the volunteer and org text
-const styleItem = "sm:text-[32px]  font-[400] text-[#ODODOD]]";
+const styleItem = "sm:text-[28px] text-lg font-[400] text-[#ODODOD]]";
 
 const page = () => {
   return (
     <>
-      <h1 className="md:text-6xl  text-4xl font-[700] pt-[130px] sm:pt-[100px] text-center">
+      <h1 className="md:text-5xl text-4xl font-[700] pt-[130px] sm:pt-[100px] text-center">
         Welcome
       </h1>
-      <p className="pt-[6px] sm:text-[20px] text-[13px] text-center">
+      <p className="pt-[6px] sm:text-[16px] text-[#000000] text-[14px] text-center">
         Please select the category that aligns with your goals
       </p>
       <div className="flex gap-[22px]">
@@ -39,7 +39,7 @@ const page = () => {
                 src={user.img}
                 width={70}
                 height={70}
-                className="md:w-[120px] md:h-[120px] sm:w-[100px] sm:h-[100px]"
+                className="sm:w-[90px] sm:h-[90px]"
                 alt={user.alt}
               />
               <h2 className={styleItem}>{user.text}</h2>
@@ -58,7 +58,7 @@ const page = () => {
         alt="illustration-svg"
         width={446}
         height={223}
-        className="fixed bottom-0 z-[-1] sm:block hidden"
+        className="absolute bottom-0 z-[-1]"
       />
     </>
   );

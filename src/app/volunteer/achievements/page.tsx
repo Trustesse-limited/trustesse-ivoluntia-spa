@@ -24,7 +24,7 @@ export default function VolunteerAchievementsPage() {
         className="flex flex-col items-center justify-center m-auto py-16 px-6"
       >
         {/* Illustration */}
-        <div className="relative w-64 h-64 sm:w-80 sm:h-80 mb-8">
+        <div className="relative w-64 h-64 mb-8">
           <Image
             src="/illustrations/no achievment.svg"
             alt="No achievements yet"

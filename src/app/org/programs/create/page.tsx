@@ -1,14 +1,18 @@
 "use client";
 
 import ImageUpload from "@/app/org/programs/create/ImageUpload";
+import BackButton from "../../../../components/BackButton";
 
 export default function CreatePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto p-6">
+    <div className="min-h-screen bg-white bg-gray-50">
+      <div className=" mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Create a Program</h1>
+          <div className="flex items-center justify-start gap-4 mb-4">
+            <BackButton />
+            <h1 className="text-2xl font-bold text-gray-900">Create a Program</h1>
+          </div>
           <p className="text-lg text-gray-600">Program Details</p>
         </div>
 

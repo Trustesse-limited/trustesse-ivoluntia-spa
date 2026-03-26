@@ -7,7 +7,7 @@ interface UserTypeCardProps {
 
 const UserTypeCard = ({ children }: UserTypeCardProps) => {
   return (
-    <div className=" flex justify-center items-center flex-col border-[#C0C0C0] border-[1px] rounded-[12px] w-40 sm:w-[300px] mt-[75px] py-[36px] hover:shadow-lg cursor-pointer text">
+    <div className="flex justify-center items-center flex-col border border-[#C0C0C0] rounded-xl w-40 sm:w-72  mt-8 sm:mt-12 py-8 sm:py-10 md:py-10 hover:shadow-xl cursor-pointer transition-all duration-300 hover:border-blue-400 bg-white">
       {children}
     </div>
   );

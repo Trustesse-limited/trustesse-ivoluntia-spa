@@ -10,7 +10,7 @@ interface ButtonProps {
 
 const Button: React.FC<ButtonProps> = ({ text, href, type = "button" }) => {
   const baseClasses =
-    "bg-[#0E68DC] text-white rounded-2xl py-4 font-[600] md:text-2xl text-xl cursor-pointer px-6 text-center block";
+    "bg-[#0E68DC] text-white rounded-2xl py-3 font-[600] md:text-xl text-lg cursor-pointer px-6 text-center block";
 
   if (href) {
     // Renders a link styled like a button
