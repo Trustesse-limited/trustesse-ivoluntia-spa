@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { BRAND_NAME } from "@/app/data";
+import { BRAND_NAME } from "../../constants";
 
 type NavLink = {
   label: string;

@@ -141,7 +141,7 @@ export default function AdminDonations() {
 
       {/* Donations Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full">
-        <div className="overflow-x-auto overflow-y-auto max-h-96 max-w-[96vw]">
+        <div className="overflow-x-auto overflow-y-auto max-h-96 max-sm:max-w-[90vw]">
           <table className="w-full min-w-[600px] sm:min-w-[700px]">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
               <tr>

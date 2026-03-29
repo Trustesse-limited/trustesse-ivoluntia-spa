@@ -1,4 +1,4 @@
-import { BRAND_NAME } from '@/app/data';
+import { BRAND_NAME } from '../../../../constants';
 import React from 'react'
 
 
@@ -16,7 +16,6 @@ export default function onboardingLayout({
 }) {
   return (
     <div className='max-w-[1538px] font-openSans min-h-screen flex flex-col justify-start items-center relative  px-2  w-[100%]'>
-      {/* you can add nav/header here if needed */}
       {children}
     </div>
   );

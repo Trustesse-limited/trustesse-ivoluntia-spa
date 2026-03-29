@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Open_Sans } from "next/font/google";
 import "./globals.css";
-import { BRAND_NAME } from "./data";
+import { BRAND_NAME } from "../../constants";
 
 const openSans = Open_Sans({
   subsets: ["latin"],

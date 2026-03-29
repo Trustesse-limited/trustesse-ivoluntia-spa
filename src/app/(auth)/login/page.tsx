@@ -75,7 +75,7 @@ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         <div className="flex-grow border-t-2 border-black"></div>
       </div>
       <SocialLogin icons={socialIcons}/>
-       <p className='text-center text-[16px]'>No Account yet? <span className='text-[#2C6EA3]'><Link href="/onboarding/signup">Sign Up</Link></span></p>
+       <p className='text-center text-[16px]'>No Account yet? <span className='text-[#2C6EA3]'><Link href="/">Sign Up</Link></span></p>
     </div>
     <Image src='/pep.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 z-[-1] sm:block hidden' />
     </>
