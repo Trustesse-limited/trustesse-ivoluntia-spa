@@ -145,7 +145,7 @@ export default function UsersPage() {
             No users found
           </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-auto max-h-96 max-sm:max-w-[90vw]">
+          <div className="overflow-x-auto overflow-y-auto max-h-96 max-md:w-[calc(90vw-2rem)] w-[calc(90vw-13rem)]">
             <table className="w-full min-w-[600px] sm:min-w-[700px]">
               <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>

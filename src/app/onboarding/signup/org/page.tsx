@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { InputComponent } from "@/components/input";
 import { Checkbox } from "@/components/ui/checkbox"
 import SocialLogin from '@/components/SocialLogin';
-import Button from '@/components/button'
+import Button from '@/components/button';
 
 
 const OrganisationPage = () => {
@@ -36,7 +36,8 @@ const OrganisationPage = () => {
   
     return (
       <>
-        <h1 className='md:text-[32px] pt-8 text-2xl text-center font-medium'>
+       
+        <h1 className='md:text-[32px] pt-4 text-2xl text-center font-medium'>
           Create an Organisation account
         </h1>
         <p className='text-center'>Join Us and get volunteers</p>

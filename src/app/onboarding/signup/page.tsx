@@ -15,7 +15,7 @@ const userType = [
 
 const page = () => {
   return (
-   <div className='p-4'>
+    <div className='p-4'>
         <h1 className='md:text-6xl  text-4xl font-[700] pt-[130px] sm:pt-[100px] text-center'>Welcome</h1>
         <p className='pt-[6px] sm:text-[20px] text-[13px] text-center'>Please select the category that aligns with your goals</p>
         <div className='flex gap-[22px] '>
