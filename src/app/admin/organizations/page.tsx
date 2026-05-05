@@ -58,7 +58,7 @@ export default function OrganizationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex-1 min-w-0 bg-white py-3 px-4 border-t-2 border-t-[#A9A7A7]">
           <h1 className="text-2xl font-bold text-gray-900 break-words">
-            Organizations Management
+            Organization Management
           </h1>
           <p className="text-sm text-black break-words">
             Manage foundations seamlessly
