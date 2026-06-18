@@ -2,7 +2,12 @@ import Image from "next/image";
 import { BRAND_NAME } from "../../../../../../constants";
 import { Button } from "@/components/ui/button";
 
-export default function Congratulations() {
+interface CongratulationsProps {
+  onLaunch?: () => void | Promise<void>;
+  isLoading?: boolean;
+}
+
+export default function Congratulations({ onLaunch, isLoading = false }: CongratulationsProps) {
     return (
       <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-3 pb-20">
         <Image
@@ -17,7 +22,16 @@ export default function Congratulations() {
           You have completed onboarding, your account is under review. Go ahead
           and explore {BRAND_NAME}
         </p>
-        <Button variant="default" className="font-bold text-white w-full h-12 text-lg">Launch</Button>
+        {onLaunch && (
+          <Button 
+            variant="default" 
+            className="font-bold text-white w-full h-12 text-lg"
+            onClick={onLaunch}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Creating Account...' : 'Launch'}
+          </Button>
+        )}
       </div>
     );
 }

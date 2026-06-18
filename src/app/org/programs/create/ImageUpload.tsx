@@ -2,6 +2,7 @@
 import Image from "next/image";
 
 import React, { useState } from "react";
+import toast from "react-hot-toast";
 
 const ImageUpload = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -22,7 +23,7 @@ const ImageUpload = () => {
 
   const handleUpload = () => {
     if (!selectedFile) {
-      alert("Please select a file first");
+      toast.error("Please select a file first");
       return;
     }
     // Replace with API call or backend upload logic

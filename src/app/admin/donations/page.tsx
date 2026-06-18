@@ -40,6 +40,7 @@ export default function AdminDonations() {
   };
 
   return (
+
     <div className="p-2 sm:p-4 w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 w-full">
@@ -197,5 +198,6 @@ export default function AdminDonations() {
         </div>
       </div>
     </div>
+    
   );
 }

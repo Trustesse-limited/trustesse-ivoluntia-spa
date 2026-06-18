@@ -1,16 +1,22 @@
 
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { InputComponent } from "@/components/input";
 import { Checkbox } from "@/components/ui/checkbox"
 import SocialLogin from '@/components/SocialLogin';
 import Button from '@/components/button';
-
+import { useOnboardingStore } from '@/store';
+import { useAuthActions } from '@/hooks/useAuthActions';
+import toast from 'react-hot-toast';
 
 const OrganisationPage = () => {
+  const router = useRouter();
+  const { updateFormData, setCurrentStep, switchAccountType, checkOnboardingStatus, formData: onboardingFormData } = useOnboardingStore();
+  const { volunteerSignUp, isLoading } = useAuthActions();
 
   //for the social icons login
     const socialIcons = [
@@ -23,15 +29,77 @@ const OrganisationPage = () => {
       email: "",
       password: "",
       confirmPassword: "",
+      hasAcceptedTOC: false,
     });
+
+    // On mount, switch to organization account type and restore data
+    useEffect(() => {
+      switchAccountType('organization');
+      
+      // Restore auth info from store if available
+      if (onboardingFormData.authInfo) {
+        setForm({
+          email: onboardingFormData.authInfo.email || "",
+          password: onboardingFormData.authInfo.password || "",
+          confirmPassword: onboardingFormData.authInfo.confirmPassword || "",
+          hasAcceptedTOC: onboardingFormData.authInfo.hasAcceptedTOC || false,
+        });
+      }
+    }, [switchAccountType, onboardingFormData]);
   
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      console.log("Form submitted:", form);
+      
+      // Validate form
+      if (!form.email || !form.password || !form.confirmPassword) {
+        toast.error('Please fill in all fields');
+        return;
+      }
+
+      if (form.password !== form.confirmPassword) {
+        toast.error('Passwords do not match');
+        return;
+      }
+
+      if (!form.hasAcceptedTOC) {
+        toast.error('Please accept the terms and conditions');
+        return;
+      }
+      
+      // Set account type and step
+      switchAccountType('organization');
+      
+      // Store auth info in onboarding store
+      updateFormData({
+        authInfo: {
+          email: form.email,
+          password: form.password,
+          confirmPassword: form.confirmPassword,
+          hasAcceptedTOC: form.hasAcceptedTOC,
+        },
+        metaData: {
+          accountType: "organization",
+          currentPage: 1,
+        },
+      });
+      
+      // Check if user has previous onboarding progress and redirect to last step
+      const { shouldRedirect, route } = checkOnboardingStatus('organization');
+      if (shouldRedirect) {
+        router.push(route);
+      } else {
+        // No previous progress, go to first onboarding step
+        setCurrentStep(1);
+        router.push('/onboarding/org');
+      }
     };
   
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const handleTermsChange = (checked: boolean) => {
+      setForm({ ...form, hasAcceptedTOC: checked });
     };
   
     return (
@@ -72,12 +140,12 @@ const OrganisationPage = () => {
           />
   
           <div className="flex items-center space-x-2">
-            <Checkbox id='terms' className='rounded-full border-black' />
+            <Checkbox id='terms' className='rounded-full border-black' onCheckedChange={handleTermsChange} />
             <label htmlFor="terms" className="text-sm">
               I agree to the <span className='text-[#163752]'><Link href='/'>Terms & Conditions</Link></span>
             </label>
           </div>
-       <Button text='Sign up' href='/onboarding/signup/org/verify'  />
+       <Button text={isLoading ? 'Signing up...' : 'Sign up'} type='submit' disabled={isLoading} />
         </form>
   
         <div className="flex items-center md:w-115 w-70 mt-4">

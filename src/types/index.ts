@@ -16,6 +16,8 @@ export interface VolunteerFormData {
 export interface FormProps {
   formData: VolunteerFormData;
   setFormData: React.Dispatch<React.SetStateAction<VolunteerFormData>>;
+  onLaunch?: () => void | Promise<void>;
+  isLoading?: boolean;
 }
 
 export interface OrganizationFormData {
