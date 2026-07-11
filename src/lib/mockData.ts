@@ -209,3 +209,46 @@ export const donors = [
   },
 ];
 
+//for organisation dashboard mock data
+export const organizationProjects = [
+  {
+    "id": "1",
+    "title": "Healthy & Empowered Girl Child Initiative",
+    "category": "Girl Child Education",
+    "raisedAmount": 50000,
+    "image":"/org/orgone.jpg",
+    "targetAmount": 500000
+  },
+  {
+    "id": "2",
+    "title": "Safe Heaven Foundation",
+    "category": "Teens And Young Adult Mental Health Safety",
+    "raisedAmount": 50000,
+    "image":"/org/donate.jpg",
+    "targetAmount": 500000
+  },
+   {
+    "id": "3",
+    "title": "Maternal & Newborn Health Outreach Program",
+    "category": "Maternal and Child Health",
+    "raisedAmount": 250000,
+    "image":"/org/vaccination.jpg",
+    "targetAmount": 1000000
+  },
+  {
+    "id": "4",
+    "title": "1,000 Youth Empowerment Program ",
+    "category": "Youth Skills Training",
+    "raisedAmount": 75000,
+    "image":"/org/charity.jpg",
+    "targetAmount": 100000
+  },
+  {
+    "id": "5",
+    "title": "FoodFirst Foundation",
+    "category": "Feeding The Nation ",
+    "raisedAmount": 50000,
+    "image":"/org/feed.jpg",
+    "targetAmount": 500000
+  },
+]
