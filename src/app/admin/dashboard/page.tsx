@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 "use client";
 import React, { useState } from "react";
+=======
+ "use client";
+import React, { useState, useEffect } from "react";
+>>>>>>> Stashed changes
 import { motion } from "framer-motion";
 import { FiChevronDown, FiChevronUp, FiDollarSign, FiUsers, FiCalendar, FiTrendingUp } from "react-icons/fi";
 
