@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { BRAND_NAME } from "@/app/data";
+import { BRAND_NAME } from "../../constants";
 
 type NavLink = {
   label: string;
@@ -30,8 +30,10 @@ export default function SuperAdminLayout({
 
   const navLinks = [
     { href: "/admin/dashboard", label: "Dashboard" },
+    { href: "/admin/organizations", label: "Organizations" },
     { href: "/admin/programs", label: "Programs" },
-    { href: "/admin/users", label: "Volunteers" },
+    { href: "/admin/users", label: "User Management" },
+    { href: "/admin/roles", label: "Role Management" },
     { href: "/admin/donations", label: "Donations" },
     { href: "/admin/broadcast", label: "Broadcast" },
     { href: "/admin/reviews", label: "Reviews" },
@@ -152,7 +154,7 @@ export default function SuperAdminLayout({
 
       {/* Main Section */}
       <div className="flex flex-col flex-1 md:ml-52 h-full">
-        <header className="sticky top-0 z-30 bg-white h-20 flex items-center justify-between gap-4 px-4 md:px-6  border-[#A9A7A7]">
+        <header className="sticky top-0 z-30 bg-white h-19.5 flex items-center justify-between gap-4 px-4 md:px-6  border-[#A9A7A7]">
           <div className="flex items-center gap-4">
             <button
               title="Open Menu"

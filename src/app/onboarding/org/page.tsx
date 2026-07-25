@@ -8,7 +8,7 @@ import SetupProfileForm from "./components/screens/SetupProfileForm";
 import Disclaimer from "./components/screens/disclaimer";
 import Congratulations from "./components/screens/congratulations";
 import { OrganizationFormProps, OrganizationFormData } from "@/types";
-import Layout from "./components/layout";
+import Layout from "./components/OnboardingLayout";
 
 type StepConfig = {
   key: string;

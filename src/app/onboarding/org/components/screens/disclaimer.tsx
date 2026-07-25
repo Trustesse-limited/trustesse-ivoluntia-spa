@@ -8,7 +8,7 @@ const Disclaimer: React.FC<OrganizationFormProps> = ({ formData, setFormData }) 
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">Disclaimer</h2>
         <p className="text-sm font-normal mt-1 text-[#161616]">
-          We encourage you to take time to review this disclaimer. By registering, your organization agrees to;
+          {`We encourage you to take time to review this disclaimer. By registering, your organization agrees to;`}
         </p>
       </div>
 
@@ -45,7 +45,7 @@ const Disclaimer: React.FC<OrganizationFormProps> = ({ formData, setFormData }) 
             htmlFor="disclaimerAgreed"
             className="text-[#212121] font-normal text-sm cursor-pointer"
           >
-            I've read and agree to the disclaimer
+            {`I've read and agree to the disclaimer`}
           </Label>
         </div>
       </div>

@@ -130,7 +130,7 @@ export default function AdminReports() {
               <div className="text-2xl font-bold text-gray-900">{reportData.overview.totalOrganizations.toLocaleString()}</div>
               <div className="text-sm text-gray-600 mt-1">Organizations</div>
             </motion.div>
-
+f 
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}

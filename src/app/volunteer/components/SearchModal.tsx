@@ -188,7 +188,7 @@ export default function SearchModal({ isOpen, onClose, onSearch }: SearchModalPr
             ].map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
+                onClick={() => setActiveTab(tab.key as 'programs' | 'interests' | 'locations')}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 font-medium transition-colors ${
                   activeTab === tab.key
                     ? 'text-[#0E68DC] border-b-2 border-[#0E68DC] bg-blue-50'

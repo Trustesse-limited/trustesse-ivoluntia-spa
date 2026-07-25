@@ -14,7 +14,7 @@ export default function EditProgramPage() {
             <BackButton />
             <h1 className="text-2xl font-bold text-gray-900">Edit Program</h1>
           </div>
-          <p className="text-lg text-gray-600 mt-1">Program Details</p>
+          <p className="text-lg text-black mt-1">Program Details</p>
         </header>
 
         {/* Form */}
@@ -25,7 +25,7 @@ export default function EditProgramPage() {
               <div>
                 <label
                   htmlFor="title"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-black"
                 >
                   Program Title <span className="text-red-500">*</span>
                 </label>
@@ -34,14 +34,14 @@ export default function EditProgramPage() {
                   name="title"
                   type="text"
                   placeholder="Community Tree Planting Drive 2025"
-                  className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-black"
                 >
                   Description <span className="text-red-500">*</span>
                 </label>
@@ -50,12 +50,12 @@ export default function EditProgramPage() {
                   name="description"
                   rows={5}
                   placeholder="Join us in planting 1,000 trees..."
-                  className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Banner Image
                 </label>
                 <ImageUpload />
@@ -68,7 +68,7 @@ export default function EditProgramPage() {
                 <div>
                   <label
                     htmlFor="startDate"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-black"
                   >
                     Start Date <span className="text-red-500">*</span>
                   </label>
@@ -76,13 +76,13 @@ export default function EditProgramPage() {
                     id="startDate"
                     name="startDate"
                     type="date"
-                    className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-2 w-full rounded-lg border text-gray-600 border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="endDate"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-black"
                   >
                     End Date <span className="text-red-500">*</span>
                   </label>
@@ -90,9 +90,9 @@ export default function EditProgramPage() {
                     id="endDate"
                     name="endDate"
                     type="date"
-                    className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-2 w-full text-gray-600 rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs  text-gray-600 mt-1">
                     Dates cannot be changed for Active, Completed or Forfeited
                     programs.
                   </p>
@@ -102,7 +102,7 @@ export default function EditProgramPage() {
               <div>
                 <label
                   htmlFor="location"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-black"
                 >
                   Location
                 </label>
@@ -111,21 +111,21 @@ export default function EditProgramPage() {
                   name="location"
                   type="text"
                   placeholder="Garki, Abuja, Nigeria"
-                  className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="category"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-black"
                 >
                   Program Category
                 </label>
                 <select
                   id="category"
                   name="category"
-                  className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="mt-2 w-full rounded-lg border text-gray-600 border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Category</option>
                   <option value="community">Community Development</option>
@@ -137,7 +137,7 @@ export default function EditProgramPage() {
               <div>
                 <label
                   htmlFor="donationTarget"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-black"
                 >
                   Donation Target (Optional)
                 </label>
@@ -146,7 +146,7 @@ export default function EditProgramPage() {
                   name="donationTarget"
                   type="number"
                   placeholder="2,000,000.00"
-                  className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -157,7 +157,7 @@ export default function EditProgramPage() {
             <div>
               <label
                 htmlFor="goals"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-black"
               >
                 Goals (Optional)
               </label>
@@ -166,14 +166,14 @@ export default function EditProgramPage() {
                 name="goals"
                 rows={4}
                 placeholder="- Plant 1,000 Trees..."
-                className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
               />
             </div>
 
             <div>
               <label
                 htmlFor="skills"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-black"
               >
                 Skills Required (Optional)
               </label>
@@ -182,7 +182,7 @@ export default function EditProgramPage() {
                 name="skills"
                 type="text"
                 placeholder="Tree planting, workshop facilitation..."
-                className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
               />
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function EditProgramPage() {
           <div className="flex flex-col sm:flex-row justify-end items-center gap-4 pt-8">
             <button
               type="button"
-              className="text-gray-700 font-medium hover:underline"
+              className="text-black font-medium hover:underline"
             >
               Cancel
             </button>

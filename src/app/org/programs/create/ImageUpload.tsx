@@ -2,6 +2,7 @@
 import Image from "next/image";
 
 import React, { useState } from "react";
+import toast from "react-hot-toast";
 
 const ImageUpload = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -22,7 +23,7 @@ const ImageUpload = () => {
 
   const handleUpload = () => {
     if (!selectedFile) {
-      alert("Please select a file first");
+      toast.error("Please select a file first");
       return;
     }
     // Replace with API call or backend upload logic
@@ -43,7 +44,7 @@ const ImageUpload = () => {
             className="absolute inset-0 w-full h-full object-cover rounded-lg"
           />
         ) : (
-          <div className="flex flex-col items-center text-gray-500">
+          <div className="flex flex-col items-center text-black">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -58,8 +59,8 @@ const ImageUpload = () => {
                 d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 10.5L12 6m0 0L7.5 10.5M12 6v12"
               />
             </svg>
-            <p className="text-sm font-medium">Click or drag to upload</p>
-            <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+            <p className="text-sm font-medium text-gray-600">Click or drag to upload</p>
+            <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
           </div>
         )}
         <input

@@ -1,5 +1,6 @@
-import { BRAND_NAME } from '@/app/data';
-import React from 'react'
+import { BRAND_NAME } from '../../../../constants';
+import React from 'react';
+import BackButton from '@/components/BackButton';
 
 
 
@@ -15,8 +16,10 @@ export default function onboardingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className='max-w-[1538px] font-openSans min-h-screen flex flex-col justify-start items-center relative  px-2  w-[100%]'>
-      {/* you can add nav/header here if needed */}
+    <div className='font-openSans min-h-screen flex flex-col justify-center items-center relative px-6 w-full'>
+      <div className="absolute top-0 left-0 z-20 p-4 sm:p-6 md:p-8">
+        <BackButton />
+      </div>
       {children}
     </div>
   );
