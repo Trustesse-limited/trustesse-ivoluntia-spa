@@ -129,15 +129,15 @@ export default function ProgramDetailPage() {
         <div className="grid grid-cols-1 gap-3 relative -top-4 text-sm text-[#373737]">
           <div className="font-medium text-base">{program.category}</div>
           <div className="flex items-center gap-2">
-            <FiCalendar className="text-gray-500" />
+            <FiCalendar className="text-black" />
             {program.startDate} – {program.endDate}
           </div>
           <div className="flex items-center gap-2">
-            <FiMapPin className="text-gray-500" />
+            <FiMapPin className="text-black" />
             {program.location}
           </div>
           <div className="flex items-center gap-2">
-            <FiUsers className="text-gray-500" />
+            <FiUsers className="text-black" />
             {program.volunteers} Volunteers
           </div>
         </div>

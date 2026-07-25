@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { BRAND_NAME } from "@/app/data";
+import { BRAND_NAME } from "../../../../../../constants";
 import { Button } from "@/components/ui/button";
 
 export default function Congratulations() {

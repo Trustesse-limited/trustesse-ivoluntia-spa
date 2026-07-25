@@ -12,7 +12,7 @@ const page = () => {
   };
   return (
     <>
-    <div className='flex flex-col justify-start mt-46 items-center w-75 sm:w-116 h-auto'>
+    <div className='flex flex-col justify-start mt-16 items-center w-75 sm:w-116 h-auto'>
         <h1 className='text-3xl text-center font-medium'>Verify email</h1>
         <p className='text-sm text-[#424242] text-center pt-3'>We sent an OTP code to A**********@gmail.com Please enter it below to continue</p>
      

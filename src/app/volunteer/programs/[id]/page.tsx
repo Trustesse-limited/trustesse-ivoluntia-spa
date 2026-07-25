@@ -1,25 +1,49 @@
 "use client";
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ProgramItem } from "@/types";
-import { programs } from "@/lib/mockData";
-import { FiCalendar, FiMapPin, FiUsers, FiTarget, FiClock } from "react-icons/fi";
-import BackButton from "../../../../components/BackButton";
 
-export default function ProgramDetailPage({ params }: { params: { id: string } }) {
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { FiCalendar, FiMapPin, FiUsers, FiTarget, FiClock } from "react-icons/fi";
+import BackButton from "@/components/BackButton";
+import { programs } from "@/lib/mockData";
+
+// Match your mockData exactly
+interface Program {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  volunteers: number;
+  donationTarget: number;
+  raised: number;
+  image: string;
+  category: string;
+  status: string; // keep flexible
+  organization: string;
+  goals: string;
+}
+
+const typedPrograms: Program[] = programs;
+
+export default function ProgramDetailPage(
+) {
   const router = useRouter();
   const [isEnrolling, setIsEnrolling] = useState(false);
-  
-  const programIndex = parseInt(params.id);
-  const program = programs[programIndex];
+  const { id } = useParams();
+  const program = programs.find((_, index) => index.toString() === id);
 
   if (!program) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Program Not Found</h2>
-          <p className="text-gray-600 mb-4">The program you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Program Not Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            {`The program you're looking for doesn't exist.`}
+          </p>
           <BackButton />
         </div>
       </div>
@@ -28,8 +52,7 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
 
   const handleEnroll = async () => {
     setIsEnrolling(true);
-    // Simulate enrollment process
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsEnrolling(false);
     router.push("/volunteer/programs?enrolled=true");
   };
@@ -48,9 +71,13 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
           <div className="flex-1">
             <div className="flex items-center justify-start gap-4 mb-4">
               <BackButton />
-              <h1 className="text-3xl font-bold text-gray-900">{program.title}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {program.title}
+              </h1>
             </div>
-            <p className="text-gray-600 leading-relaxed">{program.description}</p>
+            <p className="text-gray-600 leading-relaxed">
+              {program.description}
+            </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 lg:w-auto">
             <button
@@ -76,13 +103,17 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
         <div className="lg:col-span-2 space-y-6">
           {/* Program Information */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Program Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Program Information
+            </h2>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <FiCalendar className="text-[#0E68DC] mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-gray-900">Duration</p>
-                  <p className="text-gray-600">{program.startDate} - {program.endDate}</p>
+                  <p className="text-gray-600">
+                    {program.startDate} - {program.endDate}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -96,14 +127,18 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
                 <FiUsers className="text-[#0E68DC] mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-gray-900">Target Volunteers</p>
-                  <p className="text-gray-600">{program.volunteers || "Unlimited"}</p>
+                  <p className="text-gray-600">
+                    {program.volunteers ?? "Unlimited"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <FiTarget className="text-[#0E68DC] mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-gray-900">Donation Target</p>
-                  <p className="text-gray-600">${program.donationTarget.toLocaleString()}</p>
+                  <p className="text-gray-600">
+                    ${program.donationTarget.toLocaleString()}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -118,7 +153,9 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
 
           {/* Requirements */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Requirements</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Requirements
+            </h2>
             <ul className="space-y-2 text-gray-600">
               <li className="flex items-start gap-2">
                 <span className="text-[#0E68DC] mt-1">•</span>
@@ -144,18 +181,23 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
         <div className="space-y-6">
           {/* Program Status */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Program Status</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              Program Status
+            </h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Status</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  program.status === "active" 
-                    ? "bg-green-100 text-green-800"
-                    : program.status === "completed"
-                    ? "bg-blue-100 text-blue-800"
-                    : "bg-yellow-100 text-yellow-800"
-                }`}>
-                  {program.status.charAt(0).toUpperCase() + program.status.slice(1)}
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    program.status === "active"
+                      ? "bg-green-100 text-green-800"
+                      : program.status === "completed"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {program.status.charAt(0).toUpperCase() +
+                    program.status.slice(1)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -171,9 +213,12 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
 
           {/* Contact Information */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Contact Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+
+              Contact Information
+            </h3>
             <div className="space-y-2 text-gray-600">
-              <p><strong>Email:</strong> volunteer@example.com</p>
+                            <p><strong>Email:</strong> volunteer@example.com</p>
               <p><strong>Phone:</strong> +1 (555) 123-4567</p>
               <p><strong>Coordinator:</strong> Sarah Johnson</p>
             </div>

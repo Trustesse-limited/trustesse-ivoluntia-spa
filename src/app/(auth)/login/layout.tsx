@@ -1,5 +1,5 @@
 import React from 'react'
-import { BRAND_NAME } from '../../data';
+import { BRAND_NAME } from '../../../../constants';
 
 export const metadata = {
   title: `${BRAND_NAME} | Login`,
