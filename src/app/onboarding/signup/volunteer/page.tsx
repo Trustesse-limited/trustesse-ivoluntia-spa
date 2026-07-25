@@ -104,12 +104,12 @@ const VolunteerPage = () => {
   return (
     <>
            
-      <h1 className='md:text-[32px] pt-4 text-2xl text-center font-medium'>
+      <h1 className='md:text-[32px] text-2xl text-center font-medium'>
         Create a Volunteer account
       </h1>
       <p className='text-center'>Join Us and start volunteering</p>
 
-      <form onSubmit={handleSubmit} className='md:w-119 w-70 flex flex-col gap-[24px] mt-9'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-auto'>
         <InputComponent
           label="Email Address"
           placeholder="Enter your email address"
@@ -147,9 +147,9 @@ const VolunteerPage = () => {
      <Button text={isLoading ? 'Signing up...' : 'Sign up'} type='submit' disabled={isLoading} />
       </form>
 
-      <div className="flex items-center md:w-115 w-70 mt-4">
+      <div className="flex items-center w-full max-w-md mt-4 mx-auto">
         <div className="flex-grow border-t-2 border-black"></div>
-        <span className="mx-3 text-black font-medium">Or use</span>
+        <span className="mx-3 text-black font-medium whitespace-nowrap">Or use</span>
         <div className="flex-grow border-t-2 border-black"></div>
       </div>
 
@@ -159,7 +159,7 @@ const VolunteerPage = () => {
         Registered already? <span className='cursor-pointer text-[#2C6EA3] pl-1.5 font-medium'><Link href='/login'>Sign In</Link></span>
       </p>
 
-      <Image src='/pep.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 z-[-1] sm:block hidden' />
+      <Image src='/pep.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 left-0 z-[-1] w-full h-auto object-contain pointer-events-none' />
     </>
   )
 }

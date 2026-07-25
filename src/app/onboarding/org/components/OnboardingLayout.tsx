@@ -20,7 +20,7 @@ interface LayoutProps {
   };
 }
 
-const Layout: React.FC<LayoutProps> = ({
+const OnboardingLayout: React.FC<LayoutProps> = ({
   children,
   step,
   totalSteps,
@@ -34,20 +34,21 @@ const Layout: React.FC<LayoutProps> = ({
   }, [step]);
 
   return (
-    <div className="relative w-full md:w-[calc(100%-2rem)] border-[4px] m-4 border-[#F0EEEE] rounded-[20px] p-6 overflow-hidden">
+    <div className="flex flex-col items-center justify-center min-h-screen w-full p-4">
+      <div className="relative w-full max-w-4xl mx-auto border-[4px] border-[#F0EEEE] rounded-[20px] p-4 sm:p-6 overflow-hidden">
       {/* Header */}
       <div className="md:px-8 py-4">
         <h1 className="text-2xl md:text-3xl font-semibold mb-1 text-[#212121]">
-          Volunteer Onboarding
+          Organization Onboarding
         </h1>
         <p className="text-[#2C2C2C] font-semibold text-sm mb-4">
-          Your gateway to meaningful impact. Let’s get to know you so we can
-          match you with the right opportunities.
+          We are excited to help you find passionate volunteers and donors who
+          align with your mission and vision
         </p>
       </div>
 
       {/* Progress Bar */}
-      <ProgressBar step={step} totalSteps={totalSteps - 1} />
+      <ProgressBar isOrg step={step} totalSteps={totalSteps - 1} />
 
       {/* Main Content with animation */}
       <AnimatePresence mode="wait">
@@ -57,7 +58,7 @@ const Layout: React.FC<LayoutProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4 }}
-          className="pb-18 pt-8  lg:max-w-7xl"
+          className="pb-18 pt-8"
         >
           {children}
         </motion.div>
@@ -109,7 +110,8 @@ const Layout: React.FC<LayoutProps> = ({
         />
       )}
     </div>
+    </div>
   );
 };
 
-export default Layout;
+export default OnboardingLayout;

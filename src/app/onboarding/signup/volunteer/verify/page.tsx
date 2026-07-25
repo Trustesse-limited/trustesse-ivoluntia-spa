@@ -12,18 +12,18 @@ const page = () => {
   };
   return (
     <>
-    <div className='flex flex-col justify-start mt-16 items-center w-75 sm:w-116 h-auto'>
+    <div className='flex flex-col items-center w-full max-w-md mx-auto'>
         <h1 className='text-3xl text-center font-medium'>Verify email</h1>
         <p className='text-sm text-[#424242] text-center pt-3'>We sent an OTP code to A**********@gmail.com Please enter it below to continue</p>
      
         <OtpInput length={6}  onChangeOtp={handleOtpChange} />
-           <div className='md:w-100 w-70 flex flex-col justify-center mt-9'>
+           <div className='w-full flex flex-col justify-center mt-9'>
           <Button text='Verify'  />
           </div>
         <p className='text-sm font-light text-center pt-4 '>Yet to receive? <span className='font-medium text-[#319F43] cursor-pointer '>Resend OTP</span></p>
       
     </div>
-      <Image src='/bgframe.svg' alt='bgframe' width={1000} height={219}  className=' fixed bottom-0 sm:block hidden z-[-1]'/>
+      <Image src='/bgframe.svg' alt='bgframe' width={1000} height={219}  className='fixed bottom-0 left-0 z-[-1] w-full h-auto object-contain pointer-events-none'/>
       </>
   )
 }

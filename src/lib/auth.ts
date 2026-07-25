@@ -37,7 +37,7 @@ export async function validateSession() {
 
   try {
     // Validate token with backend API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/Auth/validate`, {
+    const response = await fetch(`${process.env.API_BASE_URL}/api/v1/Auth/validate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

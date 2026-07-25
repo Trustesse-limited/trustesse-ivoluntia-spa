@@ -62,10 +62,9 @@ const Page = () => {
 
   return (
     <>
-    <div>
-        <h1 className='md:text-[32px] pt-20 text-2xl text-center font-[600]'>Welcome Back</h1>
-        <p className='text-center'>Please enter your details</p>
-        <form onSubmit={handleSubmit} className='md:w-119 w-70 flex flex-col gap-[24px] mt-9'>
+      <h1 className='md:text-[32px] text-2xl text-center font-[600]'>Welcome Back</h1>
+      <p className='text-center'>Please enter your details</p>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-auto'>
          <InputComponent
                   label="Email Address"
                   placeholder="Enter email address"
@@ -95,15 +94,18 @@ const Page = () => {
          </div>
         <Button text={isLoading ? 'Signing in...' : 'Sign In'} type='submit' disabled={isLoading} />
         </form>
-        <div className="flex items-center md:w-115 w-70 mt-4">
+        <div className="flex items-center w-full max-w-md mt-4 mx-auto">
         <div className="flex-grow border-t-2 border-black"></div>
-        <span className="mx-3 text-black font-medium">Or continue with</span>
+        <span className="mx-3 text-black font-medium whitespace-nowrap">Or continue with</span>
         <div className="flex-grow border-t-2 border-black"></div>
       </div>
       <SocialLogin icons={socialIcons}/>
-       <p className='text-center text-[16px]'>No Account yet? <span className='text-[#2C6EA3]'><Link href="/">Sign Up</Link></span></p>
-    </div>
-    <Image src='/pep.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 z-[-1] sm:block hidden' />
+       <p className='text-center text-[16px] mt-4'>No Account yet?{" "}
+       <span className='text-[#2C6EA3]'>
+         <Link href="/">Sign Up</Link>
+       </span>
+       </p>
+      <Image src='/pep.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 left-0 z-[-1] w-full h-auto object-contain pointer-events-none' />
     </>
   )
 }

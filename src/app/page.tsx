@@ -39,44 +39,58 @@ const Page = () => {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="md:text-5xl text-4xl font-[700] pt-[130px] sm:pt-[100px] text-center">
-        Welcome
-      </h1>
-      <p className="pt-[6px] max-sm:mb-8 sm:text-[16px] text-[#000000] text-[14px] text-center">
-        Please select the category that aligns with your goals
-      </p>
-      <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 md:gap-8 lg:gap-10 xl:gap-[22px] px-4 sm:px-6 md:px-8 lg:px-12">
-        {userType.map((user, index) => (
-          <div key={index} className="flex-shrink-0 cursor-pointer" onClick={index === 0 ? handleVolunteerClick : handleOrganizationClick}>
-            <UserTypeCard>
-              <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 xl:w-[90px] xl:h-[90px] sm:mb-4">
-                <Image
-                  src={user.img}
-                  fill
-                  sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, (max-width: 1024px) 96px, (max-width: 1280px) 112px, 90px"
-                  style={{ objectFit: "contain", objectPosition: "center" }}
-                  alt={user.alt}
-                />
-              </div>
-              <h2 className={styleItem}>{user.text}</h2>
-            </UserTypeCard>
-          </div>
-        ))}
+    <div className="flex flex-col items-center justify-center min-h-screen w-full relative p-4 mx-auto">
+      {/* Main Content - centered */}
+      <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-4xl mx-auto">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-[700] text-center mb-2">
+          Welcome
+        </h1>
+        <p className="text-sm sm:text-base text-[#000000] text-center mb-8">
+          Please select the category that aligns with your goals
+        </p>
+
+        {/* User Type Cards - uniform width, 2 columns on ≥320px, wraps only on <320px */}
+        <div className="flex flex-row flex-wrap justify-center items-center gap-4 w-full">
+          {userType.map((user, index) => (
+            <div
+              key={index}
+              className="cursor-pointer"
+              onClick={index === 0 ? handleVolunteerClick : handleOrganizationClick}
+            >
+              <UserTypeCard>
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 xl:w-[90px] xl:h-[90px] mb-2">
+                  <Image
+                    src={user.img}
+                    fill
+                    sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, (max-width: 1024px) 96px, (max-width: 1280px) 112px, 90px"
+                    style={{ objectFit: "contain", objectPosition: "center" }}
+                    alt={user.alt}
+                  />
+                </div>
+                <h2 className={styleItem}>{user.text}</h2>
+              </UserTypeCard>
+            </div>
+          ))}
+        </div>
+
+        <p className="pt-[20px] text-sm sm:text-[16px] text-center">
+          Already have an account?{" "}
+          <span className="text-primary font-[700]">
+            <Link href="/login">Sign In</Link>
+          </span>
+        </p>
       </div>
-      <p className="pt-[30px] text-[16px] text-center sm:px-4">
-        Already have an account?{" "}
-        <span className="text-primary font-[700]">
-          <Link href="/login">Sign In</Link>
-        </span>
-      </p>
-      <Image
-        src="/user.svg"
-        alt="illustration-svg"
-        width={446}
-        height={223}
-        className="absolute bottom-0 z-[-1]"
-      />
+
+      {/* Illustration - fixed at bottom center */}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 z-0 w-full max-w-[446px] flex justify-center">
+        <Image
+          src="/user.svg"
+          alt="illustration-svg"
+          width={446}
+          height={223}
+          className="w-full h-auto object-contain"
+        />
+      </div>
     </div>
   );
 };

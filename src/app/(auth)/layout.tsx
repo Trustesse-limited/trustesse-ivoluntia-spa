@@ -1,21 +1,14 @@
 "use client";
 import React from "react";
+import BackButton from "@/components/BackButton";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white">
-      <div className="flex min-h-screen">
-       
-        
-        {/* Main Content */}
-        <div className="relative z-10 flex min-h-screen">
-          <div className="flex-1 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-              {children}
-            </div>
-          </div>
-        </div>
+    <div className='font-openSans min-h-screen flex flex-col justify-center items-center relative px-6 w-full'>
+      <div className="absolute top-0 left-0 z-20 p-4 sm:p-6 md:p-8">
+        <BackButton />
       </div>
+      {children}
     </div>
   );
 }

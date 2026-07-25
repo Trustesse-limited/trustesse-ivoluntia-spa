@@ -22,9 +22,9 @@ const Page = () => {
       };
   return (
     <>
-<h1 className='text-center md:text-[32px] pt-50 text-2xl font-[600]'>Forgot Password?</h1>
+<h1 className='text-center md:text-[32px] text-2xl font-[600]'>Forgot Password?</h1>
 <p className='text-center'>Dont worry, we will send you a reset link</p>
- <form onSubmit={handleSubmit} className='md:w-119 w-70 flex flex-col gap-[24px] mt-9'>
+ <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-auto'>
          <InputComponent
                   label="Email Address"
                   placeholder="Enter email address"
@@ -37,8 +37,8 @@ const Page = () => {
                 
         <Button text='Send Link'  />
     </form>
-    <Image src='/passwordbg.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 z-[-1] sm:block hidden' />
-        </>
+    <Image src='/passwordbg.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 left-0 z-[-1] w-full h-auto object-contain pointer-events-none' />
+    </>
   )
 }
 

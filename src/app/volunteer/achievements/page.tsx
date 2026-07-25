@@ -3,7 +3,6 @@ import React from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import YesAchievements from "./volunteer/achievements/yesApprec";
 
 export default function VolunteerAchievementsPage() {
 

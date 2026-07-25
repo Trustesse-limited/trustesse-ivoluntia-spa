@@ -16,10 +16,10 @@ export default function onboardingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className='max-w-[1538px] font-openSans min-h-screen flex flex-col justify-start items-center relative  px-2  w-[100%]'>
-       <div className="flex w-full items-center justify-start p-4 sm:p-6 md:p-8">
-                <BackButton />
-                </div>
+    <div className='font-openSans min-h-screen flex flex-col justify-center items-center relative px-6 w-full'>
+      <div className="absolute top-0 left-0 z-20 p-4 sm:p-6 md:p-8">
+        <BackButton />
+      </div>
       {children}
     </div>
   );

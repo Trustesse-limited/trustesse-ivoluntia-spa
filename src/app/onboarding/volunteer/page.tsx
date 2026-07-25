@@ -8,7 +8,7 @@ import SetupProfileForm from "./components/screens/SetupProfileForm";
 import SkillsAndStrengthForm from "./components/screens/SkillsAndStrengthForm";
 import Congratulations from "./components/screens/congratulations";
 import { FormProps, VolunteerFormData } from "@/types";
-import Layout from "./components/layout";
+import Layout from "./components/VolunteerOnboardingLayout";
 import { useOnboardingStore } from "@/store";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useRouter } from "next/navigation";
