@@ -9,7 +9,7 @@ export interface ApiResponse<T> {
 export interface ApiError {
   message: string;
   status: number;
-  errors?: Record<string, string[]>;
+  errors?: Record<string, string[]> | unknown[];
 }
 
 // Pagination types
@@ -114,6 +114,47 @@ export interface PartialVolunteerSignUpDto {
   };
 }
 
+// Shared auth info type for signup requests
+export interface AuthInfo {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  hasAgreedToTermsAndCondition: boolean;
+}
+
+// Volunteer Sign Up Request (initial signup - auth info only)
+// POST /api/v1/Auth/volunteer-signup
+export interface VolunteerSignUpRequest {
+  authInfo: AuthInfo;
+}
+
+// Organization Sign Up Request (initial signup - foundation admin info)
+// POST /api/v1/Auth/organization-signup
+export interface OrganizationSignUpRequest {
+  foundationAdminInfo: AuthInfo;
+}
+
+// OTP Verification Request
+// POST /api/v1/Auth/verify-otp
+export interface OtpVerificationRequest {
+  email: string;
+  otpCode: string;
+}
+
+// OTP Verification Response
+export interface OtpVerificationResponse {
+  success: boolean;
+  message?: string;
+  isEmailVerified?: boolean;
+}
+
+// Resend OTP Request
+// POST /api/v1/Otp/resendotp
+export interface ResendOtpRequest {
+  email: string;
+  purpose: number; // Available values: 1, 2, 3, 4, 5, 6
+}
+
 // Login Request Model based on backend API
 export interface LoginRequestModel {
   email: string;
@@ -131,7 +172,9 @@ export interface LoginResponse {
     email: string;
     firstName?: string;
     lastName?: string;
+    role?: string;
   };
+  requiresTwoFactor?: boolean;
 }
 
 // Reset Password Request
@@ -143,6 +186,70 @@ export interface ResetPasswordRequest {
 export interface ResetPasswordResponse {
   success: boolean;
   message?: string;
+}
+
+// Volunteer Onboarding Request
+export interface VolunteerOnboardingRequest {
+  onboardingMetaData: {
+    accountType: string;
+    currentPage: number;
+  };
+  bioData: {
+    firstName: string;
+    lastName: string;
+    gender: number;
+    dateOfBirth: string;
+  };
+  locationDto: {
+    address: string;
+    city: string;
+    zipCode: string;
+    countryId: string;
+    stateId: string;
+  };
+  interest: {
+    names: string[];
+  };
+  skill: {
+    names: string[];
+  };
+  profileAndBioData: {
+    bio: string;
+    profileImageurl?: string;
+  };
+}
+
+// Organization Onboarding Request
+export interface OrganizationOnboardingRequest {
+  metaData: {
+    accountType: string;
+    currentPage: number;
+  };
+  foundationBioData: {
+    name: string;
+    foundationCategory: string;
+    website?: string;
+    mission: string;
+  };
+  foundationLocationDto: {
+    address?: string;
+    city: string;
+    zipcode: string;
+    foundationCountry: string;
+    foundationState: string;
+    countryId?: string;
+    stateId?: string;
+    userId?: string;
+  };
+  causeDto: {
+    names: string[];
+  };
+  profileLogo: {
+    logo?: string;
+  };
+  disclaimer: {
+    hasAgreedToDisclaimer: boolean;
+  };
 }
 
 // Common entity types (adjust based on your actual API)
@@ -176,4 +283,23 @@ export interface Opportunity {
   status: 'open' | 'closed' | 'filled';
   createdAt: string;
   updatedAt: string;
+}
+
+// Country and State types - using API response field names
+export interface Country {
+  id: string;
+  countryId: string;
+  countryName: string;
+  name: string;
+  code?: string;
+  isoCode?: string;
+}
+
+export interface State {
+  id: string;
+  stateId: string;
+  stateName: string;
+  name: string;
+  countryId: string;
+  code?: string;
 }

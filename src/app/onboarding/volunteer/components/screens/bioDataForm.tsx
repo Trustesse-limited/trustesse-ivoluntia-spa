@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FormProps } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,119 @@ import {
 } from "@/components/ui/select";
 
 const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
+  const [dobError, setDobError] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (formData.dob) {
+      const selectedDate = new Date(formData.dob);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Clear error if date is valid
+      if (selectedDate < today) {
+        setDobError("");
+      }
+    }
+  }, [formData.dob]);
+
+  // Export validation function
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    }
+
+    if (!formData.sex) {
+      newErrors.sex = "Sex is required";
+    }
+
+    if (!formData.dob) {
+      newErrors.dob = "Date of birth is required";
+    } else {
+      const selectedDate = new Date(formData.dob);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate >= today) {
+        newErrors.dob = "Date of birth cannot be today or in the future";
+      } else {
+        const minAgeDate = new Date();
+        minAgeDate.setFullYear(today.getFullYear() - 13);
+        
+        if (selectedDate > minAgeDate) {
+          newErrors.dob = "You must be at least 13 years old";
+        } else {
+          const maxAgeDate = new Date();
+          maxAgeDate.setFullYear(today.getFullYear() - 120);
+          
+          if (selectedDate < maxAgeDate) {
+            newErrors.dob = "Please enter a valid date of birth";
+          }
+        }
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Expose validate function to parent
+  React.useEffect(() => {
+    (window as unknown as Record<string, unknown>).validateBioDataForm = validate;
+  }, [formData]);
+
+  const validateDOB = (dateString: string): boolean => {
+    if (!dateString) {
+      setDobError("Date of birth is required");
+      return false;
+    }
+
+    const selectedDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if date is in the future or today
+    if (selectedDate >= today) {
+      setDobError("Date of birth cannot be today or in the future");
+      return false;
+    }
+
+    // Check if user is at least 13 years old (industry standard minimum age)
+    const minAgeDate = new Date();
+    minAgeDate.setFullYear(today.getFullYear() - 13);
+    
+    if (selectedDate > minAgeDate) {
+      setDobError("You must be at least 13 years old");
+      return false;
+    }
+
+    // Check if user is not older than 120 years (reasonable maximum)
+    const maxAgeDate = new Date();
+    maxAgeDate.setFullYear(today.getFullYear() - 120);
+    
+    if (selectedDate < maxAgeDate) {
+      setDobError("Please enter a valid date of birth");
+      return false;
+    }
+
+    setDobError("");
+    return true;
+  };
+
+  const handleDOBChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData({ ...formData, dob: value });
+    if (value) {
+      validateDOB(value);
+    }
+  };
+
   return (
     <form className="space-y-6 max-w-6xl pb-8 mx-auto">
       <div className="mx-auto w-fit text-center">
@@ -31,13 +144,16 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
           <Input
             id="firstName"
             placeholder="First Name"
-            className="w-full"
+            className={`w-full ${errors.firstName ? 'border-red-500' : ''}`}
             required
             value={formData.firstName}
             onChange={(e) =>
               setFormData({ ...formData, firstName: e.target.value })
             }
           />
+          {errors.firstName && (
+            <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -49,14 +165,16 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
           </Label>
           <Input
             id="lastName"
-            className="w-full"
-            placeholder="Last Name"
+            className={`w-full ${errors.lastName ? 'border-red-500' : ''}`}
             required
             value={formData.lastName}
             onChange={(e) =>
               setFormData({ ...formData, lastName: e.target.value })
             }
           />
+          {errors.lastName && (
+            <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -91,7 +209,7 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
             >
               <SelectTrigger
                 id="sex"
-                className="w-full border-[#A0A0A0]"
+                className={`w-full border-[#A0A0A0] ${errors.sex ? 'border-red-500' : ''}`}
                 size="md"
               >
                 <SelectValue placeholder="Select Sex" />
@@ -101,6 +219,9 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
                 <SelectItem value="female">Female</SelectItem>
               </SelectContent>
             </Select>
+            {errors.sex && (
+              <p className="text-red-500 text-xs mt-1">{errors.sex}</p>
+            )}
           </div>
 
           {/* Date of Birth Field */}
@@ -112,11 +233,12 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
               id="dob"
               type="date"
               value={formData.dob}
-              onChange={(e) =>
-                setFormData({ ...formData, dob: e.target.value })
-              }
-              className="w-full placeholder:text-sm"
+              onChange={handleDOBChange}
+              className={`w-full placeholder:text-sm ${dobError ? 'border-red-500' : ''}`}
             />
+            {dobError && (
+              <p className="text-red-500 text-xs mt-1">{dobError}</p>
+            )}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { useOnboardingStore } from '@/store';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizeName, sanitizeText, sanitizeZipCode } from '@/lib/sanitize';
 
 export function LocationStep() {
   const { formData, updateFormData } = useOnboardingStore();
@@ -27,7 +28,7 @@ export function LocationStep() {
             id="address"
             placeholder="123 Main Street"
             value={formData.locationDto?.address || ''}
-            onChange={(e) => handleInputChange('address', e.target.value)}
+            onChange={(e) => handleInputChange('address', sanitizeText(e.target.value, 200))}
             className="w-full"
           />
         </div>
@@ -40,7 +41,7 @@ export function LocationStep() {
             id="city"
             placeholder="New York"
             value={formData.locationDto?.city || ''}
-            onChange={(e) => handleInputChange('city', e.target.value)}
+            onChange={(e) => handleInputChange('city', sanitizeName(e.target.value))}
             className="w-full"
           />
         </div>
@@ -54,7 +55,7 @@ export function LocationStep() {
               id="stateId"
               placeholder="NY"
               value={formData.locationDto?.stateId || ''}
-              onChange={(e) => handleInputChange('stateId', e.target.value)}
+              onChange={(e) => handleInputChange('stateId', sanitizeName(e.target.value))}
               className="w-full"
             />
           </div>
@@ -67,7 +68,7 @@ export function LocationStep() {
               id="zipCode"
               placeholder="10001"
               value={formData.locationDto?.zipCode || ''}
-              onChange={(e) => handleInputChange('zipCode', e.target.value)}
+              onChange={(e) => handleInputChange('zipCode', sanitizeZipCode(e.target.value))}
               className="w-full"
             />
           </div>
@@ -81,7 +82,7 @@ export function LocationStep() {
             id="countryId"
             placeholder="United States"
             value={formData.locationDto?.countryId || ''}
-            onChange={(e) => handleInputChange('countryId', e.target.value)}
+            onChange={(e) => handleInputChange('countryId', sanitizeName(e.target.value))}
             className="w-full"
           />
         </div>

@@ -4,6 +4,7 @@ import { useOnboardingStore } from '@/store';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { sanitizeEmail, sanitizePassword } from '@/lib/sanitize';
 
 export function AuthInfoStep() {
   const { formData, updateFormData } = useOnboardingStore();
@@ -29,7 +30,7 @@ export function AuthInfoStep() {
             type="email"
             placeholder="your@email.com"
             value={formData.authInfo?.email || ''}
-            onChange={(e) => handleInputChange('email', e.target.value)}
+            onChange={(e) => handleInputChange('email', sanitizeEmail(e.target.value))}
             className="w-full"
           />
         </div>
@@ -43,7 +44,7 @@ export function AuthInfoStep() {
             type="password"
             placeholder="••••••••"
             value={formData.authInfo?.password || ''}
-            onChange={(e) => handleInputChange('password', e.target.value)}
+            onChange={(e) => handleInputChange('password', sanitizePassword(e.target.value))}
             className="w-full"
           />
         </div>
@@ -57,7 +58,7 @@ export function AuthInfoStep() {
             type="password"
             placeholder="••••••••"
             value={formData.authInfo?.confirmPassword || ''}
-            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+            onChange={(e) => handleInputChange('confirmPassword', sanitizePassword(e.target.value))}
             className="w-full"
           />
         </div>

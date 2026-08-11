@@ -9,7 +9,7 @@ interface OtpInputProps {
 
 const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp }) => {
   const [otp, setOtp] = useState<string[]>(Array(length).fill(""));
- const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
     const value = e.target.value;
@@ -34,6 +34,32 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp }) => {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text/plain').trim();
+    
+    // Only accept numeric paste
+    if (!/^\d+$/.test(pastedData)) return;
+    
+    const digits = pastedData.slice(0, length).split('');
+    const newOtp = [...otp];
+    
+    digits.forEach((digit, i) => {
+      newOtp[i] = digit;
+    });
+    
+    setOtp(newOtp);
+    onChangeOtp(newOtp.join(''));
+    
+    // Focus the next empty input or the last input
+    const nextEmptyIndex = digits.length;
+    if (nextEmptyIndex < length) {
+      inputRefs.current[nextEmptyIndex]?.focus();
+    } else {
+      inputRefs.current[length - 1]?.focus();
+    }
+  };
+
   return (
     <div className="flex gap-2">
       {otp.map((digit: string, i: number) => (
@@ -48,6 +74,7 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp }) => {
 
   onChange={e => handleChange(e, i)}
   onKeyDown={e => handleKeyDown(e, i)}
+  onPaste={handlePaste}
   className="sm:w-12 w-10  h-12 text-center border rounded-md text-xl  focus:outline-none focus:ring-2 mt-8  focus:ring-blue-500"
 />
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { OrganizationFormProps } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,18 +9,65 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getCountriesAction, getStatesAction } from "@/app/actions/auth";
+import { Country, State } from "@/types/api";
 
 const LocationForm: React.FC<OrganizationFormProps> = ({
   formData,
   setFormData,
 }) => {
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [states, setStates] = useState<State[]>([]);
+  const [isLoadingCountries, setIsLoadingCountries] = useState(false);
+  const [isLoadingStates, setIsLoadingStates] = useState(false);
+
+  // Fetch countries on component mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      setIsLoadingCountries(true);
+      try {
+        const result = await getCountriesAction();
+        if (result.success && result.data) {
+          setCountries(result.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch countries:", error);
+      } finally {
+        setIsLoadingCountries(false);
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  // Fetch states when country changes
+  useEffect(() => {
+    const fetchStates = async () => {
+      if (!formData.country) {
+        setStates([]);
+        return;
+      }
+      
+      setIsLoadingStates(true);
+      try {
+        const result = await getStatesAction(formData.country);
+        if (result.success && result.data) {
+          setStates(result.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch states:", error);
+      } finally {
+        setIsLoadingStates(false);
+      }
+    };
+    fetchStates();
+  }, [formData.country]);
+
   return (
     <form className="space-y-6 pb-16 sm:px-6 md:px-8 max-w-6xl mx-auto">
       <div className="mx-auto w-full text-center">
         <h2 className="text-2xl font-normal text-[#161616]">Location</h2>
         <p className="text-sm font-normal mt-1 text-[#161616]">
-          Let us know where you are so we can connect you with meaningful
-          volunteer opportunities in your area.
+          Let us know where your organization is located
         </p>
       </div>
 
@@ -37,20 +84,23 @@ const LocationForm: React.FC<OrganizationFormProps> = ({
             <Select
               value={formData.country}
               onValueChange={(value) =>
-                setFormData({ ...formData, country: value })
+                setFormData({ ...formData, country: value, state: "" })
               }
+              disabled={isLoadingCountries}
             >
               <SelectTrigger
                 id="country"
                 className="w-full border-[#A0A0A0]"
                 size="md"
               >
-                <SelectValue placeholder="Select Country" />
+                <SelectValue placeholder={isLoadingCountries ? "Loading..." : "Select Country"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="nigeria">Nigeria</SelectItem>
-                <SelectItem value="ghana">Ghana</SelectItem>
-                <SelectItem value="kenya">Kenya</SelectItem>
+                {countries.map((country) => (
+                  <SelectItem key={country.id} value={country.id}>
+                    <span>{country.name}</span>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -62,15 +112,28 @@ const LocationForm: React.FC<OrganizationFormProps> = ({
             >
               State <span className="text-[#EF5350]">*</span>
             </Label>
-            <Input
-              id="state"
-              placeholder="State"
+            <Select
               value={formData.state}
-              onChange={(e) =>
-                setFormData({ ...formData, state: e.target.value })
+              onValueChange={(value) =>
+                setFormData({ ...formData, state: value })
               }
-              className="w-full"
-            />
+              disabled={isLoadingStates || !formData.country}
+            >
+              <SelectTrigger
+                id="state"
+                className="w-full border-[#A0A0A0]"
+                size="md"
+              >
+                <SelectValue placeholder={isLoadingStates ? "Loading..." : "Select State"} />
+              </SelectTrigger>
+              <SelectContent>
+                {states.map((state) => (
+                  <SelectItem key={state.id} value={state.id}>
+                    <span>{state.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
