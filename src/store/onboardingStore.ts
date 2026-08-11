@@ -1,42 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PartialVolunteerSignUpDto } from '@/types/api';
-
-interface OnboardingState {
-  currentStep: number;
-  totalSteps: number;
-  isComplete: boolean;
-  formData: PartialVolunteerSignUpDto;
-  lastVisited: number; // timestamp of last visit
-  accountType: 'volunteer' | 'organization' | null;
-  
-  // Separate data for each account type to prevent mixing
-  volunteerData: {
-    currentStep: number;
-    isComplete: boolean;
-    formData: PartialVolunteerSignUpDto;
-    lastVisited: number;
-  };
-  organizationData: {
-    currentStep: number;
-    isComplete: boolean;
-    formData: PartialVolunteerSignUpDto;
-    lastVisited: number;
-  };
-  
-  // Actions
-  setCurrentStep: (step: number) => void;
-  nextStep: () => void;
-  previousStep: () => void;
-  updateFormData: (data: Partial<PartialVolunteerSignUpDto>) => void;
-  resetOnboarding: () => void;
-  clearOnboarding: () => void;
-  setComplete: () => void;
-  setAccountType: (type: 'volunteer' | 'organization') => void;
-  checkOnboardingStatus: (type?: 'volunteer' | 'organization') => { shouldRedirect: boolean; step: number; route: string };
-  canProceedToStep: (step: number) => boolean;
-  switchAccountType: (type: 'volunteer' | 'organization') => void;
-}
+import { OnboardingState, OnboardingFormData, OrganizationOnboardingData } from '@/types/onboarding';
 
 const initialFormData: PartialVolunteerSignUpDto = {
   metaData: {
@@ -74,6 +39,35 @@ const initialFormData: PartialVolunteerSignUpDto = {
   },
 };
 
+const initialOrgData: OrganizationOnboardingData = {
+  metaData: {
+    accountType: 'organization',
+    currentPage: 0,
+  },
+  authInfo: {
+    email: '',
+    password: '',
+    confirmPassword: '',
+    hasAcceptedTOC: false,
+  },
+  orgData: {
+    name: '',
+    category: '',
+    website: '',
+    mission: '',
+    causes: [],
+    logo: null,
+    disclaimerAgreed: false,
+  },
+  locationDto: {
+    address: '',
+    city: '',
+    zipCode: '',
+    countryId: '',
+    stateId: '',
+  },
+};
+
 export const useOnboardingStore = create<OnboardingState>()(
   persist(
     (set, get) => ({
@@ -94,7 +88,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       organizationData: {
         currentStep: 0,
         isComplete: false,
-        formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'organization' } },
+        formData: { ...initialOrgData, metaData: { ...initialOrgData.metaData, accountType: 'organization' } },
         lastVisited: 0,
       },
       
@@ -140,16 +134,24 @@ export const useOnboardingStore = create<OnboardingState>()(
         });
       },
       
-      updateFormData: (data) => {
+      updateFormData: (data: OnboardingFormData) => {
         const state = get();
-        const newFormData = { ...state.formData, ...data };
+        
+        // SECURITY: Sanitize data to remove password fields before storing
+        const sanitizedData = { ...data };
+        if (sanitizedData.authInfo) {
+          const { password, confirmPassword, ...secureAuthInfo } = sanitizedData.authInfo;
+          sanitizedData.authInfo = secureAuthInfo;
+        }
+        
+        const newFormData = { ...state.formData, ...sanitizedData };
         set({
           formData: newFormData,
           lastVisited: Date.now(),
           ...(state.accountType === 'volunteer' ? {
-            volunteerData: { ...state.volunteerData, formData: newFormData, lastVisited: Date.now() }
+            volunteerData: { ...state.volunteerData, formData: newFormData as PartialVolunteerSignUpDto, lastVisited: Date.now() }
           } : state.accountType === 'organization' ? {
-            organizationData: { ...state.organizationData, formData: newFormData, lastVisited: Date.now() }
+            organizationData: { ...state.organizationData, formData: newFormData as OrganizationOnboardingData, lastVisited: Date.now() }
           } : {})
         });
       },
@@ -172,7 +174,7 @@ export const useOnboardingStore = create<OnboardingState>()(
             organizationData: {
               currentStep: 0,
               isComplete: false,
-              formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'organization' } },
+              formData: { ...initialOrgData, metaData: { ...initialOrgData.metaData, accountType: 'organization' } },
               lastVisited: Date.now(),
             }
           } : {})
@@ -196,7 +198,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           organizationData: {
             currentStep: 0,
             isComplete: false,
-            formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'organization' } },
+            formData: { ...initialOrgData, metaData: { ...initialOrgData.metaData, accountType: 'organization' } },
             lastVisited: 0,
           },
         });
@@ -286,13 +288,12 @@ export const useOnboardingStore = create<OnboardingState>()(
         
         // User can only proceed to step if they've completed previous step
         // Step 0: No prerequisites (signup)
-        // Step 1: Must have authInfo filled (signup completed)
+        // Step 1: Must have authInfo with email filled (signup completed)
+        // Note: Passwords are no longer stored in client-side state for security
         // Step 2+: Must have completed previous onboarding step
         if (step === 0) return true;
         if (step === 1) {
           return !!(accountData.formData.authInfo?.email && 
-                   accountData.formData.authInfo?.password && 
-                   accountData.formData.authInfo?.confirmPassword &&
                    accountData.formData.authInfo?.hasAcceptedTOC);
         }
         // For onboarding steps, check if current step is completed
@@ -301,6 +302,26 @@ export const useOnboardingStore = create<OnboardingState>()(
     }),
     {
       name: 'onboarding-storage',
+      // SECURITY: Persist ONLY non-sensitive progress data.
+      // Email addresses are NEVER persisted implicitly — they are only stored
+      // in localStorage via saveRememberMe() when the user explicitly
+      // ticks "Remember me" on the login or signup screen.
+      partialize: (state) => ({
+        currentStep: state.currentStep,
+        totalSteps: state.totalSteps,
+        isComplete: state.isComplete,
+        lastVisited: state.lastVisited,
+        accountType: state.accountType,
+        formData: state.formData,
+        volunteerData: state.volunteerData,
+        organizationData: {
+          ...state.organizationData,
+          formData: {
+            ...state.organizationData.formData,
+            authInfo: undefined,
+          },
+        },
+      }),
     }
   )
 );

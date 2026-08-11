@@ -4,21 +4,43 @@ import Image from 'next/image'
 import { InputComponent } from "@/components/input";
 import Button from '@/components/button'
 import { useState } from 'react'
+import { sanitizeEmail, isValidEmail } from '@/lib/sanitize';
+import { useAuthActions } from '@/hooks/useAuthActions';
+import toast from 'react-hot-toast';
 
 
 const Page = () => {
+    const { resetPassword, isLoading } = useAuthActions();
 
     const [form, setForm] = useState({
         email: "",
     })
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log("Form submitted:", form);
+        
+        // SECURITY: Sanitize email before validation
+        const sanitizedEmail = sanitizeEmail(form.email);
+        
+        if (!sanitizedEmail) {
+          toast.error('Please enter your email address');
+          return;
+        }
+        
+        if (!isValidEmail(sanitizedEmail)) {
+          toast.error('Please enter a valid email address');
+          return;
+        }
+        
+        const result = await resetPassword(sanitizedEmail);
+        if (result.success) {
+          setForm({ email: "" });
+        }
       };
     
       const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        // SECURITY: Sanitize as the user types
+        setForm({ ...form, email: sanitizeEmail(e.target.value) });
       };
   return (
     <>
@@ -35,7 +57,7 @@ const Page = () => {
                    value={form.email}
                 />
                 
-        <Button text='Send Link'  />
+        <Button text='Send Link' type='submit' isLoading={isLoading} disabled={isLoading} />
     </form>
     <Image src='/passwordbg.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 left-0 z-[-1] w-full h-auto object-contain pointer-events-none' />
     </>

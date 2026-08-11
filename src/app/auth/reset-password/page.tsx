@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LoadingButton } from '@/components/LoadingButton';
-import { Button } from '@/components/ui/button';
+import Button from '@/components/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useAuthActions } from '@/hooks/useAuthActions';
+import { sanitizeEmail, isValidEmail } from '@/lib/sanitize';
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');
@@ -22,7 +22,15 @@ export default function ResetPasswordPage() {
     setMessage('');
     setError('');
 
-    const result = await resetPassword(email);
+    // SECURITY: Sanitize email before validation
+    const sanitizedEmail = sanitizeEmail(email);
+
+    if (!isValidEmail(sanitizedEmail)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    const result = await resetPassword(sanitizedEmail);
 
     if (result.success) {
       setMessage(result.message || 'Password reset email sent successfully');
@@ -65,7 +73,7 @@ export default function ResetPasswordPage() {
                 required
                 placeholder="your@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(sanitizeEmail(e.target.value))}
                 className="w-full"
               />
             </div>
@@ -83,13 +91,12 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          <LoadingButton
-            isLoading={isLoading}
+          <Button
+            text="Send Reset Link"
             type="submit"
-            className="w-full bg-[#0E68DC] hover:bg-[#0E68DC]/90"
-          >
-            Send Reset Link
-          </LoadingButton>
+            isLoading={isLoading}
+            disabled={isLoading}
+          />
 
           <div className="text-center">
             <p className="text-sm text-gray-600">

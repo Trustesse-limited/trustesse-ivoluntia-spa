@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@radix-ui/react-label';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { sanitizeName } from '@/lib/sanitize';
 
 const COMMON_INTERESTS = [
   'Environment',
@@ -43,7 +44,7 @@ export function InterestsStep() {
     updateFormData({
       interest: {
         ...formData.interest,
-        names: interests.filter((i) => i !== interest),
+        names: interests.filter((i: string) => i !== interest),
       },
     });
   };
@@ -96,7 +97,7 @@ export function InterestsStep() {
             id="customInterest"
             placeholder="Type and press Enter or click Add"
             value={customInterest}
-            onChange={(e) => setCustomInterest(e.target.value)}
+            onChange={(e) => setCustomInterest(sanitizeName(e.target.value))}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -121,7 +122,7 @@ export function InterestsStep() {
             Selected Interests ({interests.length})
           </Label>
           <div className="flex flex-wrap gap-2">
-            {interests.map((interest) => (
+            {interests.map((interest: string) => (
               <div
                 key={interest}
                 className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"

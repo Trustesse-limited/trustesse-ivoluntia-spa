@@ -3,6 +3,7 @@
 import { useOnboardingStore } from '@/store';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { sanitizeName } from '@/lib/sanitize';
 
 export function BioDataStep() {
   const { formData, updateFormData } = useOnboardingStore();
@@ -28,7 +29,7 @@ export function BioDataStep() {
               id="firstName"
               placeholder="John"
               value={formData.bioData?.firstName || ''}
-              onChange={(e) => handleInputChange('firstName', e.target.value)}
+              onChange={(e) => handleInputChange('firstName', sanitizeName(e.target.value))}
               className="w-full"
             />
           </div>
@@ -41,7 +42,7 @@ export function BioDataStep() {
               id="lastName"
               placeholder="Doe"
               value={formData.bioData?.lastName || ''}
-              onChange={(e) => handleInputChange('lastName', e.target.value)}
+              onChange={(e) => handleInputChange('lastName', sanitizeName(e.target.value))}
               className="w-full"
             />
           </div>

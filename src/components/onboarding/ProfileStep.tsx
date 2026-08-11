@@ -4,6 +4,7 @@ import { useOnboardingStore } from '@/store';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { sanitizeText, sanitizeUrl } from '@/lib/sanitize';
 
 export function ProfileStep() {
   const { formData, updateFormData } = useOnboardingStore();
@@ -28,7 +29,7 @@ export function ProfileStep() {
             id="bio"
             placeholder="Tell us about yourself and why you want to volunteer..."
             value={formData.profileAndBioData?.bio || ''}
-            onChange={(e) => handleInputChange('bio', e.target.value)}
+            onChange={(e) => handleInputChange('bio', sanitizeText(e.target.value, 500))}
             className="w-full min-h-[120px]"
             maxLength={500}
           />
@@ -46,7 +47,7 @@ export function ProfileStep() {
             type="url"
             placeholder="https://example.com/your-image.jpg"
             value={formData.profileAndBioData?.profileImageurl || ''}
-            onChange={(e) => handleInputChange('profileImageurl', e.target.value)}
+            onChange={(e) => handleInputChange('profileImageurl', sanitizeUrl(e.target.value))}
             className="w-full"
           />
         </div>

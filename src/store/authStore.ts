@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { setAuthCookie, removeAuthCookie, setUserRoleCookie, removeUserRoleCookie } from '@/app/actions/cookies';
+import { clearRememberMe } from '@/lib/rememberMe';
 
 export type UserRole = 'volunteer' | 'organization' | 'admin' | 'super_admin';
 
@@ -73,6 +74,8 @@ export const useAuthStore = create<AuthState>()(
         // Remove cookies
         removeAuthCookie();
         removeUserRoleCookie();
+        // SECURITY: Clear remembered credentials on logout
+        clearRememberMe();
       },
       
       getUserRole: () => {

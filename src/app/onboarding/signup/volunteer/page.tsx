@@ -11,11 +11,13 @@ import Button from '@/components/button';
 import { useOnboardingStore } from '@/store';
 import { useAuthActions } from '@/hooks/useAuthActions';
 import toast from 'react-hot-toast';
+import { sanitizeEmail, sanitizePassword, isValidEmail } from '@/lib/sanitize';
 
 const VolunteerPage = () => {
   const router = useRouter();
-  const { updateFormData, setCurrentStep, switchAccountType, checkOnboardingStatus, formData: onboardingFormData } = useOnboardingStore();
+  const { updateFormData, switchAccountType, formData: onboardingFormData } = useOnboardingStore();
   const { volunteerSignUp, isLoading } = useAuthActions();
+  const [signupEmail, setSignupEmail] = useState('');
 
   //for the social icons login
   const socialIcons = [
@@ -31,31 +33,70 @@ const VolunteerPage = () => {
     hasAcceptedTOC: false,
   });
 
-  // On mount, switch to volunteer account type and restore data
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+
+  const validatePassword = (password: string) => {
+    if (!password) {
+      return '';
+    }
+    
+    const errors = [];
+    
+    if (password.length < 8) {
+      errors.push('at least 8 characters');
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push('one uppercase letter');
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push('one lowercase letter');
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push('one number');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push('one special character');
+    }
+    
+    if (errors.length > 0) {
+      return `Password must contain ${errors.join(', ')}`;
+    }
+    
+    return '';
+  };
+
+  // On mount, switch to volunteer account type.
+  // SECURITY: Email is NOT restored from any store on signup screens.
   useEffect(() => {
     switchAccountType('volunteer');
     
-    // Restore auth info from store if available
-    if (onboardingFormData.authInfo) {
-      setForm({
-        email: onboardingFormData.authInfo.email || "",
-        password: onboardingFormData.authInfo.password || "",
-        confirmPassword: onboardingFormData.authInfo.confirmPassword || "",
-        hasAcceptedTOC: onboardingFormData.authInfo.hasAcceptedTOC || false,
-      });
-    }
+    // SECURITY: Restore TOC acceptance from store ONLY (no email from store).
+    setForm((prev) => ({
+      ...prev,
+      hasAcceptedTOC: onboardingFormData.authInfo?.hasAcceptedTOC || false,
+    }));
   }, [switchAccountType, onboardingFormData]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // Validate form
-    if (!form.email || !form.password || !form.confirmPassword) {
+    // SECURITY: Sanitize inputs before validation
+    const sanitizedEmail = sanitizeEmail(form.email);
+    const sanitizedPassword = sanitizePassword(form.password);
+    const sanitizedConfirmPassword = sanitizePassword(form.confirmPassword);
+
+    if (!sanitizedEmail || !sanitizedPassword || !sanitizedConfirmPassword) {
       toast.error('Please fill in all fields');
       return;
     }
 
-    if (form.password !== form.confirmPassword) {
+    if (!isValidEmail(sanitizedEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (sanitizedPassword !== sanitizedConfirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
@@ -65,36 +106,67 @@ const VolunteerPage = () => {
       return;
     }
     
-    // Set account type and step
-    switchAccountType('volunteer');
-    
-    // Store auth info in onboarding store
-    updateFormData({
+    // Call volunteer signup API
+    const result = await volunteerSignUp({
       authInfo: {
-        email: form.email,
-        password: form.password,
-        confirmPassword: form.confirmPassword,
-        hasAcceptedTOC: form.hasAcceptedTOC,
-      },
-      metaData: {
-        accountType: "volunteer",
-        currentPage: 1,
+        email: sanitizedEmail,
+        password: sanitizedPassword,
+        confirmPassword: sanitizedConfirmPassword,
+        hasAgreedToTermsAndCondition: form.hasAcceptedTOC,
       },
     });
-    
-    // Check if user has previous onboarding progress and redirect to last step
-    const { shouldRedirect, route } = checkOnboardingStatus('volunteer');
-    if (shouldRedirect) {
-      router.push(route);
-    } else {
-      // No previous progress, go to first onboarding step
-      setCurrentStep(1);
-      router.push('/onboarding/volunteer');
+
+    if (result.success) {
+      // Store email for OTP verification
+      setSignupEmail(sanitizedEmail);
+      
+      // SECURITY: Only store non-sensitive data - passwords are never stored in client-side state
+      updateFormData({
+        authInfo: {
+          email: sanitizedEmail,
+          // Password and confirmPassword intentionally excluded for security
+          hasAcceptedTOC: form.hasAcceptedTOC,
+        },
+        metaData: {
+          accountType: "volunteer",
+          currentPage: 1,
+        },
+      });
+
+      // SECURITY: Clear password fields from local state after submission
+      setForm((prev) => ({
+        ...prev,
+        email: sanitizedEmail,
+        password: "",
+        confirmPassword: "",
+      }));
+
+      // Redirect to OTP verification page
+      router.push(`/verify?email=${encodeURIComponent(sanitizedEmail)}&type=volunteer`);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // SECURITY: Sanitize as the user types (first line of defense).
+    if (name === 'email') {
+      setForm({ ...form, email: sanitizeEmail(value) });
+    } else if (name === 'password') {
+      const sanitizedPassword = sanitizePassword(value);
+      setForm({ ...form, password: sanitizedPassword });
+      setPasswordError(validatePassword(sanitizedPassword));
+      // Also validate confirm password if it has a value
+      if (form.confirmPassword) {
+        setConfirmPasswordError(sanitizedPassword !== form.confirmPassword ? 'Passwords do not match' : '');
+      }
+    } else if (name === 'confirmPassword') {
+      const sanitizedConfirmPassword = sanitizePassword(value);
+      setForm({ ...form, confirmPassword: sanitizedConfirmPassword });
+      setConfirmPasswordError(sanitizedConfirmPassword !== form.password ? 'Passwords do not match' : '');
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const handleTermsChange = (checked: boolean) => {
@@ -119,24 +191,34 @@ const VolunteerPage = () => {
           onChange={handleChange}  
           value={form.email}
         />
-        <InputComponent
-          label="Password"
-          placeholder="Enter password"
-          name="password"
-          htmlFor="password"
-          type="password"
-          onChange={handleChange}
-          value={form.password}
-        />
-        <InputComponent
-          label="Confirm Password"
-          placeholder="Confirm Password"
-          name="confirmPassword"
-          htmlFor="confirmPassword"
-          type="password"
-          onChange={handleChange}
-          value={form.confirmPassword}
-        />
+        <div>
+          <InputComponent
+            label="Password"
+            placeholder="Enter password"
+            name="password"
+            htmlFor="password"
+            type="password"
+            onChange={handleChange}
+            value={form.password}
+          />
+          {passwordError && (
+            <p className="text-red-500 text-xs mt-1">{passwordError}</p>
+          )}
+        </div>
+        <div>
+          <InputComponent
+            label="Confirm Password"
+            placeholder="Confirm Password"
+            name="confirmPassword"
+            htmlFor="confirmPassword"
+            type="password"
+            onChange={handleChange}
+            value={form.confirmPassword}
+          />
+          {confirmPasswordError && (
+            <p className="text-red-500 text-xs mt-1">{confirmPasswordError}</p>
+          )}
+        </div>
 
         <div className="flex items-center space-x-2">
           <Checkbox id='terms' className='rounded-full border-black' onCheckedChange={handleTermsChange} />
@@ -144,7 +226,7 @@ const VolunteerPage = () => {
             I agree to the <span className='text-[#163752]'><Link href='/'>Terms & Conditions</Link></span>
           </label>
         </div>
-     <Button text={isLoading ? 'Signing up...' : 'Sign up'} type='submit' disabled={isLoading} />
+     <Button text='Sign up' type='submit' isLoading={isLoading} disabled={isLoading} />
       </form>
 
       <div className="flex items-center w-full max-w-md mt-4 mx-auto">

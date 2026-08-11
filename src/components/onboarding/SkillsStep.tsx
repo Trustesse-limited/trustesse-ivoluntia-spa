@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@radix-ui/react-label';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+import { sanitizeName } from '@/lib/sanitize';
 
 const COMMON_SKILLS = [
   'Teaching',
@@ -43,7 +44,7 @@ export function SkillsStep() {
     updateFormData({
       skill: {
         ...formData.skill,
-        names: skills.filter((s) => s !== skill),
+        names: skills.filter((s: string) => s !== skill),
       },
     });
   };
@@ -96,7 +97,7 @@ export function SkillsStep() {
             id="customSkill"
             placeholder="Type and press Enter or click Add"
             value={customSkill}
-            onChange={(e) => setCustomSkill(e.target.value)}
+            onChange={(e) => setCustomSkill(sanitizeName(e.target.value))}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -121,7 +122,7 @@ export function SkillsStep() {
             Selected Skills ({skills.length})
           </Label>
           <div className="flex flex-wrap gap-2">
-            {skills.map((skill) => (
+            {skills.map((skill: string) => (
               <div
                 key={skill}
                 className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
