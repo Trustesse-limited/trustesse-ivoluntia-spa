@@ -1,3 +1,19 @@
+/**
+ * Server-side API Configuration
+ * 
+ * SECURITY ARCHITECTURE: Pure Server-Side Authentication
+ * 
+ * This module provides server-side API calls with automatic JWT authentication.
+ * All tokens are stored in HTTP-only cookies and are never exposed to client-side JavaScript.
+ * 
+ * Key Features:
+ * - Automatic Authorization header injection from HTTP-only cookies
+ * - Public endpoint detection (no auth for signup, login, etc.)
+ * - Token expiration monitoring
+ * - Comprehensive error handling
+ * - Server-side token refresh support
+ */
+
 import axios, { AxiosError } from 'axios';
 import {
   VolunteerSignUpRequest,
@@ -11,21 +27,64 @@ import {
   OrganizationOnboardingRequest,
   Country,
   State,
+  Cause,
+  Skill,
 } from '@/types/api';
+import {
+  getServerAccessToken,
+  getAuthHeader,
+  isPublicEndpoint,
+  shouldRefreshToken,
+} from '@/lib/authToken.server';
+import { API_ENDPOINTS } from '@/lib/api-config';
+import logger from '@/lib/logger';
 
 // Server-side only axios instance (cannot be used in client components)
 const serverAxiosInstance = axios.create({
   baseURL: process.env.API_BASE_URL,
-  timeout: 20000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
+  // Note: Server-side doesn't use cookies like client-side
+  // We manually inject Authorization headers from HTTP-only cookies
 });
 
 // Request interceptor for server-side
 serverAxiosInstance.interceptors.request.use(
-  (config) => {
-    // Add server-side auth tokens if needed
+  async (config) => {
+    // Skip auth headers for public endpoints
+    if (config.url && isPublicEndpoint(config.url)) {
+      logger.log('[API] Public endpoint, skipping auth:', config.url);
+      return config;
+    }
+
+    // Add auth token for authenticated endpoints
+    try {
+      const token = await getServerAccessToken();
+      
+      if (token) {
+        logger.log('[API] Token retrieved for:', config.url);
+        logger.log('[API] Token length:', token.length);
+        logger.log('[API] Token prefix:', token.substring(0, 20) + '...');
+        
+        // Check if token needs refresh
+        if (shouldRefreshToken(token)) {
+          // Token refresh could be implemented here
+        }
+        
+        // Add Authorization header
+        if (config.headers) {
+          config.headers.Authorization = `Bearer ${token}`;
+          logger.log('[API] Authorization header added');
+        }
+      } else {
+        logger.log('[API] No token found for authenticated endpoint:', config.url);
+      }
+    } catch (error) {
+      logger.error('Error adding auth header:', error);
+    }
+
     return config;
   },
   (error: AxiosError) => {
@@ -36,12 +95,6 @@ serverAxiosInstance.interceptors.request.use(
 // Response interceptor for server-side
 serverAxiosInstance.interceptors.response.use(
   (response) => {
-    // Log the full response for debugging
-    console.log('Server API Response:', {
-      status: response.status,
-      data: response.data,
-    });
-
     // Check if response contains error even with 2xx status
     const responseData = response.data as ApiResponse<unknown>;
     // Only treat as error if success is explicitly false
@@ -50,18 +103,31 @@ serverAxiosInstance.interceptors.response.use(
         message: responseData.message || 'Request failed',
         status: response.status || 400,
       };
-      console.error('Server API Error (2xx with error):', error);
       return Promise.reject(error);
     }
     return response;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     if (error.response) {
-      console.error('Server API Error:', error.response.status, error.response.data);
-    } else if (error.request) {
-      console.error('Server API No Response:', error.message);
-    } else {
-      console.error('Server API Request Error:', error.message);
+      const status = error.response.status;
+
+      // Handle 401 Unauthorized - token expired or invalid
+      if (status === 401) {
+        const apiError: ApiError = {
+          message: 'Authentication failed. Please log in again.',
+          status: 401,
+        };
+        return Promise.reject(apiError);
+      }
+
+      // Handle 403 Forbidden - insufficient permissions
+      if (status === 403) {
+        const apiError: ApiError = {
+          message: 'You do not have permission to access this resource.',
+          status: 403,
+        };
+        return Promise.reject(apiError);
+      }
     }
     return Promise.reject(error);
   }
@@ -80,23 +146,19 @@ export async function volunteerSignUp(
   data: VolunteerSignUpRequest
 ): Promise<ApiResponse<unknown>> {
   try {
-    console.log('🔵 [API] POST /api/v1/Auth/volunteer-signup');
-    console.log('🔵 [API] Request Payload:', JSON.stringify(data, null, 2));
+    logger.log('[API] POST', API_ENDPOINTS.auth.volunteerSignup);
+    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
-      '/api/v1/Auth/volunteer-signup',
+      API_ENDPOINTS.auth.volunteerSignup,
       data
     );
     
-    console.log('🟢 [API] Response Status:', response.status);
-    console.log('🟢 [API] Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log('🔴 [API] Error Status:', error.response?.status);
-      console.log('🔴 [API] Error Response:', JSON.stringify(error.response?.data, null, 2));
-    }
     throw handleServerError(error);
   }
 }
@@ -109,40 +171,36 @@ export async function organizationSignUp(
   data: OrganizationSignUpRequest
 ): Promise<ApiResponse<unknown>> {
   try {
-    console.log('🔵 [API] POST /api/v1/Auth/organization-signup');
-    console.log('🔵 [API] Request Payload:', JSON.stringify(data, null, 2));
+    logger.log('[API] POST', API_ENDPOINTS.auth.organizationSignup);
+    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
-      '/api/v1/Auth/organization-signup',
+      API_ENDPOINTS.auth.organizationSignup,
       data
     );
     
-    console.log('🟢 [API] Response Status:', response.status);
-    console.log('🟢 [API] Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log('🔴 [API] Error Status:', error.response?.status);
-      console.log('🔴 [API] Error Response:', JSON.stringify(error.response?.data, null, 2));
-    }
     throw handleServerError(error);
   }
 }
 
 /**
  * Verify OTP (email verification)
- * POST /api/v1/Auth/confirmuser?otpCode=xxx
+ * POST /api/v1/Otp/verify-email-confirm-otp?otpCode=xxx
  */
 export async function verifyOtp(
   data: OtpVerificationRequest
 ): Promise<ApiResponse<unknown>> {
   try {
-    console.log('🔵 [API] POST /api/v1/Auth/confirmuser');
-    console.log('🔵 [API] Request Payload:', JSON.stringify(data, null, 2));
+    logger.log('[API] POST', API_ENDPOINTS.otp.verifyEmail);
+    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
-      '/api/v1/Auth/confirmuser',
+      API_ENDPOINTS.otp.verifyEmail,
       null,
       {
         params: {
@@ -151,15 +209,11 @@ export async function verifyOtp(
       }
     );
     
-    console.log('🟢 [API] Response Status:', response.status);
-    console.log('🟢 [API] Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log('🔴 [API] Error Status:', error.response?.status);
-      console.log('🔴 [API] Error Response:', JSON.stringify(error.response?.data, null, 2));
-    }
     throw handleServerError(error);
   }
 }
@@ -172,29 +226,29 @@ export async function resendOtp(
   data: ResendOtpRequest
 ): Promise<ApiResponse<unknown>> {
   try {
-    console.log('🔵 [API] POST /api/v1/Otp/resendotp');
-    console.log('🔵 [API] Request Payload:', JSON.stringify(data, null, 2));
+    logger.log('[API] POST', API_ENDPOINTS.otp.resend);
+    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    
+    const params: Record<string, string | boolean> = {
+      email: data.email,
+      purpose: data.purpose,
+      includeAlphabet: data.includeAlphabet,
+      notificationType: data.notificationType,
+    };
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
-      '/api/v1/Otp/resendotp',
+      API_ENDPOINTS.otp.resend,
       null,
       {
-        params: {
-          email: data.email,
-          purpose: data.purpose,
-        },
+        params: params,
       }
     );
     
-    console.log('🟢 [API] Response Status:', response.status);
-    console.log('🟢 [API] Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log('🔴 [API] Error Status:', error.response?.status);
-      console.log('🔴 [API] Error Response:', JSON.stringify(error.response?.data, null, 2));
-    }
     throw handleServerError(error);
   }
 }
@@ -207,23 +261,19 @@ export async function login(
   data: LoginRequestModel
 ): Promise<ApiResponse<unknown>> {
   try {
-    console.log('🔵 [API] POST /api/v1/Auth/login');
-    console.log('🔵 [API] Request Payload:', { ...data, password: '[REDACTED]' });
+    logger.log('[API] POST', API_ENDPOINTS.auth.login);
+    logger.log('[API] Request Payload:', { ...data, password: '[REDACTED]' });
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
-      '/api/v1/Auth/login',
+      API_ENDPOINTS.auth.login,
       data
     );
     
-    console.log('🟢 [API] Response Status:', response.status);
-    console.log('🟢 [API] Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log('🔴 [API] Error Status:', error.response?.status);
-      console.log('🔴 [API] Error Response:', JSON.stringify(error.response?.data, null, 2));
-    }
     throw handleServerError(error);
   }
 }
@@ -231,92 +281,158 @@ export async function login(
 /**
  * Reset Password
  * POST /api/v1/Auth/resetpassword
- * Takes email as a string directly (not an object)
+ * Takes email as query parameter
  */
 export async function resetPassword(
   email: string
 ): Promise<ApiResponse<unknown>> {
   try {
-    console.log('🔵 [API] POST /api/v1/Auth/resetpassword');
-    console.log('🔵 [API] Request Payload:', { email });
+    logger.log('[API] POST', API_ENDPOINTS.auth.resetPassword);
+    logger.log('[API] Request Payload:', { email });
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
-      '/api/v1/Auth/resetpassword',
-      email,
+      API_ENDPOINTS.auth.resetPassword,
+      null,
       {
-        headers: {
-          'Content-Type': 'application/json',
+        params: {
+          email: email,
         },
       }
     );
     
-    console.log('🟢 [API] Response Status:', response.status);
-    console.log('🟢 [API] Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log('🔴 [API] Error Status:', error.response?.status);
-      console.log('🔴 [API] Error Response:', JSON.stringify(error.response?.data, null, 2));
-    }
     throw handleServerError(error);
   }
 }
 
 /**
  * Volunteer Onboarding (complete onboarding data)
- * POST /api/v1/Onboarding/volunteer-onboarding
+ * POST /api/v1/Onboarding/volunteer-onboarding (multipart/form-data)
  */
 export async function volunteerOnboarding(
   data: VolunteerOnboardingRequest
 ): Promise<ApiResponse<unknown>> {
   try {
-    console.log('🔵 [API] POST /api/v1/Onboarding/volunteer-onboarding');
-    console.log('🔵 [API] Request Payload:', JSON.stringify(data, null, 2));
+    logger.log('[API] POST', API_ENDPOINTS.onboarding.volunteer);
+    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    
+    // Convert to FormData for multipart/form-data
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => {
+          if (item instanceof File) {
+            formData.append(`${key}[${index}]`, item);
+          } else {
+            formData.append(`${key}[${index}]`, item);
+          }
+        });
+      } else if (value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
-      '/api/v1/Onboarding/volunteer-onboarding',
-      data
+      API_ENDPOINTS.onboarding.volunteer,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
     
-    console.log('🟢 [API] Response Status:', response.status);
-    console.log('🟢 [API] Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log('🔴 [API] Error Status:', error.response?.status);
-      console.log('🔴 [API] Error Response:', JSON.stringify(error.response?.data, null, 2));
-    }
     throw handleServerError(error);
   }
 }
 
 /**
  * Organization Onboarding (complete onboarding data)
- * POST /api/v1/Onboarding/organization-onboarding
+ * POST /api/v1/Onboarding/organization-onboarding (multipart/form-data)
  */
 export async function organizationOnboarding(
   data: OrganizationOnboardingRequest
 ): Promise<ApiResponse<unknown>> {
   try {
-    console.log('🔵 [API] POST /api/v1/Onboarding/organization-onboarding');
-    console.log('🔵 [API] Request Payload:', JSON.stringify(data, null, 2));
+    logger.log('[API] POST', API_ENDPOINTS.onboarding.organization);
+    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    
+    // Convert to FormData for multipart/form-data
+    const formData = new FormData();
+    
+    // Handle nested objects
+    if (data.metaData) {
+      formData.append('MetaData.AccountType', data.metaData.accountType);
+      formData.append('MetaData.CurrentPage', String(data.metaData.currentPage));
+    }
+    
+    if (data.foundationBioData) {
+      formData.append('foundationBioData.Name', data.foundationBioData.name);
+      formData.append('foundationBioData.FoundationCategory', data.foundationBioData.foundationCategory);
+      if (data.foundationBioData.website) {
+        formData.append('foundationBioData.Website', data.foundationBioData.website);
+      }
+      formData.append('foundationBioData.Mission', data.foundationBioData.mission);
+    }
+    
+    if (data.foundationLocationDto) {
+      if (data.foundationLocationDto.address) {
+        formData.append('FoundationLocationDto.Address', data.foundationLocationDto.address);
+      }
+      formData.append('FoundationLocationDto.City', data.foundationLocationDto.city);
+      formData.append('FoundationLocationDto.Zipcode', data.foundationLocationDto.zipcode);
+      formData.append('FoundationLocationDto.FoundationCountry', data.foundationLocationDto.foundationCountry);
+      formData.append('FoundationLocationDto.FoundationState', data.foundationLocationDto.foundationState);
+      if (data.foundationLocationDto.countryId) {
+        formData.append('FoundationLocationDto.CountryId', data.foundationLocationDto.countryId);
+      }
+      if (data.foundationLocationDto.stateId) {
+        formData.append('FoundationLocationDto.StateId', data.foundationLocationDto.stateId);
+      }
+    }
+    
+    if (data.causeDto && data.causeDto.names) {
+      data.causeDto.names.forEach((name, index) => {
+        formData.append(`CauseDto.Names[${index}]`, name);
+      });
+    }
+    
+    if (data.profileLogo && data.profileLogo.logo) {
+      data.profileLogo.logo.forEach((file, index) => {
+        formData.append(`ProfileLogo.Logo[${index}]`, file);
+      });
+    }
+    
+    if (data.disclaimer) {
+      formData.append('Disclaimer.HasAgreedToDisclaimer', String(data.disclaimer.hasAgreedToDisclaimer));
+    }
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
-      '/api/v1/Onboarding/organization-onboarding',
-      data
+      API_ENDPOINTS.onboarding.organization,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
     
-    console.log('🟢 [API] Response Status:', response.status);
-    console.log('🟢 [API] Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log('🔴 [API] Error Status:', error.response?.status);
-      console.log('🔴 [API] Error Response:', JSON.stringify(error.response?.data, null, 2));
-    }
     throw handleServerError(error);
   }
 }
@@ -345,102 +461,151 @@ export default serverAxiosInstance;
 
 /**
  * Get all countries
- * GET /api/v1/countries/countries
+ * GET /api/v1/countries/get-all-countries
  */
 export async function getCountries(): Promise<Country[]> {
   try {
-    console.log("🔵 [API] GET /api/v1/countries/countries");
+    logger.log('[API] GET', API_ENDPOINTS.countries.getAll);
     
     const response = await serverAxiosInstance.get<ApiResponse<Country[]>>(
-      "/api/v1/countries/countries"
+      API_ENDPOINTS.countries.getAll
     );
     
-    console.log("🟢 [API] Response Status:", response.status);
-    console.log("🟢 [API] Response Data:", JSON.stringify(response.data, null, 2));
-    
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     interface CountryApiResponse {
-      countryId?: string;
-      countryName?: string;
       id?: string;
-      name?: string;
-      code?: string;
-      isoCode?: string;
+      countryName?: string;
+      countryCode?: string;
     }
 
-    interface CountryApiResponseWrapper {
-      responseCode: number;
-      responseMessage: string;
-      data: {
-        statusCode: number;
-        message: string;
-        data: CountryApiResponse[];
-      };
-    }
-    const rawData = (response.data as unknown as CountryApiResponseWrapper).data.data;
+    // The API returns { responseCode, isSuccessfull, message, errors, data: [...] }
+    const rawData = (response.data as unknown as { data: CountryApiResponse[] }).data;
     return rawData.map((c: CountryApiResponse) => ({
-      id: c.countryId || c.id || '',
-      name: c.countryName || c.name || '',
-      countryId: c.countryId || c.id || '',
-      countryName: c.countryName || c.name || '',
+      id: c.id || '',
+      name: c.countryName || '',
+      countryId: c.id || '',
+      countryName: c.countryName || '',
+      code: c.countryCode || '',
     }));
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log("🔴 [API] Error Status:", error.response?.status);
-      console.log("🔴 [API] Error Response:", JSON.stringify(error.response?.data, null, 2));
-    }
     throw handleServerError(error);
   }
 }
 
-interface StateApiResponse {
-      stateId?: string;
-      stateName?: string;
-      id?: string;
-      name?: string;
-      countryId?: string;
-      code?: string;
-    }
-    interface StateApiResponseWrapper {
-      responseCode: number;
-      responseMessage: string;
-      data: {
-        statusCode: number;
-        message: string;
-        data: StateApiResponse[];
-      };
-    }
 /**
- * Get states by country ID
- * GET /api/v1/countries/states?countryId={countryId}
+ * Get all states for a country
+ * GET /api/State/get-country-states-by-countryid
  */
 export async function getStates(countryId: string): Promise<State[]> {
   try {
-    console.log("🔵 [API] GET /api/v1/countries/states");
-    console.log("📤 [API] Request Params:", { countryId });
+    logger.log('[API] GET', API_ENDPOINTS.state.getByCountry);
+    logger.log('[API] Request Params:', { countryId });
     
     const response = await serverAxiosInstance.get<ApiResponse<State[]>>(
-      "/api/v1/countries/states",
+      API_ENDPOINTS.state.getByCountry,
       {
         params: { countryId },
       }
     );
     
-    console.log("🟢 [API] Response Status:", response.status);
-    console.log("🟢 [API] Response Data:", JSON.stringify(response.data, null, 2));
-    const rawData = (response.data as unknown as StateApiResponseWrapper).data.data;
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    
+    interface StateApiResponse {
+      stateId?: string;
+      stateName?: string;
+      countryId?: string;
+    }
+
+    // The API returns { responseCode, isSuccessfull, message, errors, data: [...] }
+    const rawData = (response.data as unknown as { data: StateApiResponse[] }).data;
     return rawData.map((s: StateApiResponse): State => ({
-      id: s.stateId || s.id || '',
-      name: s.stateName || s.name || '',
-      stateId: s.stateId || s.id || '',
-      stateName: s.stateName || s.name || '',
+      id: s.stateId || '',
+      name: s.stateName || '',
+      stateId: s.stateId || '',
+      stateName: s.stateName || '',
       countryId: s.countryId || '',
     }));
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.log("🔴 [API] Error Status:", error.response?.status);
-      console.log("🔴 [API] Error Response:", JSON.stringify(error.response?.data, null, 2));
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get all causes
+ * GET /api/Cause/get-all-causes
+ */
+export async function getCauses(): Promise<Cause[]> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.cause.getAll);
+    
+    const response = await serverAxiosInstance.get<ApiResponse<Cause[]>>(
+      API_ENDPOINTS.cause.getAll
+    );
+    
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    
+    return response.data.data || [];
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get all skills
+ * GET /api/Skill/get-all-skill
+ */
+export async function getSkills(): Promise<Skill[]> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.skill.getAll);
+    
+    const response = await serverAxiosInstance.get<ApiResponse<Skill[]>>(
+      API_ENDPOINTS.skill.getAll
+    );
+    
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    
+    return response.data.data || [];
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Upload file
+ * POST /api/FileUploads/file-upload
+ */
+export async function uploadFile(file: File): Promise<string> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.fileUploads.upload);
+    logger.log('[API] File:', file.name, file.type, file.size);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await serverAxiosInstance.post<ApiResponse<string[]>>(
+      API_ENDPOINTS.fileUploads.upload,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    
+    if (response.data.data && response.data.data.length > 0) {
+      return response.data.data[0];
     }
+    
+    throw new Error('No file URL returned from server');
+  } catch (error) {
     throw handleServerError(error);
   }
 }

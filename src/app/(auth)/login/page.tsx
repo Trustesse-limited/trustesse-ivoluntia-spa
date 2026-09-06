@@ -4,14 +4,16 @@ import React, { useState, useEffect } from 'react'
 import { InputComponent } from '@/components/input'
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from 'next/link'
-import Button from '@/components/button'
+import { AppButton } from '@/components/AppButton'
 import SocialLogin from '@/components/SocialLogin'
 import Image from 'next/image'
 import { useAuthActions } from '@/hooks/useAuthActions';
+import type { EnhancedLoginResult } from '@/hooks/useAuthActions';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { sanitizeEmail, sanitizePassword, isValidEmail } from '@/lib/sanitize';
 import { getRememberMe, saveRememberMe, clearRememberMe, hasRememberMe } from '@/lib/rememberMe';
+import logger from '@/lib/logger';
 
 const Page = () => {
   const router = useRouter();
@@ -29,6 +31,8 @@ const Page = () => {
       password: "",
       rememberMe: false,
     });
+
+  const isFormValid = form.email.trim() !== "" && form.password.trim() !== "";
 
   // SECURITY: On mount, restore email AND decrypted password
   // ONLY if the user previously opted in via the "Remember me" checkbox.
@@ -80,19 +84,53 @@ const Page = () => {
     });
     
     if (result.success) {
-      // SECURITY: Determine redirect based on onboarding status from API response
-      const loginData = result.data as Record<string, unknown> | undefined;
-      const hasCompletedOnboarding = loginData?.hasCompletedOnboarding as boolean | undefined;
-      const lastCompletedPage = loginData?.lastCompletedPage as number | undefined;
-      const accountType = loginData?.accountType as string | undefined;
-
-      if (hasCompletedOnboarding) {
-        // User completed onboarding, redirect to dashboard
-        router.push('/dashboard');
+      // Use the enhanced redirect information from the login hook
+      const resultData = result as { redirect?: string; requiresOnboarding?: boolean; accountType?: string; lastCompletedPage?: number; hasCompletedOnboarding?: boolean };
+      
+      console.log('🔍 [Login Page] Login successful, resultData:', resultData);
+      
+      if (resultData.redirect) {
+        logger.log('[Login Page] Redirecting to:', resultData.redirect, 'Account Type:', resultData.accountType);
+        // No longer passing query params - data is stored in onboarding store by login hook
+        console.log('🚀 [Login Page] Calling router.push to:', resultData.redirect);
+        router.push(resultData.redirect);
+        return; // Important: return early to prevent fallback logic
       } else {
-        // Redirect to unified onboarding page with step param if resuming
-        const stepParam = lastCompletedPage && lastCompletedPage > 0 ? `?step=${lastCompletedPage}` : '';
-        router.push(`/onboarding${stepParam}`);
+        // Fallback to original logic if redirect not provided
+        const loginData = result.data as Record<string, unknown> | undefined;
+        const hasCompletedOnboarding = loginData?.hasCompletedOnboarding as boolean | undefined;
+        const lastCompletedPage = loginData?.lastCompletedPage as number | undefined;
+        const accountType = loginData?.accountType as string | undefined;
+        const normalizedAccountType = accountType?.toLowerCase();
+
+        if (hasCompletedOnboarding) {
+          // User completed onboarding, redirect to appropriate dashboard
+          if (normalizedAccountType === 'organization') {
+            router.push('/org/dashboard');
+          } else if (normalizedAccountType === 'volunteer') {
+            router.push('/volunteer');
+          } else if (normalizedAccountType === 'admin') {
+            router.push('/admin/dashboard');
+          } else {
+            router.push('/dashboard');
+          }
+        } else {
+          // Redirect to appropriate onboarding based on account type
+          if (normalizedAccountType === 'organization') {
+            router.push('/onboarding?type=organization');
+          } else if (normalizedAccountType === 'volunteer') {
+            router.push('/onboarding?type=volunteer');
+          } else {
+            router.push('/onboarding');
+          }
+        }
+      }
+    } else {
+      // Check if login failed due to account not active requiring verification
+      const resultData = result as { requiresVerification?: boolean; emailForVerification?: string; redirect?: string };
+      if (resultData.requiresVerification && resultData.redirect) {
+        logger.log('[Login Page] Account not active, redirecting to verification');
+        router.push(resultData.redirect);
       }
     }
   };
@@ -122,7 +160,9 @@ const Page = () => {
 
   return (
     <>
-      <h1 className='md:text-[32px] text-2xl text-center font-[600]'>Welcome Back</h1>
+    <div className='flex flex-col items-center w-full min-h-screen'>
+      <div className='flex flex-col items-center w-full max-w-md mx-auto flex-grow'>
+      <h1 className='md:text-[32px] text-2xl text-center font-[600] mt-16'>Welcome Back</h1>
       <p className='text-center'>Please enter your details</p>
       <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-auto'>
          <InputComponent
@@ -150,9 +190,9 @@ const Page = () => {
             <Link href='/'>Remember me</Link>
           </label>
         </div>
-         <Link href='/forgotpassword' className='text-[#163752]'>Forgot Password</Link>
+         <Link href='/forgotpassword' className='text-[#163752] font-medium hover:underline'>Forgot Password</Link>
          </div>
-        <Button text='Sign In' type='submit' isLoading={isLoading} disabled={isLoading} />
+        <AppButton text='Sign In' type='submit' isLoading={isLoading} disabled={isLoading || !isFormValid} />
         </form>
         <div className="flex items-center w-full max-w-md mt-4 mx-auto">
         <div className="flex-grow border-t-2 border-black"></div>
@@ -160,12 +200,14 @@ const Page = () => {
         <div className="flex-grow border-t-2 border-black"></div>
       </div>
       <SocialLogin icons={socialIcons}/>
-       <p className='text-center text-[16px] mt-4'>No Account yet?{" "}
+       <p className='text-center text-[16px] font-medium mt-4'>No Account yet?{" "}
        <span className='text-[#2C6EA3]'>
-         <Link href="/">Sign Up</Link>
+         <Link href="/" className="hover:underline">Sign Up</Link>
        </span>
        </p>
-      <Image src='/pep.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 left-0 z-[-1] w-full h-auto object-contain pointer-events-none' />
+      </div>
+      <Image src='/pep.svg' alt='pep-svg'  width={1920} height={350} className='w-full h-[25vh] object-contain pointer-events-none' />
+    </div>
     </>
   )
 }

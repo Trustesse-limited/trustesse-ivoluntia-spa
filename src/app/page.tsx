@@ -22,7 +22,7 @@ const userType = [
 ];
 
 //for the styling of the volunteer and org text
-const styleItem = "text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-[28px] font-[400] text-[#0D0D0D] text-center";
+const styleItem = "text-lg sm:text-xl md:text-2xl font-[500] text-[#0D0D0D] text-center";
 
 const Page = () => {
   const router = useRouter();
@@ -30,12 +30,12 @@ const Page = () => {
 
   const handleVolunteerClick = () => {
     switchAccountType('volunteer');
-    router.push('/onboarding/signup/volunteer');
+    router.push('/signup?account=volunteer');
   };
 
   const handleOrganizationClick = () => {
     switchAccountType('organization');
-    router.push('/onboarding/signup/org');
+    router.push('/signup?account=organization');
   };
 
   return (
@@ -73,7 +73,7 @@ const Page = () => {
           ))}
         </div>
 
-        <p className="pt-[20px] text-sm sm:text-[16px] text-center">
+        <p className="mt-10 text-sm sm:text-[16px] text-center">
           Already have an account?{" "}
           <span className="text-primary font-[700]">
             <Link href="/login">Sign In</Link>

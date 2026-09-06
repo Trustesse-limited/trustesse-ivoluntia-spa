@@ -1,10 +1,25 @@
+/**
+ * Client-side API Configuration
+ * 
+ * 
+ * This application uses HTTP-only cookies for JWT token storage.
+ * All sensitive API calls should use server actions for maximum security.
+ * This client-side API layer is limited to non-sensitive operations only.
+ * 
+ * For authentication and sensitive operations, use server actions from:
+ * - @/app/actions/auth.ts
+ * - @/app/actions/tokenRefresh.ts
+ * 
+ * Security Features:
+ * - Credentials automatically sent via HTTP-only cookies
+ * - No token exposure to client-side JavaScript
+ * - Server-side validation and authorization
+ */
+
 import axios, { AxiosError } from 'axios';
 import axiosInstance from './axios';
 import { ApiResponse, ApiError, PaginationParams, PaginatedResponse } from '@/types/api';
-
-// NOTE: This file is for client-side API calls only
-// For server-side API calls (authentication, sensitive operations), use server-api.ts
-// Server-side functions have access to API_BASE_URL (not prefixed with NEXT_PUBLIC)
+import { API_ENDPOINTS } from './api-config';
 
 
 class ApiClient {
@@ -113,31 +128,37 @@ export const api = {
   // Use server-api.ts for volunteer signup and login operations
   // This file is for non-sensitive client-side API calls only
   
+  // WARNING: These endpoints should only be used for non-sensitive data
+  // For sensitive operations, create server actions in @/app/actions/
+  
   volunteers: {
     getAll: (params?: PaginationParams) => 
-      apiClient.getPaginated('/volunteers', params),
+      apiClient.getPaginated(API_ENDPOINTS.volunteers.getByFoundation, params),
     getById: (id: string) => 
-      apiClient.get(`/volunteers/${id}`),
+      apiClient.get(`${API_ENDPOINTS.volunteers.getByFoundation}/${id}`),
     create: (data: Record<string, unknown>) => 
-      apiClient.post('/volunteers', data),
+      apiClient.post(API_ENDPOINTS.volunteers.getByFoundation, data),
     update: (id: string, data: Record<string, unknown>) => 
-      apiClient.put(`/volunteers/${id}`, data),
+      apiClient.put(`${API_ENDPOINTS.volunteers.getByFoundation}/${id}`, data),
     delete: (id: string) => 
-      apiClient.delete(`/volunteers/${id}`),
+      apiClient.delete(`${API_ENDPOINTS.volunteers.getByFoundation}/${id}`),
   },
   
   opportunities: {
     getAll: (params?: PaginationParams) => 
-      apiClient.getPaginated('/opportunities', params),
+      apiClient.getPaginated(API_ENDPOINTS.programs.getAll, params),
     getById: (id: string) => 
-      apiClient.get(`/opportunities/${id}`),
+      apiClient.get(API_ENDPOINTS.programs.getById(id)),
     create: (data: Record<string, unknown>) => 
-      apiClient.post('/opportunities', data),
+      apiClient.post(API_ENDPOINTS.programs.create, data),
     update: (id: string, data: Record<string, unknown>) => 
-      apiClient.put(`/opportunities/${id}`, data),
+      apiClient.put(API_ENDPOINTS.programs.update, data),
     delete: (id: string) => 
-      apiClient.delete(`/opportunities/${id}`),
+      apiClient.delete(API_ENDPOINTS.programs.deleteGoal),
   },
+  
+  // Additional client-side endpoints can be added here
+  // using the API_ENDPOINTS from api-config.ts
 };
 
 export default api;

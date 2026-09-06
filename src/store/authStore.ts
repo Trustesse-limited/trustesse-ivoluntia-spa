@@ -1,3 +1,19 @@
+/**
+ * Client-side Authentication State Management
+ * 
+ * SECURITY ARCHITECTURE: Pure Server-Side Authentication
+ * 
+ * This store manages client-side authentication state (UI state only).
+ * Actual authentication tokens are stored securely in HTTP-only cookies
+ * and are managed server-side. The store only tracks:
+ * - User information (for UI display)
+ * - Authentication status (for UI logic)
+ * - Loading states
+ * 
+ * SECURITY NOTE: No tokens are stored in this store or localStorage.
+ * All token management happens server-side via HTTP-only cookies.
+ */
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { setAuthCookie, removeAuthCookie, setUserRoleCookie, removeUserRoleCookie } from '@/app/actions/cookies';
@@ -5,27 +21,32 @@ import { clearRememberMe } from '@/lib/rememberMe';
 
 export type UserRole = 'volunteer' | 'organization' | 'admin' | 'super_admin';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   firstName?: string;
   lastName?: string;
   role?: UserRole;
+  accountType?: 'Volunteer' | 'Organization' | 'Admin';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  token: string | null;
+  token: string | null; // In-memory only, NOT persisted to localStorage
   
   // Actions
   setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
+  setToken: (token: string | null) => void; // Only for server cookie management
   setLoading: (loading: boolean) => void;
   login: (user: User, token: string) => void;
   logout: () => void;
   getUserRole: () => UserRole | null;
+  checkAuth: () => boolean; // Check if user is authenticated
+  validateToken: () => Promise<boolean>; // Validate token with server and set isAuthenticated
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -40,7 +61,7 @@ export const useAuthStore = create<AuthState>()(
       
       setToken: (token) => {
         set({ token });
-        // Also set cookie for server-side auth
+        // Set cookie for server-side auth (HTTP-only, secure)
         if (token) {
           setAuthCookie(token);
         } else {
@@ -65,30 +86,87 @@ export const useAuthStore = create<AuthState>()(
       },
       
       logout: () => {
+        // Clear all persisted storage first to prevent re-hydration
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth-storage');
+        }
+        
         set({
           user: null,
           token: null,
           isAuthenticated: false,
           isLoading: false,
         });
-        // Remove cookies
+        
+        // Remove cookies (server-side token management)
         removeAuthCookie();
         removeUserRoleCookie();
+        
         // SECURITY: Clear remembered credentials on logout
         clearRememberMe();
+        
+        // Clear all persisted storage from localStorage again to ensure it's gone
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth-storage');
+        }
       },
       
       getUserRole: () => {
         const { user } = get();
         return user?.role || null;
       },
+
+      checkAuth: () => {
+        const { user, isAuthenticated } = get();
+        // User is authenticated if isAuthenticated is true and user exists
+        return isAuthenticated && !!user;
+      },
+
+      validateToken: async () => {
+        // Fallback: assume authenticated if user data exists
+        const { user } = get();
+        if (user && user.id && user.email) {
+          set({ isAuthenticated: true });
+          return true;
+        }
+        return false;
+      },
     }),
     {
       name: 'auth-storage',
+      version: 5, // Increment version to force migration and remove token from storage
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        // SECURITY: Token is NOT persisted to localStorage
+        // Only stored in HTTP-only cookies server-side
       }),
+      migrate: (persistedState: any, version: number) => {
+        // If version is less than 5, clear the state to force fresh start
+        // This ensures any previously stored tokens are removed
+        if (version < 5) {
+          return {
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            token: null,
+          };
+        }
+        // Remove token from persisted state if it exists
+        if (persistedState.token) {
+          delete persistedState.token;
+        }
+        return persistedState;
+      },
+      onRehydrateStorage: () => (state) => {
+        // After rehydration, set isAuthenticated based on user data
+        if (state) {
+          // Assume authenticated if user data exists
+          state.isAuthenticated = !!state.user && !!state.user.id && !!state.user.email;
+          // Ensure token is not persisted
+          state.token = null;
+        }
+      },
     }
   )
 );

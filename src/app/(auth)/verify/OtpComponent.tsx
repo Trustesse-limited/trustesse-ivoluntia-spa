@@ -5,9 +5,10 @@ import React, { useState, useRef, ChangeEvent, KeyboardEvent } from "react";
 interface OtpInputProps {
   length?: number;
   onChangeOtp: (otp: string) => void;
+  onComplete?: (otp: string) => void;
 }
 
-const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp }) => {
+const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp, onComplete }) => {
   const [otp, setOtp] = useState<string[]>(Array(length).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -25,7 +26,14 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp }) => {
     if (value && index < length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
-    onChangeOtp(newOtp.join(""));
+    
+    const otpString = newOtp.join("");
+    onChangeOtp(otpString);
+    
+    // Trigger onComplete when all digits are filled
+    if (otpString.length === length && onComplete) {
+      onComplete(otpString);
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -49,7 +57,8 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp }) => {
     });
     
     setOtp(newOtp);
-    onChangeOtp(newOtp.join(''));
+    const otpString = newOtp.join('');
+    onChangeOtp(otpString);
     
     // Focus the next empty input or the last input
     const nextEmptyIndex = digits.length;
@@ -57,6 +66,11 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp }) => {
       inputRefs.current[nextEmptyIndex]?.focus();
     } else {
       inputRefs.current[length - 1]?.focus();
+    }
+    
+    // Trigger onComplete when all digits are filled
+    if (otpString.length === length && onComplete) {
+      onComplete(otpString);
     }
   };
 

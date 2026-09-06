@@ -28,10 +28,10 @@ import { useState } from "react";
 
       return (
         <div className="grid gap-2 relative">
-          <Label htmlFor={htmlFor} className="font-normal text-[#000000]">
+          <Label htmlFor={htmlFor} className="font-medium text-[#000000]">
             {label}
           </Label>
-          <div className="relative ">
+          <div className="relative">
             <Input
               id={htmlFor}
               name={name}

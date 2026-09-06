@@ -2,7 +2,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { InputComponent } from "@/components/input";
-import Button from '@/components/button'
+import { AppButton } from '@/components/AppButton';
 import { useState } from 'react'
 import { sanitizeEmail, isValidEmail } from '@/lib/sanitize';
 import { useAuthActions } from '@/hooks/useAuthActions';
@@ -15,6 +15,8 @@ const Page = () => {
     const [form, setForm] = useState({
         email: "",
     })
+
+    const isFormValid = form.email.trim() !== "" && isValidEmail(form.email);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -44,9 +46,11 @@ const Page = () => {
       };
   return (
     <>
-<h1 className='text-center md:text-[32px] text-2xl font-[600]'>Forgot Password?</h1>
-<p className='text-center'>Dont worry, we will send you a reset link</p>
- <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-auto'>
+    <div className='flex flex-col items-center w-full min-h-screen'>
+      <div className='flex flex-col items-center w-full max-w-md mx-auto flex-grow'>
+      <h1 className='text-center md:text-[32px] text-2xl font-[600] mt-16'>Forgot Password?</h1>
+      <p className='text-center'>Dont worry, we will send you a reset link</p>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-auto'>
          <InputComponent
                   label="Email Address"
                   placeholder="Enter email address"
@@ -57,9 +61,11 @@ const Page = () => {
                    value={form.email}
                 />
                 
-        <Button text='Send Link' type='submit' isLoading={isLoading} disabled={isLoading} />
-    </form>
-    <Image src='/passwordbg.svg' alt='pep-svg'  width={1000} height={177} className='fixed bottom-0 left-0 z-[-1] w-full h-auto object-contain pointer-events-none' />
+        <AppButton text='Send Link' type='submit' isLoading={isLoading} disabled={isLoading || !isFormValid} />
+      </form>
+      </div>
+      <Image src='/passwordbg.svg' alt='pep-svg'  width={1920} height={350} className='w-full h-[25vh] object-contain pointer-events-none' />
+    </div>
     </>
   )
 }

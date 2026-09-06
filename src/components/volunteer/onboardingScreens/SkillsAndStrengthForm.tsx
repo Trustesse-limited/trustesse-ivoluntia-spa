@@ -1,0 +1,176 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { AppButton } from "@/components/AppButton";
+import { getSkillsAction } from "@/app/actions/auth";
+import { Skill } from "@/types/api";
+import { VolunteerFormData } from "@/types";
+import { motion } from "framer-motion";
+
+interface SkillsAndStrengthFormProps {
+  formData: VolunteerFormData;
+  setFormData: (data: VolunteerFormData) => void;
+}
+
+const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData, setFormData }) => {
+  const [selected, setSelected] = useState<string[]>(formData.skills || []);
+  const [showMore, setShowMore] = useState<boolean>(false);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSkills = async () => {
+      setIsLoading(true);
+      try {
+        const result = await getSkillsAction();
+        if (result.success && result.data) {
+          setSkills(result.data);
+        } else {
+          setError(result.error || 'Failed to fetch skills');
+        }
+      } catch (err) {
+        setError('Failed to fetch skills');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSkills();
+  }, []);
+
+  const toggleSkill = (skill: string) => {
+    const updated = selected.includes(skill)
+      ? selected.filter((item) => item !== skill)
+      : [...selected, skill];
+    setSelected(updated);
+    setFormData({ ...formData, skills: updated });
+  };
+
+  const displayedSkills = showMore ? skills : skills.slice(0, 24);
+
+  if (isLoading) {
+    return (
+      <form className="space-y-6 max-w-6xl pb-20 mx-auto">
+        <div className="mx-auto w-fit text-center">
+          <h2 className="text-2xl font-normal text-[#161616]">
+            Skills and Strength
+          </h2>
+          <p className="text-sm font-normal mt-1 text-[#161616]">
+            {`Tell us what you're good at, and we'll help you find the right place to use it for good.`}
+          </p>
+        </div>
+        <div className="max-w-2xl mx-auto space-y-4">
+          <fieldset>
+            <legend className="text-xs w-fit mx-auto font-semibold text-[#818181]">
+              (Select all that apply)
+            </legend>
+            <div className="flex flex-wrap gap-3 justify-center mt-2">
+              {[...Array(12)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-10 w-32 bg-[#F3F3F3] rounded-[6px] animate-pulse"
+                />
+              ))}
+            </div>
+          </fieldset>
+        </div>
+      </form>
+    );
+  }
+
+  if (error) {
+    return (
+      <form className="space-y-6 max-w-6xl pb-20 mx-auto">
+        <div className="mx-auto w-fit text-center">
+          <h2 className="text-2xl font-normal text-[#161616]">
+            Skills and Strength
+          </h2>
+          <p className="text-sm font-normal mt-1 text-red-500">
+            {error}
+          </p>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <form className="space-y-6 max-w-6xl pb-20 mx-auto">
+      <div className="mx-auto w-fit text-center">
+        <h2 className="text-2xl font-normal text-[#161616]">
+          Skills and Strength
+        </h2>
+        <p className="text-sm font-normal mt-1 text-[#161616]">
+          {`Tell us what you're good at, and we'll help you find the right place to use it for good.`}
+        </p>
+      </div>
+
+      <div className="max-w-2xl mx-auto space-y-4">
+        <fieldset>
+          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181]">
+            (Select all that apply)
+          </legend>
+
+          <div className="flex flex-wrap gap-3 justify-center mt-2">
+            {displayedSkills.map((skill) => {
+              const isSelected = selected.includes(skill.name);
+
+              return (
+                <AppButton
+                  key={skill.name}
+                  type="button"
+                  onClick={() => toggleSkill(skill.name)}
+                  isLoading={false}
+                  className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] text-xs font-normal transition-colors duration-200 ${
+                    isSelected
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-[#F3F3F3] text-[#212121]"
+                  }`}
+                  aria-pressed={isSelected}
+                  aria-label={`Toggle ${skill.name}`}
+                >
+                  <span className={`text-sm pr-2.5 font-normal ${
+                    isSelected
+                      ? "text-blue-700"
+                      : "text-[#161616]"
+                  }`}>{skill.name}</span>
+                  <motion.div
+                    initial={false}
+                    animate={{ 
+                      scale: isSelected ? [1, 0.8, 1] : [1, 0.8, 1],
+                      rotate: isSelected ? [0, 180] : [180, 0]
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Image
+                      src={isSelected ? "/icons/minus.svg" : "/icons/plus.svg"}
+                      alt={isSelected ? "minus" : "plus"}
+                      width={12}
+                      height={12}
+                      loading="lazy"
+                    />
+                  </motion.div>
+                </AppButton>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {skills.length > 24 && (
+          <div className="flex justify-center">
+            <AppButton
+              type="button"
+              onClick={() => setShowMore((prev) => !prev)}
+              isLoading={false}
+              className="text-sm text-[#21537B] bg-transparent shadow-none font-medium hover:underline"
+              aria-expanded={showMore ? true : false}
+            >
+              {showMore ? "Show less" : "Show more"}
+            </AppButton>
+          </div>
+        )}
+      </div>
+    </form>
+  );
+};
+
+export default SkillsAndStrengthForm;

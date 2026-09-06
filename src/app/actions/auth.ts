@@ -11,6 +11,9 @@ import {
   organizationOnboarding,
   getCountries,
   getStates,
+  getCauses,
+  getSkills,
+  uploadFile,
 } from '@/lib/server-api';
 import {
   VolunteerSignUpRequest,
@@ -24,6 +27,8 @@ import {
   OrganizationOnboardingRequest,
   Country,
   State,
+  Cause,
+  Skill,
 } from '@/types/api';
 import { cookies } from 'next/headers';
 import {
@@ -32,6 +37,7 @@ import {
   sanitizeOtp,
   isValidEmail,
 } from '@/lib/sanitize';
+import logger from '@/lib/logger';
 
 /**
  * Server Action for Volunteer Sign Up (initial auth info)
@@ -46,20 +52,17 @@ export async function volunteerSignUpAction(data: VolunteerSignUpRequest): Promi
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    // SECURITY: Never log sensitive authentication data including passwords
-    console.log('Server Action: volunteerSignUpAction called');
-
+    logger.log('[Server Action] volunteerSignUpAction called');
+    
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: VolunteerSignUpRequest = {
-      authInfo: {
-        email: sanitizeEmail(data.authInfo.email),
-        password: sanitizePassword(data.authInfo.password),
-        confirmPassword: sanitizePassword(data.authInfo.confirmPassword),
-        hasAgreedToTermsAndCondition: data.authInfo.hasAgreedToTermsAndCondition,
-      },
+      email: sanitizeEmail(data.email),
+      password: sanitizePassword(data.password),
+      confirmPassword: sanitizePassword(data.confirmPassword),
+      hasAgreedToTermsAndCondition: data.hasAgreedToTermsAndCondition,
     };
 
-    if (!isValidEmail(sanitizedData.authInfo.email)) {
+    if (!isValidEmail(sanitizedData.email)) {
       return {
         success: false,
         error: 'Please enter a valid email address',
@@ -67,7 +70,18 @@ export async function volunteerSignUpAction(data: VolunteerSignUpRequest): Promi
     }
 
     const response: ApiResponse<unknown> = await volunteerSignUp(sanitizedData);
-    console.log('Server Action: API response received');
+    
+    logger.log('[Server Action] volunteerSignUpAction completed');
+
+    // Set user role cookie for volunteer
+    const cookieStore = await cookies();
+    cookieStore.set('user_role', 'volunteer', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+    });
 
     return {
       success: true,
@@ -75,7 +89,7 @@ export async function volunteerSignUpAction(data: VolunteerSignUpRequest): Promi
       message: response.message,
     };
   } catch (error) {
-    console.log('Server Action: Error caught:', error);
+    logger.log('[Server Action] volunteerSignUpAction error:', error);
     const apiError = error as ApiError;
 
     // Return the actual API error message
@@ -100,20 +114,17 @@ export async function organizationSignUpAction(data: OrganizationSignUpRequest):
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    // SECURITY: Never log sensitive authentication data including passwords
-    console.log('Server Action: organizationSignUpAction called');
-
+    logger.log('[Server Action] organizationSignUpAction called');
+    
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: OrganizationSignUpRequest = {
-      foundationAdminInfo: {
-        email: sanitizeEmail(data.foundationAdminInfo.email),
-        password: sanitizePassword(data.foundationAdminInfo.password),
-        confirmPassword: sanitizePassword(data.foundationAdminInfo.confirmPassword),
-        hasAgreedToTermsAndCondition: data.foundationAdminInfo.hasAgreedToTermsAndCondition,
-      },
+      email: sanitizeEmail(data.email),
+      password: sanitizePassword(data.password),
+      confirmPassword: sanitizePassword(data.confirmPassword),
+      hasAgreedToTermsAndCondition: data.hasAgreedToTermsAndCondition,
     };
 
-    if (!isValidEmail(sanitizedData.foundationAdminInfo.email)) {
+    if (!isValidEmail(sanitizedData.email)) {
       return {
         success: false,
         error: 'Please enter a valid email address',
@@ -121,7 +132,18 @@ export async function organizationSignUpAction(data: OrganizationSignUpRequest):
     }
 
     const response: ApiResponse<unknown> = await organizationSignUp(sanitizedData);
-    console.log('Server Action: API response received');
+    
+    logger.log('[Server Action] organizationSignUpAction completed');
+
+    // Set user role cookie for organization
+    const cookieStore = await cookies();
+    cookieStore.set('user_role', 'organization', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+    });
 
     return {
       success: true,
@@ -129,7 +151,7 @@ export async function organizationSignUpAction(data: OrganizationSignUpRequest):
       message: response.message,
     };
   } catch (error) {
-    console.log('Server Action: Error caught:', error);
+    logger.log('[Server Action] organizationSignUpAction error:', error);
     const apiError = error as ApiError;
 
     // Return the actual API error message
@@ -154,22 +176,23 @@ export async function verifyOtpAction(data: OtpVerificationRequest): Promise<{
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
+    logger.log('[Server Action] verifyOtpAction called');
+    
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: OtpVerificationRequest = {
-      email: sanitizeEmail(data.email),
       otpCode: sanitizeOtp(data.otpCode),
     };
 
-    if (!isValidEmail(sanitizedData.email)) {
+    if (!sanitizedData.otpCode || sanitizedData.otpCode.length !== 6) {
       return {
         success: false,
-        error: 'Please enter a valid email address',
+        error: 'Please enter a valid 6-digit OTP',
       };
     }
 
-    console.log('Server Action: verifyOtpAction called');
     const response: ApiResponse<unknown> = await verifyOtp(sanitizedData);
-    console.log('Server Action: API response received:', JSON.stringify(response, null, 2));
+    
+    logger.log('[Server Action] verifyOtpAction completed');
 
     return {
       success: true,
@@ -177,7 +200,7 @@ export async function verifyOtpAction(data: OtpVerificationRequest): Promise<{
       message: response.message,
     };
   } catch (error) {
-    console.log('Server Action: Error caught:', error);
+    logger.log('[Server Action] verifyOtpAction error:', error);
     const apiError = error as ApiError;
 
     // Return the actual API error message
@@ -206,6 +229,8 @@ export async function resendOtpAction(data: ResendOtpRequest): Promise<{
     const sanitizedData: ResendOtpRequest = {
       email: sanitizeEmail(data.email),
       purpose: data.purpose,
+      includeAlphabet: data.includeAlphabet,
+      notificationType: data.notificationType,
     };
 
     if (!isValidEmail(sanitizedData.email)) {
@@ -215,9 +240,9 @@ export async function resendOtpAction(data: ResendOtpRequest): Promise<{
       };
     }
 
-    console.log('Server Action: resendOtpAction called');
+    logger.log('[Server Action] resendOtpAction called');
     const response: ApiResponse<unknown> = await resendOtp(sanitizedData);
-    console.log('Server Action: API response received:', JSON.stringify(response, null, 2));
+    logger.log('[Server Action] resendOtpAction completed');
 
     return {
       success: true,
@@ -225,7 +250,7 @@ export async function resendOtpAction(data: ResendOtpRequest): Promise<{
       message: response.message,
     };
   } catch (error) {
-    console.log('Server Action: Error caught:', error);
+    logger.log('[Server Action] resendOtpAction error:', error);
     const apiError = error as ApiError;
 
     // Return the actual API error message
@@ -248,9 +273,8 @@ export async function loginAction(data: LoginRequestModel): Promise<{
   error?: string;
 }> {
   try {
-    // SECURITY: Never log login credentials
-    console.log('Server Action: loginAction called');
-
+    logger.log('[Server Action] loginAction called');
+    
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: LoginRequestModel = {
       email: sanitizeEmail(data.email),
@@ -268,16 +292,53 @@ export async function loginAction(data: LoginRequestModel): Promise<{
     }
 
     const response: ApiResponse<unknown> = await login(sanitizedData);
+    logger.log('[Server Action] loginAction completed');
+    logger.log('[Server Action] Full login response:', JSON.stringify(response.data, null, 2));
 
     // SECURITY: Store tokens in HTTP-only cookies for security
     const loginData = response.data as Record<string, unknown> | undefined;
     
     if (loginData) {
+      logger.log('[Server Action] loginData keys:', Object.keys(loginData));
+      logger.log('[Server Action] loginData.nameid:', loginData.nameid);
+      logger.log('[Server Action] loginData.email:', loginData.email);
+      logger.log('[Server Action] loginData.userProfile:', loginData.userProfile);
+      
+      // TEMPORARY WORKAROUND: Extract user data from JWT token since userProfile is null
+      // This will be removed once backend fixes the userProfile field
+      let userData: Record<string, unknown> | null = null;
+      if ('accessToken' in loginData && typeof loginData.accessToken === 'string') {
+        try {
+          const tokenParts = loginData.accessToken.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            logger.log('[Server Action] Decoded JWT payload:', payload);
+            userData = {
+              id: payload.nameid || payload.sub || '',
+              email: payload.email || payload.unique_name || '',
+              role: payload.role || '',
+              firstName: payload.given_name || '',
+              lastName: payload.family_name || '',
+              organizationName: payload.OrganizationName || '',
+              foundationId: payload.FoundationId || '',
+            };
+            logger.log('[Server Action] Extracted user data from JWT:', userData);
+          }
+        } catch (error) {
+          logger.error('[Server Action] Failed to decode JWT:', error);
+        }
+      }
+      
+      // Attach extracted user data to loginData for use in client
+      if (userData) {
+        (loginData as Record<string, unknown>).extractedUserData = userData;
+      }
+      
       const cookieStore = await cookies();
       
-      // Store access token
+      // Store access token as auth_token for consistency
       if ('accessToken' in loginData && typeof loginData.accessToken === 'string') {
-        cookieStore.set('access_token', loginData.accessToken, {
+        cookieStore.set('auth_token', loginData.accessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
@@ -302,8 +363,39 @@ export async function loginAction(data: LoginRequestModel): Promise<{
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 7, // 1 week
+          path: '/',
         });
       }
+      
+      // Store onboarding status in cookie for redirect logic
+      if ('hasCompletedOnboarding' in loginData) {
+        cookieStore.set('has_completed_onboarding', String(loginData.hasCompletedOnboarding), {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+          path: '/',
+        });
+      }
+      
+      // Store last completed page for onboarding resume
+      if (loginData && 'lastCompletedPage' in loginData && typeof loginData.lastCompletedPage === 'number') {
+        cookieStore.set('last_completed_page', String(loginData.lastCompletedPage), {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+          path: '/',
+        });
+      }
+      
+      logger.log('[Server Action] Returning loginData with extractedUserData:', (loginData as Record<string, unknown>).extractedUserData);
+      
+      return {
+        success: true,
+        data: loginData,
+        message: 'Login successful',
+      };
     }
 
     return {
@@ -361,7 +453,7 @@ export async function resetPasswordAction(email: string): Promise<{
 
 /**
  * Server Action for Logout
- * Removes the auth token from HTTP-only cookie
+ * Removes the auth token from HTTP-only cookie and clears all auth-related data
  */
 export async function logoutAction(): Promise<{
   success: boolean;
@@ -369,8 +461,41 @@ export async function logoutAction(): Promise<{
 }> {
   try {
     const cookieStore = await cookies();
-    cookieStore.delete('auth_token');
-    cookieStore.delete('user_role');
+    
+    // Delete all auth-related cookies by setting them to expire immediately
+    const cookiesToDelete = [
+      'auth_token',
+      'access_token',
+      'user_role',
+      'refresh_token',
+      'has_completed_onboarding',
+      'last_completed_page',
+    ];
+    
+    cookiesToDelete.forEach(cookieName => {
+      // Try multiple methods to ensure cookie deletion
+      cookieStore.delete(cookieName);
+      cookieStore.set(cookieName, '', { 
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === 'production', 
+        sameSite: 'lax', 
+        maxAge: 0, 
+        path: '/',
+        expires: new Date(0),
+      });
+    });
+
+    // Also clear with different path variations to ensure all instances are deleted
+    cookiesToDelete.forEach(cookieName => {
+      cookieStore.set(cookieName, '', { 
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === 'production', 
+        sameSite: 'lax', 
+        maxAge: 0, 
+        path: '',
+        expires: new Date(0),
+      });
+    });
 
     return {
       success: true,
@@ -379,6 +504,100 @@ export async function logoutAction(): Promise<{
     return {
       success: false,
       error: 'Failed to logout',
+    };
+  }
+}
+
+/**
+ * Server Action for Token Validation
+ * Validates if the current token is still valid by calling a lightweight API endpoint
+ * This is called from client-side to check authentication status on page refresh
+ */
+export async function validateTokenAction(): Promise<{
+  success: boolean;
+  isValid: boolean;
+  user?: {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+    accountType?: string;
+  };
+  error?: string;
+}> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
+
+    if (!token) {
+      return {
+        success: true,
+        isValid: false,
+      };
+    }
+
+    // Try to call a lightweight endpoint to validate the token
+    // Using a GET request to get current user info (this validates the token)
+    const apiBaseUrl = process.env.API_BASE_URL;
+    if (!apiBaseUrl) {
+      // Fallback: if no API base URL, assume token is invalid
+      return {
+        success: true,
+        isValid: false,
+        error: 'API base URL not configured',
+      };
+    }
+
+    try {
+      // Try to get current user info - this validates the token
+      const response = await fetch(`${apiBaseUrl}/api/v1/Auth/current-user`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      });
+
+      if (response.status === 401) {
+        // Token is invalid or expired
+        return {
+          success: true,
+          isValid: false,
+        };
+      }
+
+      if (!response.ok) {
+        // If endpoint doesn't exist, try another approach
+        // For now, assume token is valid if it exists (temporary)
+        return {
+          success: true,
+          isValid: !!token,
+        };
+      }
+
+      const data = await response.json();
+
+      return {
+        success: true,
+        isValid: true,
+        user: data,
+      };
+    } catch (fetchError) {
+      // If fetch fails, assume token is invalid
+      logger.error('Token validation failed, assuming token is invalid');
+      return {
+        success: true,
+        isValid: false,
+      };
+    }
+  } catch (error) {
+    logger.error('Token validation error:', error);
+    return {
+      success: false,
+      isValid: false,
+      error: 'Token validation failed',
     };
   }
 }
@@ -396,44 +615,40 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    // SECURITY: Never log sensitive data
-    console.log('🔵 [Server Action] volunteerOnboardingAction called');
-    console.log('📤 [Server Action] Request Payload:', JSON.stringify(data, null, 2));
-
+    logger.log('[Server Action] volunteerOnboardingAction called');
+    
     // SECURITY: Server-side sanitization
+    // Convert nested structure to flat multipart/form-data format
     const sanitizedData: VolunteerOnboardingRequest = {
-      onboardingMetaData: {
-        accountType: data.onboardingMetaData.accountType,
-        currentPage: data.onboardingMetaData.currentPage,
-      },
-      bioData: {
-        firstName: data.bioData.firstName.trim(),
-        lastName: data.bioData.lastName.trim(),
-        gender: data.bioData.gender,
-        dateOfBirth: data.bioData.dateOfBirth,
-      },
-      locationDto: {
-        address: data.locationDto.address?.trim() || '',
-        city: data.locationDto.city?.trim() || '',
-        zipCode: data.locationDto.zipCode?.trim() || '',
-        countryId: data.locationDto.countryId?.trim() || '',
-        stateId: data.locationDto.stateId?.trim() || '',
-      },
-      interest: {
-        names: data.interest.names || [],
-      },
-      skill: {
-        names: data.skill.names || [],
-      },
-      profileAndBioData: {
-        bio: data.profileAndBioData.bio?.trim() || '',
-        profileImageurl: data.profileAndBioData.profileImageurl,
-      },
+      'onboardingMetaData.AccountType': data['onboardingMetaData.AccountType'],
+      'onboardingMetaData.CurrentPage': data['onboardingMetaData.CurrentPage'],
+      'BioData.FirstName': data['BioData.FirstName'].trim(),
+      'BioData.LastName': data['BioData.LastName'].trim(),
+      'BioData.Gender': data['BioData.Gender'],
+      'BioData.DateOfBirth': data['BioData.DateOfBirth'],
+      'LocationDto.Address': data['LocationDto.Address']?.trim() || '',
+      'LocationDto.City': data['LocationDto.City']?.trim() || '',
+      'LocationDto.ZipCode': data['LocationDto.ZipCode']?.trim() || '',
+      'LocationDto.Country': data['LocationDto.Country']?.trim() || '',
+      'LocationDto.State': data['LocationDto.State']?.trim() || '',
+      'Interest.Names': data['Interest.Names'] || [],
+      'Skill.Names': data['Skill.Names'] || [],
+      'ProfileAndBioData.Bio': data['ProfileAndBioData.Bio']?.trim() || '',
+      'ProfileAndBioData.ProfileImage': data['ProfileAndBioData.ProfileImage'],
     };
 
     const response: ApiResponse<unknown> = await volunteerOnboarding(sanitizedData);
-    console.log('🟢 [Server Action] API response received');
-    console.log('✅ [Server Action] Response Data:', JSON.stringify(response, null, 2));
+    logger.log('[Server Action] volunteerOnboardingAction completed');
+
+    // Set user role cookie for volunteer
+    const cookieStore = await cookies();
+    cookieStore.set('user_role', 'volunteer', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+    });
 
     return {
       success: true,
@@ -441,7 +656,7 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
       message: response.message,
     };
   } catch (error) {
-    console.log('🔴 [Server Action] Error caught:', error);
+    logger.log('[Server Action] volunteerOnboardingAction error:', error);
     const apiError = error as ApiError;
 
     return {
@@ -465,10 +680,8 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    // SECURITY: Never log sensitive data
-    console.log('🔵 [Server Action] organizationOnboardingAction called');
-    console.log('📤 [Server Action] Request Payload:', JSON.stringify(data, null, 2));
-
+    logger.log('[Server Action] organizationOnboardingAction called');
+    
     // SECURITY: Server-side sanitization
     const sanitizedData: OrganizationOnboardingRequest = {
       metaData: {
@@ -503,8 +716,17 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
     };
 
     const response: ApiResponse<unknown> = await organizationOnboarding(sanitizedData);
-    console.log('🟢 [Server Action] API response received');
-    console.log('✅ [Server Action] Response Data:', JSON.stringify(response, null, 2));
+    logger.log('[Server Action] organizationOnboardingAction completed');
+
+    // Set user role cookie for organization
+    const cookieStore = await cookies();
+    cookieStore.set('user_role', 'organization', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+    });
 
     return {
       success: true,
@@ -512,7 +734,7 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
       message: response.message,
     };
   } catch (error) {
-    console.log('🔴 [Server Action] Error caught:', error);
+    logger.log('[Server Action] organizationOnboardingAction error:', error);
     const apiError = error as ApiError;
 
     return {
@@ -526,7 +748,7 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
 /**
  * Server Action to Get Countries
  * This can be called from client components but executes on the server
- * GET /api/v1/countries/countries
+ * GET /api/v1/countries/get-all-countries
  */
 export async function getCountriesAction(): Promise<{
   success: boolean;
@@ -534,16 +756,16 @@ export async function getCountriesAction(): Promise<{
   error?: string;
 }> {
   try {
-    console.log('🔵 [Server Action] getCountriesAction called');
+    logger.log('[Server Action] getCountriesAction called');
     const countries = await getCountries();
-    console.log('🟢 [Server Action] Countries fetched successfully');
+    logger.log('[Server Action] getCountriesAction completed');
 
     return {
       success: true,
       data: countries,
     };
   } catch (error) {
-    console.log('🔴 [Server Action] Error fetching countries:', error);
+    logger.log('[Server Action] getCountriesAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,
@@ -555,7 +777,7 @@ export async function getCountriesAction(): Promise<{
 /**
  * Server Action to Get States by Country ID
  * This can be called from client components but executes on the server
- * GET /api/v1/countries/states?countryId={countryId}
+ * GET /api/State/get-country-states-by-countryid?countryId={countryId}
  */
 export async function getStatesAction(countryId: string): Promise<{
   success: boolean;
@@ -563,20 +785,107 @@ export async function getStatesAction(countryId: string): Promise<{
   error?: string;
 }> {
   try {
-    console.log('🔵 [Server Action] getStatesAction called with countryId:', countryId);
+    logger.log('[Server Action] getStatesAction called with countryId:', countryId);
     const states = await getStates(countryId);
-    console.log('🟢 [Server Action] States fetched successfully');
+    logger.log('[Server Action] getStatesAction completed');
 
     return {
       success: true,
       data: states,
     };
   } catch (error) {
-    console.log('🔴 [Server Action] Error fetching states:', error);
+    logger.log('[Server Action] getStatesAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,
       error: apiError.message || 'Failed to fetch states',
+    };
+  }
+}
+
+/**
+ * Server Action to Get All Causes
+ * This can be called from client components but executes on the server
+ * GET /api/Cause/get-all-causes
+ */
+export async function getCausesAction(): Promise<{
+  success: boolean;
+  data?: Cause[];
+  error?: string;
+}> {
+  try {
+    logger.log('[Server Action] getCausesAction called');
+    const causes = await getCauses();
+    logger.log('[Server Action] getCausesAction completed');
+
+    return {
+      success: true,
+      data: causes,
+    };
+  } catch (error) {
+    logger.log('[Server Action] getCausesAction error:', error);
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch causes',
+    };
+  }
+}
+
+/**
+ * Server Action to Get All Skills
+ * This can be called from client components but executes on the server
+ * GET /api/Skill/get-all-skill
+ */
+export async function getSkillsAction(): Promise<{
+  success: boolean;
+  data?: Skill[];
+  error?: string;
+}> {
+  try {
+    logger.log('[Server Action] getSkillsAction called');
+    const skills = await getSkills();
+    logger.log('[Server Action] getSkillsAction completed');
+
+    return {
+      success: true,
+      data: skills,
+    };
+  } catch (error) {
+    logger.log('[Server Action] getSkillsAction error:', error);
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch skills',
+    };
+  }
+}
+
+/**
+ * Server Action to Upload File
+ * This can be called from client components but executes on the server
+ * POST /api/FileUploads/file-upload
+ */
+export async function uploadFileAction(file: File): Promise<{
+  success: boolean;
+  data?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[Server Action] uploadFileAction called');
+    const fileUrl = await uploadFile(file);
+    logger.log('[Server Action] uploadFileAction completed');
+
+    return {
+      success: true,
+      data: fileUrl,
+    };
+  } catch (error) {
+    logger.log('[Server Action] uploadFileAction error:', error);
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to upload file',
     };
   }
 }

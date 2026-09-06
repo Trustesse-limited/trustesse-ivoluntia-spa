@@ -106,6 +106,7 @@ export function validateLocationForm(formData: {
 export function validateOrgAboutForm(formData: {
   name: string;
   category: string;
+  website: string;
   mission: string;
 }): ValidationResult {
   const errors: Record<string, string> = {};
@@ -114,8 +115,12 @@ export function validateOrgAboutForm(formData: {
     errors.name = "Organization name is required";
   }
 
-  if (!formData.category) {
+  if (!formData.category.trim()) {
     errors.category = "Category is required";
+  }
+
+  if (!formData.website.trim()) {
+    errors.website = "Website is required";
   }
 
   if (!formData.mission.trim()) {
