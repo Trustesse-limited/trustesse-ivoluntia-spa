@@ -24,6 +24,25 @@ import {
 } from '@/types/api';
 import { useAuthStore, useOnboardingStore } from '@/store';
 import type { User, UserRole } from '@/store/authStore';
+import logger from '@/lib/logger';
+
+interface LoginDataWithExtractedUser {
+  userProfile?: User;
+  extractedUserData?: {
+    id: string;
+    email: string;
+    role: UserRole;
+    firstName: string;
+    lastName: string;
+  };
+  nameid?: string;
+  email?: string;
+  accountType?: string;
+  accessToken?: string;
+  hasCompletedOnboarding?: boolean;
+  lastCompletedPage?: number;
+  [key: string]: unknown;
+}
 
 export interface EnhancedLoginResult {
   success: boolean;
@@ -317,7 +336,7 @@ export function useAuthActions() {
         });
 
         // Process login response data for redirect logic
-        const loginData = result.data as Record<string, unknown> | undefined;
+        const loginData = result.data as LoginDataWithExtractedUser | undefined;
         
         if (loginData) {
           // Extract account type and onboarding status
@@ -325,9 +344,9 @@ export function useAuthActions() {
           const hasCompletedOnboarding = loginData.hasCompletedOnboarding as boolean | undefined;
           const lastCompletedPage = loginData.lastCompletedPage as number | undefined;
           
-          console.log('🔍 [Login] Account Type:', accountType);
-          console.log('🔍 [Login] Has Completed Onboarding:', hasCompletedOnboarding);
-          console.log('🔍 [Login] Last Completed Page:', lastCompletedPage);
+          logger.log('[Login] Account Type:', accountType);
+          logger.log('[Login] Has Completed Onboarding:', hasCompletedOnboarding);
+          logger.log('[Login] Last Completed Page:', lastCompletedPage);
           
           // Preserve local onboarding data - don't clear it
           // Instead, update the onboarding store with the latest data from login API
@@ -348,9 +367,9 @@ export function useAuthActions() {
           }
           
           // Update auth store with user data
-          console.log('🔍 [Login] loginData keys:', Object.keys(loginData));
-          console.log('🔍 [Login] loginData.userProfile:', loginData.userProfile);
-          console.log('🔍 [Login] loginData.extractedUserData:', (loginData as any).extractedUserData);
+          logger.log('[Login] loginData keys:', Object.keys(loginData));
+          logger.log('[Login] loginData.userProfile:', loginData.userProfile);
+          logger.log('[Login] loginData.extractedUserData:', loginData.extractedUserData);
           
           if (loginData.userProfile && typeof loginData.userProfile === 'object') {
             const userProfile = loginData.userProfile as User;
@@ -359,11 +378,11 @@ export function useAuthActions() {
               ...userProfile,
               accountType: accountType as 'Volunteer' | 'Organization' | 'Admin',
             };
-            console.log('🔵 [Login] Using userProfile:', userWithAccountType);
+            logger.log('[Login] Using userProfile:', userWithAccountType);
             setLogin(userWithAccountType, loginData.accessToken as string || '');
-          } else if ((loginData as any).extractedUserData) {
+          } else if (loginData.extractedUserData) {
             // TEMPORARY WORKAROUND: Use extracted user data from JWT since userProfile is null
-            const extracted = (loginData as any).extractedUserData;
+            const extracted = loginData.extractedUserData;
             const userFromJwt: User = {
               id: extracted.id as string,
               email: extracted.email as string,
@@ -374,7 +393,7 @@ export function useAuthActions() {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            console.log('🔵 [Login] Using extracted user data from JWT:', userFromJwt);
+            logger.log('[Login] Using extracted user data from JWT:', userFromJwt);
             setLogin(userFromJwt, loginData.accessToken as string || '');
           } else {
             // If userProfile is not available, create minimal user object with account type
@@ -385,7 +404,7 @@ export function useAuthActions() {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            console.log('🔵 [Login] Using minimal user object:', minimalUser);
+            logger.log('[Login] Using minimal user object:', minimalUser);
             setLogin(minimalUser, loginData.accessToken as string || '');
           }
           
@@ -394,7 +413,7 @@ export function useAuthActions() {
             // Redirect to appropriate onboarding flow
             const normalizedAccountType = accountType?.toLowerCase();
             if (normalizedAccountType === 'organization') {
-              console.log('🚀 [Login] Redirecting to organization onboarding');
+              logger.log('[Login] Redirecting to organization onboarding');
               return {
                 success: true, 
                 data: result.data, 
@@ -406,7 +425,7 @@ export function useAuthActions() {
                 hasCompletedOnboarding: hasCompletedOnboarding || false
               } as EnhancedLoginResult;
             } else if (normalizedAccountType === 'volunteer') {
-              console.log('🚀 [Login] Redirecting to volunteer onboarding');
+              logger.log('[Login] Redirecting to volunteer onboarding');
               return {
                 success: true, 
                 data: result.data, 
@@ -422,7 +441,7 @@ export function useAuthActions() {
             // User has completed onboarding, redirect to appropriate dashboard
             const normalizedAccountType = accountType?.toLowerCase();
             if (normalizedAccountType === 'organization') {
-              console.log('🚀 [Login] Redirecting to organization dashboard');
+              logger.log('[Login] Redirecting to organization dashboard');
               return { 
                 success: true, 
                 data: result.data, 
@@ -432,7 +451,7 @@ export function useAuthActions() {
                 accountType: 'organization'
               } as EnhancedLoginResult;
             } else if (normalizedAccountType === 'volunteer') {
-              console.log('🚀 [Login] Redirecting to volunteer dashboard');
+              logger.log('[Login] Redirecting to volunteer dashboard');
               return { 
                 success: true, 
                 data: result.data, 
@@ -442,7 +461,7 @@ export function useAuthActions() {
                 accountType: 'volunteer'
               } as EnhancedLoginResult;
             } else if (normalizedAccountType === 'admin') {
-              console.log('🚀 [Login] Redirecting to admin dashboard');
+              logger.log('[Login] Redirecting to admin dashboard');
               return { 
                 success: true, 
                 data: result.data, 

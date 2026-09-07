@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { FiHome, FiUser, FiActivity, FiHeart, FiAward, FiSettings } from 'react-icons/fi';
+import logger from '@/lib/logger';
 
 const navLinks = [
   { label: 'Home', href: '/home', icon: <FiHome /> },
@@ -17,18 +18,18 @@ async function VolunteerAuthWrapper({ children }: { children: React.ReactNode })
   const token = cookieStore.get('auth_token')?.value || cookieStore.get('access_token')?.value;
   const userRole = cookieStore.get('user_role')?.value;
   
-  console.log('=== VOLUNTEER LAYOUT SERVER-SIDE AUTH CHECK ===');
-  console.log('🔑 Token exists:', !!token);
-  console.log('👤 User Role:', userRole);
-  console.log('========================================');
+  logger.log('=== VOLUNTEER LAYOUT SERVER-SIDE AUTH CHECK ===');
+  logger.log('Token exists:', !!token);
+  logger.log('User Role:', userRole);
+  logger.log('========================================');
   
   if (!token) {
-    console.log('🚫 No token found in volunteer layout, redirecting to login');
+    logger.log('No token found in volunteer layout, redirecting to login');
     redirect('/login');
   }
   
   if (userRole !== 'volunteer') {
-    console.log('🚫 User is not volunteer, redirecting to login');
+    logger.log('User is not volunteer, redirecting to login');
     redirect('/login');
   }
   

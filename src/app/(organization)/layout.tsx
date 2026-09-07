@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FiHome, FiUser, FiBriefcase, FiCalendar, FiSettings } from 'react-icons/fi';
+import logger from '@/lib/logger';
 
 const navLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: <FiHome /> },
@@ -17,18 +18,18 @@ async function OrganizationAuthWrapper({ children }: { children: React.ReactNode
   const token = cookieStore.get('auth_token')?.value || cookieStore.get('access_token')?.value;
   const userRole = cookieStore.get('user_role')?.value;
   
-  console.log('=== ORGANIZATION LAYOUT SERVER-SIDE AUTH CHECK ===');
-  console.log('🔑 Token exists:', !!token);
-  console.log('👤 User Role:', userRole);
-  console.log('========================================');
+  logger.log('=== ORGANIZATION LAYOUT SERVER-SIDE AUTH CHECK ===');
+  logger.log('Token exists:', !!token);
+  logger.log('User Role:', userRole);
+  logger.log('========================================');
   
   if (!token) {
-    console.log('🚫 No token found in organization layout, redirecting to login');
+    logger.log('No token found in organization layout, redirecting to login');
     redirect('/login');
   }
   
   if (userRole !== 'organization') {
-    console.log('🚫 User is not organization, redirecting to login');
+    logger.log('User is not organization, redirecting to login');
     redirect('/login');
   }
   

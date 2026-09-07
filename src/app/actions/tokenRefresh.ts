@@ -1,6 +1,7 @@
 'use server';
 
 import { refreshAccessToken } from '@/lib/authToken.server';
+import logger from '@/lib/logger';
 
 /**
  * Server Action for Token Refresh
@@ -23,25 +24,25 @@ export async function refreshTokenAction(): Promise<{
   error?: string;
 }> {
   try {
-    console.log('🔄 [Server Action] refreshTokenAction called');
+    logger.log('[Server Action] refreshTokenAction called');
     
     const newAccessToken = await refreshAccessToken();
     
     if (!newAccessToken) {
-      console.log('🔴 [Server Action] refreshTokenAction failed - no token returned');
+      logger.log('[Server Action] refreshTokenAction failed - no token returned');
       return {
         success: false,
         error: 'Failed to refresh access token',
       };
     }
     
-    console.log('✅ [Server Action] refreshTokenAction completed');
+    logger.log('[Server Action] refreshTokenAction completed');
     
     return {
       success: true,
     };
   } catch (error) {
-    console.log('🔴 [Server Action] refreshTokenAction error:', error);
+    logger.log('[Server Action] refreshTokenAction error:', error);
     return {
       success: false,
       error: 'Failed to refresh access token',

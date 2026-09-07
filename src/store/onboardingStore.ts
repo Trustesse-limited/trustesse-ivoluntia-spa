@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PartialVolunteerSignUpDto } from '@/types/api';
 import { OnboardingState, OnboardingFormData, OrganizationOnboardingData } from '@/types/onboarding';
+import logger from '@/lib/logger';
 
 const initialFormData: PartialVolunteerSignUpDto = {
   metaData: {
@@ -193,11 +194,11 @@ export const useOnboardingStore = create<OnboardingState>()(
         const state = get();
         // Only clear if the email is different from the stored email
         if (email && state.currentUserEmail === email) {
-          console.log('🔍 [Onboarding] Same user logged in, preserving onboarding data');
+          logger.log('[Onboarding] Same user logged in, preserving onboarding data');
           return;
         }
         
-        console.log('🔍 [Onboarding] Different user or no email, clearing onboarding data');
+        logger.log('[Onboarding] Different user or no email, clearing onboarding data');
         set({
           currentStep: 0,
           isComplete: false,
@@ -225,7 +226,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       },
 
       clearAllOnboarding: () => {
-        console.log('🔍 [Onboarding] Force clearing all onboarding data');
+        logger.log('[Onboarding] Force clearing all onboarding data');
         set({
           currentStep: 0,
           isComplete: false,
