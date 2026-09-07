@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import logger from '@/lib/logger';
 import OnboardingClient from './OnboardingClient';
 
 async function OnboardingPage() {
@@ -8,15 +9,15 @@ async function OnboardingPage() {
   const hasCompletedOnboarding = cookieStore.get('has_completed_onboarding')?.value === 'true';
   const userRole = cookieStore.get('user_role')?.value;
   
-  console.log('=== ONBOARDING PAGE SERVER-SIDE AUTH CHECK ===');
-  console.log('🔑 Token exists:', !!token);
-  console.log('👤 User Role:', userRole);
-  console.log('✅ Has Completed Onboarding:', hasCompletedOnboarding);
-  console.log('========================================');
+  logger.log('=== ONBOARDING PAGE SERVER-SIDE AUTH CHECK ===');
+  logger.log('Token exists:', !!token);
+  logger.log('User Role:', userRole);
+  logger.log('Has Completed Onboarding:', hasCompletedOnboarding);
+  logger.log('========================================');
   
   // Only redirect if no token - let middleware handle the onboarding completion redirect
   if (!token) {
-    console.log('� No token found in onboarding page, redirecting to login');
+    logger.log('No token found in onboarding page, redirecting to login');
     redirect('/login');
   }
   

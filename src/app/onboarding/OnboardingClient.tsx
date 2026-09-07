@@ -7,6 +7,7 @@ import { useOnboardingStore } from "@/store";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import logger from '@/lib/logger';
 import { VolunteerFormData, OrganizationFormData } from "@/types";
 import { OrganizationOnboardingData } from "@/types/onboarding";
 import { PartialVolunteerSignUpDto, VolunteerOnboardingRequest, OrganizationOnboardingRequest } from "@/types/api";
@@ -179,8 +180,13 @@ const OnboardingContent: React.FC = () => {
   const { formData: onboardingFormData, switchAccountType, setCurrentStep, setComplete, updateFormData } = useOnboardingStore();
   const { volunteerOnboarding, organizationOnboarding, isLoading } = useAuthActions();
 
-  // Determine account type from onboarding store (set during signup)
-  const accountType = (onboardingFormData.metaData?.accountType?.toLowerCase() || "volunteer") as "volunteer" | "organization";
+  // Determine account type from query param first, then fall back to onboarding store
+  const queryType = searchParams.get('type')?.toLowerCase();
+  const accountType = (queryType || onboardingFormData.metaData?.accountType?.toLowerCase() || "volunteer") as "volunteer" | "organization";
+  
+  logger.log('[Onboarding Client] accountType from query:', queryType);
+  logger.log('[Onboarding Client] accountType from store:', onboardingFormData.metaData?.accountType);
+  logger.log('[Onboarding Client] final accountType:', accountType);
   
   // Filter steps based on account type
   const filteredSteps = steps.filter(s => s.isVolunteer === (accountType !== "organization"));
@@ -219,6 +225,9 @@ const OnboardingContent: React.FC = () => {
           skills: [],
         }
   );
+  
+  // Track if we've initialized form data from store to prevent overwriting
+  const hasInitializedRef = React.useRef(false);
 
   // On mount, restore the user's last step from query param or store
   useEffect(() => {
@@ -234,45 +243,49 @@ const OnboardingContent: React.FC = () => {
       setStep(Math.max(0, storedStep - 1));
     }
     
-    // Restore form data from store
-    if (accountType === "volunteer") {
-      const volunteerData = onboardingFormData as PartialVolunteerSignUpDto;
-      if (volunteerData.bioData) {
+    // Restore form data from store ONLY on first mount
+    // This prevents overwriting user's selections when they navigate back to a step
+    if (!hasInitializedRef.current) {
+      if (accountType === "volunteer") {
+        const volunteerData = onboardingFormData as PartialVolunteerSignUpDto;
+        if (volunteerData.bioData) {
+          setFormData({
+            firstName: volunteerData.bioData.firstName || "",
+            lastName: volunteerData.bioData.lastName || "",
+            otherNames: "",
+            sex: volunteerData.bioData.gender === 1 ? "male" : volunteerData.bioData.gender === 2 ? "female" : "",
+            dob: volunteerData.bioData.dateOfBirth || "",
+            country: volunteerData.locationDto?.countryId || "",
+            countryName: volunteerData.locationDto?.countryName || "",
+            state: volunteerData.locationDto?.stateId || "",
+            city: volunteerData.locationDto?.city || "",
+            zip: volunteerData.locationDto?.zipCode || "",
+            address: volunteerData.locationDto?.address || "",
+            interests: volunteerData.interest?.names || [],
+            skills: volunteerData.skill?.names || [],
+          });
+        }
+      } else if (accountType === "organization") {
+        const orgData = (onboardingFormData as OrganizationOnboardingData).orgData || {};
         setFormData({
-          firstName: volunteerData.bioData.firstName || "",
-          lastName: volunteerData.bioData.lastName || "",
-          otherNames: "",
-          sex: volunteerData.bioData.gender === 1 ? "male" : volunteerData.bioData.gender === 2 ? "female" : "",
-          dob: volunteerData.bioData.dateOfBirth || "",
-          country: volunteerData.locationDto?.countryId || "",
-          countryName: volunteerData.locationDto?.countryName || "",
-          state: volunteerData.locationDto?.stateId || "",
-          city: volunteerData.locationDto?.city || "",
-          zip: volunteerData.locationDto?.zipCode || "",
-          address: volunteerData.locationDto?.address || "",
-          interests: volunteerData.interest?.names || [],
-          skills: volunteerData.skill?.names || [],
-        });
-      }
-    } else if (accountType === "organization") {
-      const orgData = (onboardingFormData as OrganizationOnboardingData).orgData || {};
-      setFormData({
-        name: orgData.name || "",
-        category: orgData.category || "",
-        website: orgData.website || "",
-        mission: orgData.mission || "",
-        country: onboardingFormData.locationDto?.countryId || "",
-        countryName: onboardingFormData.locationDto?.countryName || "",
-        state: onboardingFormData.locationDto?.stateId || "",
-        city: onboardingFormData.locationDto?.city || "",
-        zip: onboardingFormData.locationDto?.zipCode || "",
+          name: orgData.name || "",
+          category: orgData.category || "",
+          website: orgData.website || "",
+          mission: orgData.mission || "",
+          country: onboardingFormData.locationDto?.countryId || "",
+          countryName: onboardingFormData.locationDto?.countryName || "",
+          state: onboardingFormData.locationDto?.stateId || "",
+          city: onboardingFormData.locationDto?.city || "",
+          zip: onboardingFormData.locationDto?.zipCode || "",
         address: onboardingFormData.locationDto?.address || "",
         causes: orgData.causes || [],
         logo: null,
         disclaimerAgreed: orgData.disclaimerAgreed || false,
       });
+      }
+      hasInitializedRef.current = true;
     }
-  }, [accountType, onboardingFormData, switchAccountType, searchParams, filteredSteps.length]);
+  }, [accountType, switchAccountType, searchParams, filteredSteps.length]);
 
   // Check if current step is valid
   const isStepValid = () => {

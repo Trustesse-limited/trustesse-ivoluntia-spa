@@ -50,7 +50,7 @@ const Page = () => {
       <div className='flex flex-col items-center w-full max-w-md mx-auto flex-grow'>
       <h1 className='text-center md:text-[32px] text-2xl font-[600] mt-16'>Forgot Password?</h1>
       <p className='text-center'>Dont worry, we will send you a reset link</p>
-      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-auto'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-4 md:mx-auto'>
          <InputComponent
                   label="Email Address"
                   placeholder="Enter email address"

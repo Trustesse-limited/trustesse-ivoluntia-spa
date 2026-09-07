@@ -202,7 +202,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
           ? 'Join our community of volunteers and make a difference' 
           : 'Register your organization and connect with volunteers'}
       </p>
-      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mx-auto'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mx-4 md:mx-auto'>
         <InputComponent
           label="Email Address"
           placeholder="Enter your email address"

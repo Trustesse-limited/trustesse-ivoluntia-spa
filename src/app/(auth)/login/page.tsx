@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React, { useState, useEffect } from 'react'
 import { InputComponent } from '@/components/input'
@@ -87,15 +87,17 @@ const Page = () => {
       // Use the enhanced redirect information from the login hook
       const resultData = result as { redirect?: string; requiresOnboarding?: boolean; accountType?: string; lastCompletedPage?: number; hasCompletedOnboarding?: boolean };
       
-      console.log('🔍 [Login Page] Login successful, resultData:', resultData);
+      logger.log('[Login Page] Login successful, resultData:', resultData);
+      logger.log('[Login Page] resultData.redirect:', resultData.redirect);
+      logger.log('[Login Page] resultData.accountType:', resultData.accountType);
       
       if (resultData.redirect) {
         logger.log('[Login Page] Redirecting to:', resultData.redirect, 'Account Type:', resultData.accountType);
-        // No longer passing query params - data is stored in onboarding store by login hook
-        console.log('🚀 [Login Page] Calling router.push to:', resultData.redirect);
+        logger.log('[Login Page] Calling router.push to:', resultData.redirect);
         router.push(resultData.redirect);
         return; // Important: return early to prevent fallback logic
       } else {
+        logger.log('[Login Page] No redirect provided, using fallback logic');
         // Fallback to original logic if redirect not provided
         const loginData = result.data as Record<string, unknown> | undefined;
         const hasCompletedOnboarding = loginData?.hasCompletedOnboarding as boolean | undefined;
@@ -103,24 +105,35 @@ const Page = () => {
         const accountType = loginData?.accountType as string | undefined;
         const normalizedAccountType = accountType?.toLowerCase();
 
+        logger.log('[Login Page] Fallback - hasCompletedOnboarding:', hasCompletedOnboarding);
+        logger.log('[Login Page] Fallback - accountType:', accountType);
+        logger.log('[Login Page] Fallback - normalizedAccountType:', normalizedAccountType);
+
         if (hasCompletedOnboarding) {
           // User completed onboarding, redirect to appropriate dashboard
           if (normalizedAccountType === 'organization') {
+            logger.log('[Login Page] Fallback redirect to /org/dashboard');
             router.push('/org/dashboard');
           } else if (normalizedAccountType === 'volunteer') {
+            logger.log('[Login Page] Fallback redirect to /volunteer');
             router.push('/volunteer');
           } else if (normalizedAccountType === 'admin') {
+            logger.log('[Login Page] Fallback redirect to /admin/dashboard');
             router.push('/admin/dashboard');
           } else {
+            logger.log('[Login Page] Fallback redirect to /dashboard');
             router.push('/dashboard');
           }
         } else {
           // Redirect to appropriate onboarding based on account type
           if (normalizedAccountType === 'organization') {
+            logger.log('[Login Page] Fallback redirect to /onboarding?type=organization');
             router.push('/onboarding?type=organization');
           } else if (normalizedAccountType === 'volunteer') {
+            logger.log('[Login Page] Fallback redirect to /onboarding?type=volunteer');
             router.push('/onboarding?type=volunteer');
           } else {
+            logger.log('[Login Page] Fallback redirect to /onboarding');
             router.push('/onboarding');
           }
         }
@@ -164,7 +177,7 @@ const Page = () => {
       <div className='flex flex-col items-center w-full max-w-md mx-auto flex-grow'>
       <h1 className='md:text-[32px] text-2xl text-center font-[600] mt-16'>Welcome Back</h1>
       <p className='text-center'>Please enter your details</p>
-      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-auto'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-4 md:mx-auto'>
          <InputComponent
                   label="Email Address"
                   placeholder="Enter email address"

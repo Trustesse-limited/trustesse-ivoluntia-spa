@@ -135,7 +135,7 @@ function VerifyContent() {
   return (
     <>
     <div className='flex flex-col items-center w-full min-h-screen'>
-      <div className='flex flex-col items-center w-full max-w-md mx-auto mt-20 flex-grow'>
+      <div className='flex flex-col items-center w-full max-w-md mx-4 md:mx-auto mt-20 flex-grow'>
         <h1 className='text-3xl text-center font-medium mt-16'>Verify email</h1>
         <p className='text-sm text-[#424242] text-left pt-3'>
           We sent an OTP code to {maskedEmail}. Please enter it below to continue

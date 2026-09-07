@@ -1,18 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-
-// Helper function for production-safe logging in middleware
-const middlewareLogger = {
-  log: (...args: unknown[]) => {
-    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-      console.log(...args);
-    }
-  }
-};
+import logger from '@/lib/logger';
 
 // Public routes that don't require authentication
 const publicRoutes = [
-  '/',
   '/login',
   '/signup',
   '/forgotpassword',
@@ -66,24 +57,27 @@ export function middleware(request: NextRequest) {
   const allCookies = request.cookies.getAll();
   const cookieNames = allCookies.map(c => c.name).join(', ');
   
-  console.log('=== MIDDLEWARE AUTHENTICATION CHECK ===');
-  console.log('📍 Pathname:', pathname);
-  console.log('🍪 All Cookies:', cookieNames || 'NONE');
-  console.log('🔑 Auth Token exists:', !!token);
-  console.log('🔑 Auth Token value:', token ? `${token.substring(0, 20)}...` : 'NONE');
-  console.log('👤 User Role:', accountType || 'NONE');
-  console.log('✅ Has Completed Onboarding:', hasCompletedOnboarding);
-  console.log('🔒 Protected Routes:', protectedRoutes.join(', '));
-  console.log('🔒 Is Protected Route:', protectedRoutes.some(route => pathname.startsWith(route)));
-  console.log('🔓 Public Routes:', publicRoutes.join(', '));
-  console.log('🔓 Auth Routes:', authRoutes.join(', '));
-  console.log('========================================');
+  logger.log('=== MIDDLEWARE AUTHENTICATION CHECK ===');
+  logger.log('Pathname:', pathname);
+  logger.log('Pathname === "/":', pathname === '/');
+  logger.log('All Cookies:', cookieNames || 'NONE');
+  logger.log('Auth Token exists:', !!token);
+  logger.log('Auth Token value:', token ? `${token.substring(0, 20)}...` : 'NONE');
+  logger.log('User Role:', accountType || 'NONE');
+  logger.log('Has Completed Onboarding:', hasCompletedOnboarding);
+  logger.log('Protected Routes:', protectedRoutes.join(', '));
+  logger.log('Is Protected Route:', protectedRoutes.some(route => pathname.startsWith(route)));
+  logger.log('Public Routes:', publicRoutes.join(', '));
+  logger.log('Auth Routes:', authRoutes.join(', '));
+  logger.log('Is Public Route:', publicRoutes.includes(pathname));
+  logger.log('Is Auth Route:', authRoutes.some(route => pathname.startsWith(route)));
+  logger.log('========================================');
   
   // If trying to access protected route without token, redirect to login
   // Exception: Allow authenticated users to access onboarding even if it's in protected routes
   if (protectedRoutes.some(route => pathname.startsWith(route)) && !token) {
-    console.log('🚫 BLOCKING: No token for protected route, redirecting to login');
-    console.log('🚫 Protected route accessed:', pathname);
+    logger.log('BLOCKING: No token for protected route, redirecting to login');
+    logger.log('Protected route accessed:', pathname);
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
@@ -91,9 +85,9 @@ export function middleware(request: NextRequest) {
   
   // Special handling for onboarding: allow authenticated users who haven't completed onboarding
   if (pathname.startsWith('/onboarding') && token) {
-    console.log('🔐 Checking onboarding access');
+    logger.log('Checking onboarding access');
     if (hasCompletedOnboarding) {
-      console.log('🔄 User has completed onboarding, redirecting to dashboard');
+      logger.log('User has completed onboarding, redirecting to dashboard');
       if (accountType === 'volunteer') {
         return NextResponse.redirect(new URL('/home', request.url));
       } else if (accountType === 'organization') {
@@ -102,21 +96,25 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/admin-dashboard', request.url));
       }
     } else {
-      console.log('✅ ALLOWING: User can access onboarding (not completed yet)');
+      logger.log('ALLOWING: User can access onboarding (not completed yet)');
       return NextResponse.next();
     }
   }
   
-  console.log('✅ Token present, checking route access...');
+  logger.log('Token present, checking route access...');
   
   // If authenticated and trying to access auth routes, redirect based on onboarding status
   if (token && authRoutes.some(route => pathname.startsWith(route))) {
-    console.log('🔄 Authenticated user accessing auth route');
+    logger.log('Authenticated user accessing auth route');
     if (!hasCompletedOnboarding) {
-      console.log('🔄 Redirecting to onboarding (not completed)');
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+      logger.log('Redirecting to onboarding (not completed)');
+      const lastCompletedPage = request.cookies.get('last_completed_page')?.value || '0';
+      const onboardingUrl = new URL('/onboarding', request.url);
+      onboardingUrl.searchParams.set('type', accountType || 'volunteer');
+      onboardingUrl.searchParams.set('step', lastCompletedPage);
+      return NextResponse.redirect(onboardingUrl);
     } else {
-      console.log('🔄 Redirecting to dashboard based on account type:', accountType);
+      logger.log('Redirecting to dashboard based on account type:', accountType);
       if (accountType === 'volunteer') {
         return NextResponse.redirect(new URL('/home', request.url));
       } else if (accountType === 'organization') {
@@ -129,12 +127,39 @@ export function middleware(request: NextRequest) {
   
   // If authenticated and accessing root route, redirect based on onboarding status
   if (token && pathname === '/') {
-    console.log('🔄 Authenticated user accessing root route');
+    logger.log('Authenticated user accessing root route');
     if (!hasCompletedOnboarding) {
-      console.log('🔄 Redirecting to onboarding (not completed)');
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+      logger.log('Redirecting to onboarding (not completed)');
+      const lastCompletedPage = request.cookies.get('last_completed_page')?.value || '0';
+      const onboardingUrl = new URL('/onboarding', request.url);
+      onboardingUrl.searchParams.set('type', accountType || 'volunteer');
+      onboardingUrl.searchParams.set('step', lastCompletedPage);
+      return NextResponse.redirect(onboardingUrl);
     } else {
-      console.log('🔄 Redirecting to dashboard based on account type:', accountType);
+      logger.log('Redirecting to dashboard based on account type:', accountType);
+      if (accountType === 'volunteer') {
+        return NextResponse.redirect(new URL('/home', request.url));
+      } else if (accountType === 'organization') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      } else {
+        return NextResponse.redirect(new URL('/admin-dashboard', request.url));
+      }
+    }
+  }
+  
+  // Catch-all for authenticated users: redirect to appropriate route based on onboarding status
+  // This handles cases where user visits any route that's not a protected route they can access
+  if (token && !publicRoutes.includes(pathname) && !protectedRoutes.some(route => pathname.startsWith(route))) {
+    logger.log('Authenticated user accessing non-protected route:', pathname);
+    if (!hasCompletedOnboarding) {
+      logger.log('Redirecting to onboarding (not completed)');
+      const lastCompletedPage = request.cookies.get('last_completed_page')?.value || '0';
+      const onboardingUrl = new URL('/onboarding', request.url);
+      onboardingUrl.searchParams.set('type', accountType || 'volunteer');
+      onboardingUrl.searchParams.set('step', lastCompletedPage);
+      return NextResponse.redirect(onboardingUrl);
+    } else {
+      logger.log('Redirecting to dashboard based on account type:', accountType);
       if (accountType === 'volunteer') {
         return NextResponse.redirect(new URL('/home', request.url));
       } else if (accountType === 'organization') {
@@ -147,21 +172,21 @@ export function middleware(request: NextRequest) {
   
   // Role-based access control for protected routes (excluding onboarding)
   if (token && protectedRoutes.some(route => pathname.startsWith(route)) && !pathname.startsWith('/onboarding')) {
-    console.log('🔐 Checking role-based access for:', pathname);
-    console.log('👤 User account type:', accountType);
+    logger.log('Checking role-based access for:', pathname);
+    logger.log('User account type:', accountType);
     if (accountType) {
       // Check if user can access this route based on role
       const allowedRoutes = roleRouteGroups[accountType as keyof typeof roleRouteGroups];
-      console.log('✅ Allowed routes for role:', allowedRoutes?.join(', ') || 'NONE');
+      logger.log('Allowed routes for role:', allowedRoutes?.join(', ') || 'NONE');
       const canAccess = allowedRoutes?.some((route: string) => 
         pathname === route || pathname.startsWith(route + '/')
       );
-      console.log('🔍 Can access route:', canAccess);
+      logger.log('Can access route:', canAccess);
       
       // If user has a role but can't access this route, redirect to their appropriate dashboard
       if (!canAccess) {
-        console.log('🚫 BLOCKING: User role cannot access this route');
-        console.log('🚫 Redirecting to appropriate dashboard for role:', accountType);
+        logger.log('BLOCKING: User role cannot access this route');
+        logger.log('Redirecting to appropriate dashboard for role:', accountType);
         if (accountType === 'volunteer') {
           return NextResponse.redirect(new URL('/home', request.url));
         } else if (accountType === 'organization') {
@@ -170,15 +195,15 @@ export function middleware(request: NextRequest) {
           return NextResponse.redirect(new URL('/admin-dashboard', request.url));
         }
       } else {
-        console.log('✅ ALLOWING: User has access to this route');
+        logger.log('ALLOWING: User has access to this route');
       }
     } else {
-      console.log('⚠️ WARNING: Token exists but no account type found');
+      logger.log('WARNING: Token exists but no account type found');
     }
   }
   
-  console.log('✅ ALLOWING: Request proceeding to page');
-  console.log('========================================\n');
+  logger.log('ALLOWING: Request proceeding to page');
+  logger.log('========================================\n');
   return NextResponse.next();
 }
 
