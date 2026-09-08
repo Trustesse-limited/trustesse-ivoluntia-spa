@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import Layout from "@/components/onboarding/components/OnboardingLayout";
 import { useOnboardingStore } from "@/store";
+import { useAuthStore } from "@/store";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
@@ -12,7 +12,7 @@ import { VolunteerFormData, OrganizationFormData } from "@/types";
 import { OrganizationOnboardingData } from "@/types/onboarding";
 import { PartialVolunteerSignUpDto, VolunteerOnboardingRequest, OrganizationOnboardingRequest } from "@/types/api";
 import { validateBioDataForm, validateLocationForm, validateOrgAboutForm, ValidationResult } from "@/lib/formValidation";
-import { volunteerOnboarding, organizationOnboarding } from "@/lib/server-api";
+
 
 // Import volunteer forms
 import BioDataForm from "@/components/volunteer/onboardingScreens/bioDataForm";
@@ -157,7 +157,19 @@ const steps: StepConfig[] = [
       position: "bottom-left",
       width: 500,
       height: 183,
-      className: "md:w-1/3 lg:w-1/2",
+      className: "",
+    },
+  },
+  {
+    key: "orgCongratulations",
+    isVolunteer: false,
+    Component: Congratulations as VolunteerStepComponent,
+    illustration: {
+      src: "/illustrations/Frame 44.svg",
+      position: "bottom-center",
+      width: 1038,
+      height: 150,
+      className: "",
     },
   },
   {
@@ -174,24 +186,37 @@ const steps: StepConfig[] = [
   },
 ];
 
-const OnboardingContent: React.FC = () => {
-  const searchParams = useSearchParams();
+interface OnboardingClientProps {
+  accountTypeFromCookie?: string;
+}
+
+const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCookie }) => {
   const router = useRouter();
-  const { formData: onboardingFormData, switchAccountType, setCurrentStep, setComplete, updateFormData } = useOnboardingStore();
+  const { formData: onboardingFormData, switchAccountType, setCurrentStep, setComplete, updateFormData, volunteerData, organizationData, currentStep: storeCurrentStep } = useOnboardingStore();
+  const { user } = useAuthStore();
   const { volunteerOnboarding, organizationOnboarding, isLoading } = useAuthActions();
 
-  // Determine account type from query param first, then fall back to onboarding store
-  const queryType = searchParams.get('type')?.toLowerCase();
-  const accountType = (queryType || onboardingFormData.metaData?.accountType?.toLowerCase() || "volunteer") as "volunteer" | "organization";
+  // Determine account type from cookie (most accurate), then auth store, then store
+  const accountType = (accountTypeFromCookie?.toLowerCase() || user?.accountType?.toLowerCase() || onboardingFormData.metaData?.accountType?.toLowerCase() || "volunteer") as "volunteer" | "organization";
   
-  logger.log('[Onboarding Client] accountType from query:', queryType);
+  logger.log('[Onboarding Client] accountTypeFromCookie prop:', accountTypeFromCookie);
+  logger.log('[Onboarding Client] accountType from cookie (lowercased):', accountTypeFromCookie?.toLowerCase());
+  logger.log('[Onboarding Client] accountType from auth store:', user?.accountType);
   logger.log('[Onboarding Client] accountType from store:', onboardingFormData.metaData?.accountType);
   logger.log('[Onboarding Client] final accountType:', accountType);
+  logger.log('[Onboarding Client] store currentStep:', storeCurrentStep);
   
   // Filter steps based on account type
   const filteredSteps = steps.filter(s => s.isVolunteer === (accountType !== "organization"));
 
-  const [step, setStep] = useState<number>(0);
+  const [step, setStep] = useState<number>(() => {
+    // Initialize step from store's currentStep
+    // Store's currentStep: 0 = signup, 1-5 = onboarding screens
+    // UI step index: 0-4 for onboarding screens (excluding signup)
+    const initialStep = storeCurrentStep > 0 ? storeCurrentStep - 1 : 0;
+    logger.log('[Onboarding Client] Initial step from store:', initialStep, '(store currentStep:', storeCurrentStep, ')');
+    return initialStep;
+  });
   const [formData, setFormData] = useState<VolunteerFormData | OrganizationFormData>(
     accountType === "organization"
       ? {
@@ -229,25 +254,18 @@ const OnboardingContent: React.FC = () => {
   // Track if we've initialized form data from store to prevent overwriting
   const hasInitializedRef = React.useRef(false);
 
-  // On mount, restore the user's last step from query param or store
+  // On mount, restore form data from localStorage for the current step
   useEffect(() => {
     switchAccountType(accountType as "volunteer" | "organization");
     
-    // Check for step query param first, then fall back to store
-    const queryStep = searchParams.get('step');
-    if (queryStep) {
-      const stepNum = parseInt(queryStep, 10);
-      setStep(Math.max(0, Math.min(stepNum - 1, filteredSteps.length - 1)));
-    } else {
-      const storedStep = onboardingFormData.metaData?.currentPage || 0;
-      setStep(Math.max(0, storedStep - 1));
-    }
+    // Get the account-specific data from localStorage
+    const accountSpecificData = accountType === "organization" ? organizationData : volunteerData;
     
     // Restore form data from store ONLY on first mount
     // This prevents overwriting user's selections when they navigate back to a step
     if (!hasInitializedRef.current) {
       if (accountType === "volunteer") {
-        const volunteerData = onboardingFormData as PartialVolunteerSignUpDto;
+        const volunteerData = accountSpecificData.formData as PartialVolunteerSignUpDto;
         if (volunteerData.bioData) {
           setFormData({
             firstName: volunteerData.bioData.firstName || "",
@@ -266,26 +284,26 @@ const OnboardingContent: React.FC = () => {
           });
         }
       } else if (accountType === "organization") {
-        const orgData = (onboardingFormData as OrganizationOnboardingData).orgData || {};
+        const orgData = (accountSpecificData.formData as OrganizationOnboardingData).orgData || {};
         setFormData({
           name: orgData.name || "",
           category: orgData.category || "",
           website: orgData.website || "",
           mission: orgData.mission || "",
-          country: onboardingFormData.locationDto?.countryId || "",
-          countryName: onboardingFormData.locationDto?.countryName || "",
-          state: onboardingFormData.locationDto?.stateId || "",
-          city: onboardingFormData.locationDto?.city || "",
-          zip: onboardingFormData.locationDto?.zipCode || "",
-        address: onboardingFormData.locationDto?.address || "",
-        causes: orgData.causes || [],
-        logo: null,
-        disclaimerAgreed: orgData.disclaimerAgreed || false,
-      });
+          country: accountSpecificData.formData?.locationDto?.countryId || "",
+          countryName: accountSpecificData.formData?.locationDto?.countryName || "",
+          state: accountSpecificData.formData?.locationDto?.stateId || "",
+          city: accountSpecificData.formData?.locationDto?.city || "",
+          zip: accountSpecificData.formData?.locationDto?.zipCode || "",
+          address: accountSpecificData.formData?.locationDto?.address || "",
+          causes: orgData.causes || [],
+          logo: null,
+          disclaimerAgreed: orgData.disclaimerAgreed || false,
+        });
       }
       hasInitializedRef.current = true;
     }
-  }, [accountType, switchAccountType, searchParams, filteredSteps.length]);
+  }, [accountType, switchAccountType, volunteerData, organizationData]);
 
   // Check if current step is valid
   const isStepValid = () => {
@@ -294,19 +312,19 @@ const OnboardingContent: React.FC = () => {
       
       switch (filteredSteps[step].key) {
         case "bio":
-          return volunteerData.firstName.trim() !== "" &&
-                 volunteerData.lastName.trim() !== "" &&
-                 volunteerData.sex !== "" &&
-                 volunteerData.dob !== "";
+          return (volunteerData.firstName?.trim() || "") !== "" &&
+                 (volunteerData.lastName?.trim() || "") !== "" &&
+                 (volunteerData.sex || "") !== "" &&
+                 (volunteerData.dob || "") !== "";
         case "location":
-          return volunteerData.address.trim() !== "" &&
-                 volunteerData.city.trim() !== "" &&
-                 volunteerData.country.trim() !== "" &&
-                 volunteerData.state.trim() !== "";
+          return (volunteerData.address?.trim() || "") !== "" &&
+                 (volunteerData.city?.trim() || "") !== "" &&
+                 (volunteerData.country?.trim() || "") !== "" &&
+                 (volunteerData.state?.trim() || "") !== "";
         case "interest":
-          return volunteerData.interests.length > 0;
+          return (volunteerData.interests?.length || 0) > 0;
         case "skills":
-          return volunteerData.skills.length > 0;
+          return (volunteerData.skills?.length || 0) > 0;
         default:
           return true;
       }
@@ -315,18 +333,18 @@ const OnboardingContent: React.FC = () => {
       
       switch (filteredSteps[step].key) {
         case "about":
-          return orgData.name.trim() !== "" &&
-                 orgData.category.trim() !== "" &&
-                 orgData.mission.trim() !== "";
+          return (orgData.name?.trim() || "") !== "" &&
+                 (orgData.category?.trim() || "") !== "" &&
+                 (orgData.mission?.trim() || "") !== "";
         case "orgLocation":
-          return orgData.address.trim() !== "" &&
-                 orgData.city.trim() !== "" &&
-                 orgData.country.trim() !== "" &&
-                 orgData.state.trim() !== "";
+          return (orgData.address?.trim() || "") !== "" &&
+                 (orgData.city?.trim() || "") !== "" &&
+                 (orgData.country?.trim() || "") !== "" &&
+                 (orgData.state?.trim() || "") !== "";
         case "causes":
-          return orgData.causes.length > 0;
+          return (orgData.causes?.length || 0) > 0;
         case "disclaimer":
-          return orgData.disclaimerAgreed;
+          return orgData.disclaimerAgreed === true;
         default:
           return true;
       }
@@ -478,8 +496,6 @@ const OnboardingContent: React.FC = () => {
           currentPage: newStep + 1,
         },
       });
-      // Update URL without reloading
-      router.push(`/onboarding?step=${newStep + 1}`);
     } else {
       await handleSubmit();
     }
@@ -498,7 +514,6 @@ const OnboardingContent: React.FC = () => {
           currentPage: newStep + 1,
         },
       });
-      router.push(`/onboarding?step=${newStep + 1}`);
     }
   };
 
@@ -606,7 +621,7 @@ const OnboardingContent: React.FC = () => {
       if (accountType === "volunteer") {
         router.push('/home');
       } else {
-        router.push('/dashboard');
+        router.push('/org/dashboard');
       }
     } catch (error) {
       console.error('Error completing onboarding:', error);
@@ -614,7 +629,7 @@ const OnboardingContent: React.FC = () => {
   };
 
   const CurrentComponent = filteredSteps[step].Component as React.ElementType;
-  const isCongratulations = filteredSteps[step].key === "congratulations";
+  const isCongratulations = filteredSteps[step].key === "congratulations" || filteredSteps[step].key === "orgCongratulations";
 
   return (
     <Layout
@@ -647,10 +662,4 @@ const OnboardingContent: React.FC = () => {
   );
 };
 
-export default function OnboardingClient() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-      <OnboardingContent />
-    </Suspense>
-  );
-}
+export default OnboardingContent;

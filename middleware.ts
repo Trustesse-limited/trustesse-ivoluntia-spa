@@ -13,30 +13,21 @@ const publicRoutes = [
 
 // Role-based route groups
 const roleRouteGroups = {
-  volunteer: ['/home', '/profile', '/activity', '/favourites', '/achievements', '/settings'],
-  organization: ['/dashboard', '/org-profile', '/campaigns', '/events', '/org-settings'],
-  admin: ['/admin-dashboard', '/admin-users', '/admin-organizations', '/admin-analytics', '/admin-settings'],
+  volunteer: ['/home', '/profile', '/activity', '/favourites', '/achievements', '/settings', '/notifications', '/legal-support'],
+  organization: ['/org'],
+  admin: ['/admin'],
 };
 
 // Protected routes that require authentication
 const protectedRoutes = [
-  '/dashboard',
   '/home',
   '/profile',
   '/activity',
   '/favourites',
   '/achievements',
   '/settings',
-  '/org-profile',
-  '/campaigns',
-  '/events',
-  '/org-settings',
-  '/admin-dashboard',
-  '/admin-users',
-  '/admin-organizations',
-  '/admin-analytics',
-  '/admin-settings',
-  '/volunteer',
+  '/notifications',
+  '/legal-support',
   '/org',
   '/admin',
   '/onboarding',
@@ -91,9 +82,9 @@ export function middleware(request: NextRequest) {
       if (accountType === 'volunteer') {
         return NextResponse.redirect(new URL('/home', request.url));
       } else if (accountType === 'organization') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        return NextResponse.redirect(new URL('/org/dashboard', request.url));
       } else if (accountType === 'admin') {
-        return NextResponse.redirect(new URL('/admin-dashboard', request.url));
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       }
     } else {
       logger.log('ALLOWING: User can access onboarding (not completed yet)');
@@ -108,19 +99,15 @@ export function middleware(request: NextRequest) {
     logger.log('Authenticated user accessing auth route');
     if (!hasCompletedOnboarding) {
       logger.log('Redirecting to onboarding (not completed)');
-      const lastCompletedPage = request.cookies.get('last_completed_page')?.value || '0';
-      const onboardingUrl = new URL('/onboarding', request.url);
-      onboardingUrl.searchParams.set('type', accountType || 'volunteer');
-      onboardingUrl.searchParams.set('step', lastCompletedPage);
-      return NextResponse.redirect(onboardingUrl);
+      return NextResponse.redirect(new URL('/onboarding', request.url));
     } else {
       logger.log('Redirecting to dashboard based on account type:', accountType);
       if (accountType === 'volunteer') {
         return NextResponse.redirect(new URL('/home', request.url));
       } else if (accountType === 'organization') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        return NextResponse.redirect(new URL('/org/dashboard', request.url));
       } else {
-        return NextResponse.redirect(new URL('/admin-dashboard', request.url));
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       }
     }
   }
@@ -130,19 +117,15 @@ export function middleware(request: NextRequest) {
     logger.log('Authenticated user accessing root route');
     if (!hasCompletedOnboarding) {
       logger.log('Redirecting to onboarding (not completed)');
-      const lastCompletedPage = request.cookies.get('last_completed_page')?.value || '0';
-      const onboardingUrl = new URL('/onboarding', request.url);
-      onboardingUrl.searchParams.set('type', accountType || 'volunteer');
-      onboardingUrl.searchParams.set('step', lastCompletedPage);
-      return NextResponse.redirect(onboardingUrl);
+      return NextResponse.redirect(new URL('/onboarding', request.url));
     } else {
       logger.log('Redirecting to dashboard based on account type:', accountType);
       if (accountType === 'volunteer') {
         return NextResponse.redirect(new URL('/home', request.url));
       } else if (accountType === 'organization') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        return NextResponse.redirect(new URL('/org/dashboard', request.url));
       } else {
-        return NextResponse.redirect(new URL('/admin-dashboard', request.url));
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       }
     }
   }
@@ -153,19 +136,15 @@ export function middleware(request: NextRequest) {
     logger.log('Authenticated user accessing non-protected route:', pathname);
     if (!hasCompletedOnboarding) {
       logger.log('Redirecting to onboarding (not completed)');
-      const lastCompletedPage = request.cookies.get('last_completed_page')?.value || '0';
-      const onboardingUrl = new URL('/onboarding', request.url);
-      onboardingUrl.searchParams.set('type', accountType || 'volunteer');
-      onboardingUrl.searchParams.set('step', lastCompletedPage);
-      return NextResponse.redirect(onboardingUrl);
+      return NextResponse.redirect(new URL('/onboarding', request.url));
     } else {
       logger.log('Redirecting to dashboard based on account type:', accountType);
       if (accountType === 'volunteer') {
         return NextResponse.redirect(new URL('/home', request.url));
       } else if (accountType === 'organization') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        return NextResponse.redirect(new URL('/org/dashboard', request.url));
       } else {
-        return NextResponse.redirect(new URL('/admin-dashboard', request.url));
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       }
     }
   }
@@ -190,9 +169,9 @@ export function middleware(request: NextRequest) {
         if (accountType === 'volunteer') {
           return NextResponse.redirect(new URL('/home', request.url));
         } else if (accountType === 'organization') {
-          return NextResponse.redirect(new URL('/dashboard', request.url));
+          return NextResponse.redirect(new URL('/org/dashboard', request.url));
         } else if (accountType === 'admin') {
-          return NextResponse.redirect(new URL('/admin-dashboard', request.url));
+          return NextResponse.redirect(new URL('/admin/dashboard', request.url));
         }
       } else {
         logger.log('ALLOWING: User has access to this route');

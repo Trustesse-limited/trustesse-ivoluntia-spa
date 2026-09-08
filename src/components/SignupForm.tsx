@@ -192,8 +192,8 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
 
   return (
     <>
-    <div className='flex flex-col items-center w-full min-h-screen'>
-      <div className='flex flex-col items-center w-full max-w-md mx-auto flex-grow'>
+    <div className='flex flex-col items-center w-full min-h-screen pt-20'>
+      <div className='flex flex-col items-center w-full max-w-md mx-auto px-4 flex-grow'>
       <h1 className='text-3xl text-center font-[600] mb-2 mt-16'>
         {type === 'volunteer' ? 'Volunteer Sign Up' : 'Organization Sign Up'}
       </h1>
@@ -202,7 +202,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
           ? 'Join our community of volunteers and make a difference' 
           : 'Register your organization and connect with volunteers'}
       </p>
-      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mx-4 md:mx-auto'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] md:mx-auto'>
         <InputComponent
           label="Email Address"
           placeholder="Enter your email address"

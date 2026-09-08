@@ -9,7 +9,9 @@ import {
   resendOtpAction,
   loginAction,
   logoutAction as authLogoutAction,
+  forgotPasswordAction,
   resetPasswordAction,
+  verifyResetPasswordAction,
   volunteerOnboardingAction,
   organizationOnboardingAction,
 } from '@/app/actions/auth';
@@ -410,7 +412,7 @@ export function useAuthActions() {
           
           // Determine redirect based on account type and onboarding status
           if (!hasCompletedOnboarding) {
-            // Redirect to appropriate onboarding flow
+            // Redirect to onboarding (account type is read from cookies)
             const normalizedAccountType = accountType?.toLowerCase();
             if (normalizedAccountType === 'organization') {
               logger.log('[Login] Redirecting to organization onboarding');
@@ -418,7 +420,7 @@ export function useAuthActions() {
                 success: true, 
                 data: result.data, 
                 message: result.message,
-                redirect: '/onboarding?type=organization',
+                redirect: '/onboarding',
                 requiresOnboarding: true,
                 accountType: 'organization',
                 lastCompletedPage: lastCompletedPage || 0,
@@ -430,7 +432,7 @@ export function useAuthActions() {
                 success: true, 
                 data: result.data, 
                 message: result.message,
-                redirect: '/onboarding?type=volunteer',
+                redirect: '/onboarding',
                 requiresOnboarding: true,
                 accountType: 'volunteer',
                 lastCompletedPage: lastCompletedPage || 0,
@@ -474,7 +476,7 @@ export function useAuthActions() {
           }
         }
 
-        return { success: true, data: result.data, message: result.message, redirect: '/dashboard' } as EnhancedLoginResult;
+        return { success: true, data: result.data, message: result.message, redirect: '/home' } as EnhancedLoginResult;
       } else {
         // Show the actual API error message
         const errorMessage = typeof result.error === 'string' ? result.error : 'Login failed. Please try again.';
@@ -632,6 +634,70 @@ export function useAuthActions() {
     }
   };
 
+  const forgotPassword = async (data: { email: string; newPassword: string; confirmPassword: string; token: string }) => {
+    setIsLoading(true);
+    try {
+      const result = await forgotPasswordAction(data.email, data.newPassword, data.confirmPassword, data.token);
+
+      if (result.success) {
+        toast.success(result.message || 'Password reset successfully', {
+          duration: 3000,
+        });
+        return { success: true, message: result.message };
+      } else {
+        // Check for invalid token error
+        if (result.error?.toLowerCase().includes('invalid token')) {
+          // Clear cookies and redirect to forgot password on invalid token
+          document.cookie = 'reset_email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          document.cookie = 'reset_otp=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          toast.error('Invalid or expired token. Please request a new OTP.', {
+            duration: 5000,
+          });
+          window.location.href = '/forgotpassword';
+        } else {
+          toast.error(result.error || 'Failed to reset password. Please try again.', {
+            duration: 4000,
+          });
+        }
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in forgotPassword:', error);
+      // Check if this is a network/system error vs API error
+      if (error instanceof Error) {
+        if (error.message.includes('ENOENT') || error.message.includes('.next')) {
+          toast.error('Application error: Please refresh the page and try again.', {
+            duration: 5000,
+          });
+        } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
+          toast.error('Request timed out. Please check your connection and try again.', {
+            duration: 5000,
+          });
+        } else if (error.message.toLowerCase().includes('invalid token')) {
+          // Clear cookies and redirect to forgot password on invalid token
+          document.cookie = 'reset_email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          document.cookie = 'reset_otp=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          toast.error('Invalid or expired token. Please request a new OTP.', {
+            duration: 5000,
+          });
+          window.location.href = '/forgotpassword';
+        } else {
+          // Show the actual error message from the API
+          toast.error(error.message || 'An unexpected error occurred. Please try again.', {
+            duration: 5000,
+          });
+        }
+      } else {
+        toast.error('An unexpected error occurred. Please try again.', {
+          duration: 5000,
+        });
+      }
+      return { success: false, error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resetPassword = async (email: string) => {
     setIsLoading(true);
     try {
@@ -774,6 +840,50 @@ export function useAuthActions() {
     }
   };
 
+  const verifyResetPassword = async (email: string, newPassword: string, confirmPassword: string, token: string) => {
+    setIsLoading(true);
+    try {
+      const result = await verifyResetPasswordAction(email, newPassword, confirmPassword, token);
+
+      if (result.success) {
+        toast.success(result.message || 'Password reset successfully', {
+          duration: 3000,
+        });
+        return { success: true, message: result.message };
+      } else {
+        toast.error(result.error || 'Failed to reset password. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in verifyResetPassword:', error);
+      // Check if this is a network/system error vs API error
+      if (error instanceof Error) {
+        if (error.message.includes('ENOENT') || error.message.includes('.next')) {
+          toast.error('Application error: Please refresh the page and try again.', {
+            duration: 5000,
+          });
+        } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
+          toast.error('Request timed out. Please check your connection and try again.', {
+            duration: 5000,
+          });
+        } else {
+          toast.error('An unexpected error occurred. Please try again.', {
+            duration: 5000,
+          });
+        }
+      } else {
+        toast.error('An unexpected error occurred. Please try again.', {
+          duration: 5000,
+        });
+      }
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     volunteerSignUp,
     organizationSignUp,
@@ -781,7 +891,9 @@ export function useAuthActions() {
     resendOtp,
     login,
     logout,
+    forgotPassword,
     resetPassword,
+    verifyResetPassword,
     volunteerOnboarding,
     organizationOnboarding,
     isLoading,

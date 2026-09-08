@@ -124,9 +124,9 @@ const projectsToRender = isViewingAll
             <p className="text-sm">{project.category}</p>
           </span>
 
-          <div className="w-full h-[7px] bg-[#BFD8F7] rounded-full overflow-hidden mt-3 transition-all duration-1000 ease-out">
+          <div className="w-full h-[7px] bg-[var(--primary)]/30 rounded-full overflow-hidden mt-3 transition-all duration-1000 ease-out">
             <motion.div
-              className="h-full bg-[#052C57] rounded-full"
+              className="h-full bg-[var(--buttonPrimary)] rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
               transition={{ duration: 1.2, ease: "easeOut" }}

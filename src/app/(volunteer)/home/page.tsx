@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import ProgramCard from "@/components/volunteer/ProgramCard";
 import SearchBar from "@/components/volunteer/SearchBar";
 import { programs } from "@/lib/mockData";
+import { AppButton } from "@/components/AppButton";
 
 export default function VolunteerHomePage() {
   const [searchFilters, setSearchFilters] = useState({
@@ -57,14 +58,13 @@ export default function VolunteerHomePage() {
       {filteredPrograms.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-lg">No programs found matching your criteria.</div>
-          <button
+          <AppButton
+            text="Clear Filters"
             onClick={() => {
               setSearchFilters({ program: "", interest: "", location: "" });
             }}
-            className="mt-4 px-4 py-2 bg-[#0E68DC] text-white rounded-md hover:opacity-90 transition"
-          >
-            Clear Filters
-          </button>
+            className="!mt-4 !px-4 !py-2 !rounded-md"
+          />
         </div>
       )}
     </motion.section>

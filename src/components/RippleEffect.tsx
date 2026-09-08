@@ -71,7 +71,10 @@ export function RippleEffect({ children, disabled = false, className = '', onCli
   const handleClick = useCallback((event: React.MouseEvent | React.TouchEvent) => {
     addRipple(event);
     if (onClick) {
-      onClick();
+      // Delay onClick to allow ripple animation to complete
+      setTimeout(() => {
+        onClick();
+      }, 300);
     }
   }, [addRipple, onClick]);
 

@@ -15,6 +15,7 @@ type NavLink = {
   label: string;
   href: string;
   icon?: React.ReactNode;
+  isBottom?: boolean;
 };
 
 type DashboardType = 'volunteer' | 'organization' | 'admin';
@@ -132,7 +133,7 @@ export default function DashboardLayout({
         </div>
         <nav className="flex-1 overflow-y-auto px-4 py-6">
           <ul>
-            {links.map((link) => {
+            {links.filter(link => !link.isBottom).map((link) => {
               const isActive = getIsActiveLink(pathname, link.href, dashboardType);
               return (
                 <li key={link.href} className="mb-2">
@@ -141,8 +142,8 @@ export default function DashboardLayout({
                     className={`rounded-[8px] w-full flex items-center justify-start py-2 px-4 text-sm font-semibold ${
                       isActive
                         ? "bg-[#0E68DC] text-[#FFFFFF]"
-                        : "text-black bg-transparent"
-                    } hover:bg-[#0e67dc46]`}
+                        : "text-black bg-transparent hover:bg-[#0e67dc46]"
+                    } `}
                   >
                     {link.icon && <span className="mr-2">{link.icon}</span>}
                     {link.label}
@@ -152,6 +153,32 @@ export default function DashboardLayout({
             })}
           </ul>
         </nav>
+
+        {/* Bottom Links (for volunteer dashboard) */}
+        {links.some(link => link.isBottom) && (
+          <footer className="px-4 pb-6 md:pb-8 mt-auto border-t border-gray-200 pt-4">
+            <ul>
+              {links.filter(link => link.isBottom).map((link) => {
+                const isActive = getIsActiveLink(pathname, link.href, dashboardType);
+                return (
+                  <li key={link.href} className="mb-2">
+                    <Link
+                      href={link.href}
+                      className={`rounded-[8px] w-full flex items-center justify-start py-2 px-4 text-sm font-semibold ${
+                        isActive
+                          ? "bg-[#0E68DC] text-[#FFFFFF]"
+                          : "text-black bg-transparent hover:bg-[#0e67dc46]"
+                      } `}
+                    >
+                      {link.icon && <span className="mr-2">{link.icon}</span>}
+                      {link.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </footer>
+        )}
 
         {/* Logout Link */}
         <footer className="px-4 pb-6 md:pb-8 mt-auto">
@@ -198,7 +225,7 @@ export default function DashboardLayout({
                 </div>
                 <nav>
                   <ul>
-                    {links.map((link) => {
+                    {links.filter(link => !link.isBottom).map((link) => {
                       const isActive = getIsActiveLink(pathname, link.href, dashboardType);
                       return (
                         <li key={link.href} className="mb-2">
@@ -221,6 +248,37 @@ export default function DashboardLayout({
                     })}
                   </ul>
                 </nav>
+
+                {/* Bottom Links (for volunteer dashboard) */}
+                {links.some(link => link.isBottom) && (
+                  <div className="border-t border-gray-200 pt-4 mt-4">
+                    <nav>
+                      <ul>
+                        {links.filter(link => link.isBottom).map((link) => {
+                          const isActive = getIsActiveLink(pathname, link.href, dashboardType);
+                          return (
+                            <li key={link.href} className="mb-2">
+                              <Link
+                                href={link.href}
+                                className={`rounded-[8px] w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold ${
+                                  isActive
+                                    ? "bg-[var(--buttonPrimary)] text-[#FFFFFF]"
+                                    : "text-black bg-transparent"
+                                } hover:bg-[var(--buttonPrimary)] hover:text-[#FFFFFF]`}
+                                onClick={() => setIsMobileNavOpen(false)}
+                              >
+                                {link.icon && (
+                                  <span className="mr-2">{link.icon}</span>
+                                )}
+                                {link.label}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </nav>
+                  </div>
+                )}
               </div>
 
               {/* Logout Link */}

@@ -2,11 +2,9 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
+import { AppButton } from "@/components/AppButton";
 
 export default function VolunteerAchievementsPage() {
-
-  const [achievements, setAchievements] = React.useState(false);
   return (
 
     
@@ -51,21 +49,17 @@ export default function VolunteerAchievementsPage() {
 
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
-          {/* Primary Button - Explore Programs */}
-          <Link
+          <AppButton
+            text="Explore Programs"
             href="/home"
-            className="px-6 py-3 bg-[#0E68DC] text-white rounded-lg font-medium hover:bg-[#0E68DC]/90 transition-colors text-center"
-          >
-            Explore Programs
-          </Link>
-
-          {/* Secondary Button - View Activity */}
-          <Link
+            className="!px-6 !py-3 !rounded-lg"
+          />
+          <AppButton
+            text="View Activity"
             href="/activity"
-            className="px-6 py-3 border border-[#0E68DC] text-[#0E68DC] rounded-lg font-medium hover:bg-[#0E68DC]/10 transition-colors text-center"
-          >
-            View Activity
-          </Link>
+            variant="outline"
+            className="!px-6 !py-3 !rounded-lg"
+          />
         </div>
       </motion.div>
     </motion.section>

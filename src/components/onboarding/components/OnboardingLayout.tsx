@@ -43,8 +43,8 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   const progress = totalSteps > 0 ? ((step + 1) / totalSteps) * 100 : 0;
 
   return (
-    <div className="flex flex-col items-center justify-start my-4 mx-auto min-h-screen w-[95%]">
-      <div className="relative w-full mx-4 sm:mx-8 border-[4px] border-[#F0EEEE] rounded-[20px] p-4 sm:p-6 overflow-hidden">
+    <div className="flex flex-col items-center justify-start my-4 min-h-screen mx-auto w-[95%]">
+      <div className="relative w-full mx-4 sm:mx-8 border-[4px] min-h-screen border-[#F0EEEE] rounded-[20px] p-4 sm:p-6 overflow-hidden">
         {/* Header - Left aligned */}
         <div className="md:px-8 py-4 text-left">
           <h1 className="text-2xl md:text-3xl font-semibold mb-1 text-[#212121]">

@@ -210,13 +210,13 @@ export const useOnboardingStore = create<OnboardingState>()(
             currentStep: 0,
             isComplete: false,
             formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'volunteer' } },
-            lastVisited: 0,
+            lastVisited: Date.now(),
           },
           organizationData: {
             currentStep: 0,
             isComplete: false,
             formData: { ...initialOrgData, metaData: { ...initialOrgData.metaData, accountType: 'organization' } },
-            lastVisited: 0,
+            lastVisited: Date.now(),
           },
         });
         // Clear localStorage to prevent persist middleware from restoring old data

@@ -74,6 +74,7 @@ const SkillsAndStrengthForm: React.FC = () => {
                 <AppButton
                   key={skill}
                   type="button"
+                  variant="custom"
                   onClick={() => toggleSkill(skill)}
                   isLoading={false}
                   className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] text-xs font-normal transition-colors duration-200 ${

@@ -113,6 +113,7 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
                 <AppButton
                   key={cause.name}
                   type="button"
+                  variant="custom"
                   onClick={() => toggleInterest(cause.name)}
                   isLoading={false}
                   className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] text-xs font-normal transition-colors duration-200 ${
@@ -123,7 +124,7 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
                   aria-pressed={isSelected}
                   aria-label={`Toggle ${cause.name}`}
                 >
-                  <span className={`text-sm pr-2.5 font-normal ${
+                  <span className={`text-sm font-normal ${
                     isSelected
                       ? "text-blue-700"
                       : "text-[#161616]"

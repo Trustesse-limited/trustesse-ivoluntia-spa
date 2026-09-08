@@ -15,11 +15,11 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp, onComplete
   const handleChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
     const value = e.target.value;
 
-    // accept only numbers
-    if (/[^0-9]/.test(value)) return;
+    // accept only alphanumeric characters
+    if (/[^0-9a-zA-Z]/.test(value)) return;
 
     const newOtp = [...otp];
-    newOtp[index] = value.slice(-1); // keep only last digit
+    newOtp[index] = value.slice(-1); // keep only last character
     setOtp(newOtp);
 
     // move to next input if not last
@@ -46,14 +46,14 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp, onComplete
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text/plain').trim();
     
-    // Only accept numeric paste
-    if (!/^\d+$/.test(pastedData)) return;
+    // Only accept alphanumeric paste
+    if (!/^[0-9a-zA-Z]+$/.test(pastedData)) return;
     
-    const digits = pastedData.slice(0, length).split('');
+    const characters = pastedData.slice(0, length).split('');
     const newOtp = [...otp];
     
-    digits.forEach((digit, i) => {
-      newOtp[i] = digit;
+    characters.forEach((char, i) => {
+      newOtp[i] = char;
     });
     
     setOtp(newOtp);
@@ -61,7 +61,7 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp, onComplete
     onChangeOtp(otpString);
     
     // Focus the next empty input or the last input
-    const nextEmptyIndex = digits.length;
+    const nextEmptyIndex = characters.length;
     if (nextEmptyIndex < length) {
       inputRefs.current[nextEmptyIndex]?.focus();
     } else {

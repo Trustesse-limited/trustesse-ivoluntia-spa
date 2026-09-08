@@ -3,16 +3,16 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { AppButton } from "@/components/AppButton";
 import { 
   FiUser, 
   FiDollarSign, 
   FiClock, 
-  FiAward, 
+  FiAward,
   FiHeart,
   FiSearch,
   FiFilter,
   FiPlus,
-  FiSettings,
   FiShield,
   FiBell,
   FiLock,
@@ -106,7 +106,7 @@ export default function VolunteerProfilePage() {
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-[#0E68DC] rounded-2xl p-6 sm:p-8 text-white"
+        className="bg-[var(--buttonPrimary)] rounded-2xl p-6 sm:p-8 text-white"
       >
         <div className="flex flex-col lg:flex-row items-center lg:items-center gap-6">
           {/* Profile Image */}
@@ -340,30 +340,29 @@ export default function VolunteerProfilePage() {
                       className="px-3 py-2 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-[#0E68DC] focus:border-transparent"
                       autoFocus
                     />
-                    <button
+                    <AppButton
+                      icon={<FiPlus className="text-sm" />}
                       onClick={addSkill}
-                      className="p-2 bg-[#0E68DC] text-white rounded-full hover:bg-[#0E68DC]/90"
-                    >
-                      <FiPlus className="text-sm" />
-                    </button>
-                    <button
+                      className="!p-2 !rounded-full"
+                    />
+                    <AppButton
+                      icon={<FiX className="text-sm" />}
                       onClick={() => {
                         setIsAddingSkill(false);
                         setNewSkill('');
                       }}
-                      className="p-2 bg-gray-300 text-gray-700 rounded-full hover:bg-gray-400"
-                    >
-                      <FiX className="text-sm" />
-                    </button>
+                      variant="outline"
+                      className="!p-2 !rounded-full"
+                    />
                   </div>
                 ) : (
-                  <button
+                  <AppButton
+                    icon={<FiPlus className="text-sm" />}
+                    text="Add More"
                     onClick={() => setIsAddingSkill(true)}
-                    className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-full text-gray-600 hover:border-[#0E68DC] hover:text-[#0E68DC]"
-                  >
-                    <FiPlus className="text-sm" />
-                    <span className="text-black">Add More</span>
-                  </button>
+                    variant="outline"
+                    className="!px-4 !py-2 !rounded-full"
+                  />
                 )}
               </div>
             </motion.div>
@@ -391,7 +390,7 @@ export default function VolunteerProfilePage() {
                     <button
                       onClick={() => setAccountSettings(prev => ({...prev, twoFactorAuth: !prev.twoFactorAuth}))}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        accountSettings.twoFactorAuth ? 'bg-[#0E68DC]' : 'bg-gray-200'
+                        accountSettings.twoFactorAuth ? 'bg-[var(--buttonPrimary)]' : 'bg-gray-200'
                       }`}
                     >
                       <span

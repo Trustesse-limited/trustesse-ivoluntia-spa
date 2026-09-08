@@ -80,8 +80,9 @@ export const useAuthStore = create<AuthState>()(
         });
         // Set cookies for server-side auth
         setAuthCookie(token);
-        if (user.role) {
-          setUserRoleCookie(user.role);
+        // Use accountType for user_role cookie, not role (role is from JWT like "FoundationAdmin")
+        if (user.accountType) {
+          setUserRoleCookie(user.accountType.toLowerCase());
         }
       },
       
@@ -134,14 +135,14 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      version: 5, // Increment version to force migration and remove token from storage
+      version: 6, // Increment version to force migration and fix accountType inference
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
         // SECURITY: Token is NOT persisted to localStorage
         // Only stored in HTTP-only cookies server-side
       }),
-      migrate: (persistedState: any, version: number) => {
+      migrate: (persistedState: unknown, version: number) => {
         // If version is less than 5, clear the state to force fresh start
         // This ensures any previously stored tokens are removed
         if (version < 5) {
@@ -153,8 +154,9 @@ export const useAuthStore = create<AuthState>()(
           };
         }
         // Remove token from persisted state if it exists
-        if (persistedState.token) {
-          delete persistedState.token;
+        const state = persistedState as { token?: string };
+        if (state.token) {
+          delete state.token;
         }
         return persistedState;
       },
@@ -165,6 +167,21 @@ export const useAuthStore = create<AuthState>()(
           state.isAuthenticated = !!state.user && !!state.user.id && !!state.user.email;
           // Ensure token is not persisted
           state.token = null;
+          // Ensure accountType is set from user object
+          if (state.user && !state.user.accountType) {
+            // If accountType is missing, try to infer from role
+            if (state.user.role) {
+              const roleToAccountType: Record<string, 'Volunteer' | 'Organization' | 'Admin'> = {
+                'volunteer': 'Volunteer',
+                'organization': 'Organization',
+                'admin': 'Admin',
+                'super_admin': 'Admin',
+                'FoundationAdmin': 'Organization',
+                'VolunteerAdmin': 'Volunteer',
+              };
+              state.user.accountType = roleToAccountType[state.user.role] || 'Volunteer';
+            }
+          }
         }
       },
     }

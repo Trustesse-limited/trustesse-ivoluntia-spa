@@ -3,6 +3,10 @@ import { redirect } from 'next/navigation';
 import logger from '@/lib/logger';
 import OnboardingClient from './OnboardingClient';
 
+// Disable static generation to ensure fresh cookie reads
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function OnboardingPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get('auth_token')?.value || cookieStore.get('access_token')?.value;
@@ -21,7 +25,18 @@ async function OnboardingPage() {
     redirect('/login');
   }
   
-  return <OnboardingClient />;
+  // If onboarding is complete, redirect to appropriate dashboard
+  if (hasCompletedOnboarding) {
+    logger.log('Onboarding completed, redirecting to dashboard');
+    if (userRole === 'organization') {
+      redirect('/org/dashboard');
+    } else {
+      redirect('/home');
+    }
+  }
+  
+  logger.log('[Onboarding Page] Passing data to client');
+  return <OnboardingClient accountTypeFromCookie={userRole} />;
 }
 
 export default OnboardingPage;

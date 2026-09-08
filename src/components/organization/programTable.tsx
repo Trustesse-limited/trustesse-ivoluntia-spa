@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProgramItem } from "@/types";
 import { formatNumberWithCommas } from "@/lib/utils";
+import Modal from "@/components/Modal";
+import { AppButton } from "@/components/AppButton";
 
 type ProgramTableProps = {
   data: ProgramItem[];
@@ -139,6 +141,30 @@ export default function ProgramTable({
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={showDeleteModal} onClose={handleCloseModal}>
+        <div className="text-center">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Delete Program
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Are you sure you want to delete this program? This action cannot be undone.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <AppButton
+              text="Cancel"
+              onClick={handleCloseModal}
+              className="!bg-gray-200 hover:!bg-gray-300 !text-gray-800 !py-3 !px-8 !rounded-xl !text-base !font-medium"
+            />
+            <AppButton
+              text="Delete"
+              onClick={handleConfirmDelete}
+              className="!bg-red-500 hover:!bg-red-600 !py-3 !px-8 !rounded-xl !text-base !font-medium"
+            />
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

@@ -6,7 +6,9 @@ import {
   verifyOtp,
   resendOtp,
   login,
+  forgotPassword,
   resetPassword,
+  verifyResetPassword,
   volunteerOnboarding,
   organizationOnboarding,
   getCountries,
@@ -410,6 +412,160 @@ export async function loginAction(data: LoginRequestModel): Promise<{
     return {
       success: false,
       error: apiError.message || 'Failed to login',
+    };
+  }
+}
+
+/**
+ * Server Action for Forgot Password (reset password with OTP)
+ * This can be called from client components but executes on the server
+ */
+export async function forgotPasswordAction(
+  email: string,
+  newPassword: string,
+  confirmPassword: string,
+  token: string
+): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    // SECURITY: Server-side sanitization (authoritative layer)
+    const sanitizedEmail = sanitizeEmail(email);
+    const sanitizedPassword = sanitizePassword(newPassword);
+    const sanitizedConfirmPassword = sanitizePassword(confirmPassword);
+    const sanitizedToken = sanitizeOtp(token);
+
+    if (!isValidEmail(sanitizedEmail)) {
+      return {
+        success: false,
+        error: 'Please enter a valid email address',
+      };
+    }
+
+    if (!sanitizedPassword) {
+      return {
+        success: false,
+        error: 'Please enter a valid password',
+      };
+    }
+
+    if (!sanitizedConfirmPassword) {
+      return {
+        success: false,
+        error: 'Please confirm your password',
+      };
+    }
+
+    if (sanitizedPassword !== sanitizedConfirmPassword) {
+      return {
+        success: false,
+        error: 'Passwords do not match',
+      };
+    }
+
+    if (!sanitizedToken) {
+      return {
+        success: false,
+        error: 'Please enter a valid OTP code',
+      };
+    }
+
+    const response: ApiResponse<unknown> = await forgotPassword(
+      sanitizedEmail,
+      sanitizedPassword,
+      sanitizedConfirmPassword,
+      sanitizedToken
+    );
+
+    return {
+      success: true,
+      message: (response.data as { message?: string })?.message || 'Password reset successfully',
+    };
+  } catch (error) {
+    logger.error('[ForgotPasswordAction] Error:', error);
+    // Extract the actual error message from the API error
+    const errorMessage = (error as { message?: string })?.message || 'Failed to reset password. Please try again.';
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+/**
+ * Server Action for Verify Reset Password OTP
+ * This can be called from client components but executes on the server
+ */
+export async function verifyResetPasswordAction(
+  email: string,
+  newPassword: string,
+  confirmPassword: string,
+  token: string
+): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    // SECURITY: Server-side sanitization (authoritative layer)
+    const sanitizedEmail = sanitizeEmail(email);
+    const sanitizedPassword = sanitizePassword(newPassword);
+    const sanitizedConfirmPassword = sanitizePassword(confirmPassword);
+    const sanitizedToken = sanitizeOtp(token);
+
+    if (!isValidEmail(sanitizedEmail)) {
+      return {
+        success: false,
+        error: 'Please enter a valid email address',
+      };
+    }
+
+    if (!sanitizedPassword) {
+      return {
+        success: false,
+        error: 'Please enter a valid password',
+      };
+    }
+
+    if (!sanitizedConfirmPassword) {
+      return {
+        success: false,
+        error: 'Please confirm your password',
+      };
+    }
+
+    if (sanitizedPassword !== sanitizedConfirmPassword) {
+      return {
+        success: false,
+        error: 'Passwords do not match',
+      };
+    }
+
+    if (!sanitizedToken) {
+      return {
+        success: false,
+        error: 'Please enter a valid OTP code',
+      };
+    }
+
+    const response: ApiResponse<unknown> = await verifyResetPassword(
+      sanitizedEmail,
+      sanitizedPassword,
+      sanitizedConfirmPassword,
+      sanitizedToken
+    );
+
+    return {
+      success: true,
+      message: (response.data as { message?: string })?.message || 'Password reset successfully',
+    };
+  } catch (error) {
+    logger.error('[VerifyResetPasswordAction] Error:', error);
+    return {
+      success: false,
+      error: 'Failed to reset password. Please try again.',
     };
   }
 }

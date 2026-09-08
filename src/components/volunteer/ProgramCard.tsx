@@ -20,7 +20,7 @@ export default function ProgramCard({ program, index }: ProgramCardProps) {
   };
 
   const handleLearnMore = () => {
-    router.push(`/volunteer/programs/${index}`);
+    router.push(`/programs/${index}`);
   };
 
   const getProgressPercentage = () => {

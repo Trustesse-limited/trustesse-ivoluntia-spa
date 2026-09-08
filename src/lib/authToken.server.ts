@@ -35,6 +35,7 @@ const PUBLIC_ENDPOINTS = [
   API_ENDPOINTS.otp.resend,
   API_ENDPOINTS.auth.login,
   API_ENDPOINTS.auth.resetPassword,
+  API_ENDPOINTS.auth.forgotPassword,
   '/api/v1/countries/countries',
   '/api/v1/countries/states',
 ];

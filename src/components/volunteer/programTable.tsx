@@ -136,7 +136,7 @@ export default function ProgramTable({
                   onClick={() =>
                     onViewDetails
                       ? onViewDetails(program, index)
-                      : router.push(`/volunteer/programs/${index}`)
+                      : router.push(`/programs/${index}`)
                   }
                   className="px-4 py-2 text-sm bg-[#0E68DC] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer"
                 >
@@ -153,7 +153,7 @@ export default function ProgramTable({
                 )}
                 {showCertificate && program.status === "completed" && (
                   <button
-                    onClick={() => router.push(`/volunteer/programs/${index}/certificate`)}
+                    onClick={() => router.push(`/programs/${index}/certificate`)}
                     className="px-4 py-2 text-sm bg-[#9C27B0] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer"
                   >
                     Certificate

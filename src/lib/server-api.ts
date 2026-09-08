@@ -32,7 +32,6 @@ import {
 } from '@/types/api';
 import {
   getServerAccessToken,
-  getAuthHeader,
   isPublicEndpoint,
   shouldRefreshToken,
 } from '@/lib/authToken.server';
@@ -267,6 +266,74 @@ export async function login(
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.login,
       data
+    );
+    
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    
+    return response.data;
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Forgot Password (reset password with OTP)
+ * POST /api/v1/Auth/forgotpassword
+ * Takes email, newPassword, confirmPassword, and token (OTP) as request body
+ */
+export async function forgotPassword(
+  email: string,
+  newPassword: string,
+  confirmPassword: string,
+  token: string
+): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.auth.forgotPassword);
+    logger.log('[API] Request Payload:', { email, newPassword: '[REDACTED]', confirmPassword: '[REDACTED]', token });
+    
+    const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
+      API_ENDPOINTS.auth.forgotPassword,
+      {
+        email,
+        newPassword,
+        confirmPassword,
+        token,
+      }
+    );
+    
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    
+    return response.data;
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Verify Reset Password OTP
+ * POST /api/v1/Otp/verify-reset-password-otp
+ * Takes email, newPassword, confirmPassword, and token (OTP) as request body
+ */
+export async function verifyResetPassword(
+  email: string,
+  newPassword: string,
+  confirmPassword: string,
+  token: string
+): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.otp.verifyResetPassword);
+    logger.log('[API] Request Payload:', { email, newPassword: '[REDACTED]', confirmPassword: '[REDACTED]', token });
+    
+    const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
+      API_ENDPOINTS.otp.verifyResetPassword,
+      {
+        email,
+        newPassword,
+        confirmPassword,
+        token,
+      }
     );
     
     logger.log('[API] Response Status:', response.status);

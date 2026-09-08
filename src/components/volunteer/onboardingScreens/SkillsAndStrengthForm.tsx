@@ -118,6 +118,7 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
                 <AppButton
                   key={skill.name}
                   type="button"
+                  variant="custom"
                   onClick={() => toggleSkill(skill.name)}
                   isLoading={false}
                   className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] text-xs font-normal transition-colors duration-200 ${
@@ -128,7 +129,7 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
                   aria-pressed={isSelected}
                   aria-label={`Toggle ${skill.name}`}
                 >
-                  <span className={`text-sm pr-2.5 font-normal ${
+                  <span className={`text-sm font-normal ${
                     isSelected
                       ? "text-blue-700"
                       : "text-[#161616]"

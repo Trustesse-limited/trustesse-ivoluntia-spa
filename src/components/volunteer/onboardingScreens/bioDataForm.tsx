@@ -50,15 +50,23 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      if (selectedDate >= today) {
-        newErrors.dob = "Date of birth cannot be today or in the future";
-      } else {
+      // Check if date is in the future
+      if (selectedDate > today) {
+        newErrors.dob = "Date of birth cannot be in the future";
+      } 
+      // Check if date is today
+      else if (selectedDate.getTime() === today.getTime()) {
+        newErrors.dob = "Date of birth cannot be today";
+      } 
+      // Check minimum age requirement (12 years)
+      else {
         const minAgeDate = new Date();
-        minAgeDate.setFullYear(today.getFullYear() - 13);
+        minAgeDate.setFullYear(today.getFullYear() - 12);
         
         if (selectedDate > minAgeDate) {
-          newErrors.dob = "You must be at least 13 years old";
+          newErrors.dob = "You must be at least 12 years old";
         } else {
+          // Check maximum age (120 years)
           const maxAgeDate = new Date();
           maxAgeDate.setFullYear(today.getFullYear() - 120);
           
@@ -88,18 +96,24 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Check if date is in the future or today
-    if (selectedDate >= today) {
-      setDobError("Date of birth cannot be today or in the future");
+    // Check if date is in the future
+    if (selectedDate > today) {
+      setDobError("Date of birth cannot be in the future");
       return false;
     }
 
-    // Check if user is at least 13 years old (industry standard minimum age)
+    // Check if date is today
+    if (selectedDate.getTime() === today.getTime()) {
+      setDobError("Date of birth cannot be today");
+      return false;
+    }
+
+    // Check if user is at least 12 years old
     const minAgeDate = new Date();
-    minAgeDate.setFullYear(today.getFullYear() - 13);
+    minAgeDate.setFullYear(today.getFullYear() - 12);
     
     if (selectedDate > minAgeDate) {
-      setDobError("You must be at least 13 years old");
+      setDobError("You must be at least 12 years old");
       return false;
     }
 

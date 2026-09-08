@@ -21,16 +21,15 @@ async function Page() {
   if (token) {
     if (!hasCompletedOnboarding) {
       logger.log('Redirecting to onboarding (not completed)');
-      const normalizedAccountType = accountType?.toLowerCase() || 'volunteer';
-      redirect(`/onboarding?type=${normalizedAccountType}&step=${lastCompletedPage}`);
+      redirect('/onboarding');
     } else {
       logger.log('Redirecting to dashboard based on account type:', accountType);
       if (accountType === 'volunteer') {
         redirect('/home');
       } else if (accountType === 'organization') {
-        redirect('/dashboard');
+        redirect('/org/dashboard');
       } else if (accountType === 'admin') {
-        redirect('/admin-dashboard');
+        redirect('/admin/dashboard');
       }
     }
   }
