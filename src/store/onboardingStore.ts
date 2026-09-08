@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PartialVolunteerSignUpDto } from '@/types/api';
 import { OnboardingState, OnboardingFormData, OrganizationOnboardingData } from '@/types/onboarding';
+import logger from '@/lib/logger';
 
 const initialFormData: PartialVolunteerSignUpDto = {
   metaData: {
@@ -25,6 +26,7 @@ const initialFormData: PartialVolunteerSignUpDto = {
     city: '',
     zipCode: '',
     countryId: '',
+    countryName: '',
     stateId: '',
   },
   interest: {
@@ -64,6 +66,7 @@ const initialOrgData: OrganizationOnboardingData = {
     city: '',
     zipCode: '',
     countryId: '',
+    countryName: '',
     stateId: '',
   },
 };
@@ -77,6 +80,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       formData: initialFormData,
       lastVisited: Date.now(),
       accountType: null,
+      currentUserEmail: null,
       
       // Separate data for each account type
       volunteerData: {
@@ -142,6 +146,11 @@ export const useOnboardingStore = create<OnboardingState>()(
         if (sanitizedData.authInfo) {
           const { password, confirmPassword, ...secureAuthInfo } = sanitizedData.authInfo;
           sanitizedData.authInfo = secureAuthInfo;
+          
+          // Store the email if available
+          if (secureAuthInfo.email && !state.currentUserEmail) {
+            set({ currentUserEmail: secureAuthInfo.email });
+          }
         }
         
         const newFormData = { ...state.formData, ...sanitizedData };
@@ -181,14 +190,50 @@ export const useOnboardingStore = create<OnboardingState>()(
         });
       },
       
-      clearOnboarding: () => {
+      clearOnboarding: (email?: string) => {
         const state = get();
+        // Only clear if the email is different from the stored email
+        if (email && state.currentUserEmail === email) {
+          logger.log('[Onboarding] Same user logged in, preserving onboarding data');
+          return;
+        }
+        
+        logger.log('[Onboarding] Different user or no email, clearing onboarding data');
         set({
           currentStep: 0,
           isComplete: false,
           formData: initialFormData,
           lastVisited: Date.now(),
           accountType: null,
+          currentUserEmail: email || null,
+          volunteerData: {
+            currentStep: 0,
+            isComplete: false,
+            formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'volunteer' } },
+            lastVisited: Date.now(),
+          },
+          organizationData: {
+            currentStep: 0,
+            isComplete: false,
+            formData: { ...initialOrgData, metaData: { ...initialOrgData.metaData, accountType: 'organization' } },
+            lastVisited: Date.now(),
+          },
+        });
+        // Clear localStorage to prevent persist middleware from restoring old data
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('onboarding-storage');
+        }
+      },
+
+      clearAllOnboarding: () => {
+        logger.log('[Onboarding] Force clearing all onboarding data');
+        set({
+          currentStep: 0,
+          isComplete: false,
+          formData: initialFormData,
+          lastVisited: Date.now(),
+          accountType: null,
+          currentUserEmail: null,
           volunteerData: {
             currentStep: 0,
             isComplete: false,
@@ -202,6 +247,10 @@ export const useOnboardingStore = create<OnboardingState>()(
             lastVisited: 0,
           },
         });
+        // Clear persisted storage
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('onboarding-storage');
+        }
       },
       
       setComplete: () => {
@@ -262,15 +311,15 @@ export const useOnboardingStore = create<OnboardingState>()(
         if (hasStartedOnboarding && !accountData.isComplete) {
           if (checkType === 'volunteer') {
             if (accountData.currentStep === 0) {
-              route = '/onboarding/signup/volunteer';
+              route = '/signup?type=volunteer';
             } else {
-              route = '/onboarding/volunteer';
+              route = '/onboarding?type=volunteer';
             }
           } else {
             if (accountData.currentStep === 0) {
-              route = '/onboarding/signup/org';
+              route = '/signup?type=organization';
             } else {
-              route = '/onboarding/org';
+              route = '/onboarding?type=organization';
             }
           }
         }
@@ -312,6 +361,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         isComplete: state.isComplete,
         lastVisited: state.lastVisited,
         accountType: state.accountType,
+        currentUserEmail: state.currentUserEmail,
         formData: state.formData,
         volunteerData: state.volunteerData,
         organizationData: {

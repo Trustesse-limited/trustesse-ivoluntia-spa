@@ -1,22 +1,59 @@
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+/**
+ * Client-side Axios Configuration
+ * 
+ * SECURITY ARCHITECTURE: Pure Server-Side Authentication
+ * 
+ * This application uses HTTP-only cookies for JWT token storage, which is the industry standard
+ * for secure authentication. Tokens are never exposed to client-side JavaScript.
+ * 
+ * Key Security Features:
+ * - JWT tokens stored in HTTP-only cookies (inaccessible to JavaScript)
+ * - Credentials automatically sent with requests (withCredentials: true)
+ * - No localStorage usage (eliminates XSS vulnerabilities)
+ * - Server-side token validation and refresh
+ * - Automatic cookie management by browser
+ * 
+ * Public endpoints (signup, login, etc.) exclude credentials to prevent unnecessary cookie transmission.
+ * Authenticated endpoints automatically include cookies for authentication.
+ */
 
-// Create axios instance with base configuration (server-side only)
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import {
+  isPublicEndpoint,
+  getCookieAuthConfig,
+} from '@/lib/authToken.client';
+import logger from '@/lib/logger';
+
+// Create axios instance with base configuration (client-side)
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: process.env.API_BASE_URL,
-  timeout: 10000,
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable cookie-based authentication
 });
 
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // You can add auth tokens here if needed
-    // const token = localStorage.getItem('token');
-    // if (token && config.headers) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    // Configure credentials based on endpoint type
+    const authConfig = getCookieAuthConfig(config.url || '');
+    config.withCredentials = authConfig.withCredentials;
+    
+    // Log request for debugging
+    logger.log('[Client API] Request:', config.method?.toUpperCase(), config.url);
+    if (config.data) {
+      logger.log('[Client API] Request Payload:', JSON.stringify(config.data, null, 2));
+    }
+    if (config.params) {
+      logger.log('[Client API] Request Params:', JSON.stringify(config.params, null, 2));
+    }
+    
+    // NOTE: Authorization headers are automatically handled by HTTP-only cookies
+    // The browser will send cookies with requests when withCredentials is true
+    // No manual token injection needed - this is more secure
+    
     return config;
   },
   (error: AxiosError) => {
@@ -27,35 +64,35 @@ axiosInstance.interceptors.request.use(
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
+    logger.log('[Client API] Response Status:', response.status);
+    logger.log('[Client API] Response Data:', JSON.stringify(response.data, null, 2));
     return response;
   },
   (error: AxiosError) => {
-    // Handle common error cases
+    logger.log('[Client API] Error:', error.message);
     if (error.response) {
+      logger.log('[Client API] Error Status:', error.response.status);
+      logger.log('[Client API] Error Data:', JSON.stringify(error.response.data, null, 2));
+      
+      const status = error.response.status;
+      
       // Server responded with error status
-      switch (error.response.status) {
+      switch (status) {
         case 401:
-          console.error('Unauthorized access');
-          // Handle unauthorized - maybe redirect to login
+          error.message = 'Authentication failed. Please log in again.';
           break;
         case 403:
-          console.error('Forbidden access');
+          error.message = 'You do not have permission to access this resource.';
           break;
         case 404:
-          console.error('Resource not found');
+          error.message = 'The requested resource was not found.';
           break;
         case 500:
-          console.error('Server error');
+          error.message = 'Internal server error. Please try again later.';
           break;
-        default:
-          console.error('An error occurred:', error.response.status);
       }
     } else if (error.request) {
-      // Request made but no response received
-      console.error('No response received:', error.message);
-    } else {
-      // Error in request setup
-      console.error('Request setup error:', error.message);
+      error.message = 'Network error. Please check your connection.';
     }
     
     return Promise.reject(error);

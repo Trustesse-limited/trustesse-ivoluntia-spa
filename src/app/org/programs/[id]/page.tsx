@@ -1,52 +1,41 @@
 "use client";
-import React, { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { programs, volunteers } from "@/lib/mockData";
-import { FiCalendar, FiMapPin, FiUsers } from "react-icons/fi";
-import Image from "next/image";
+
+import { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import ProgramNotFound from "../components/programNotFound";
-import DeleteModal from "../components/modals/deleteProgram";
-import ForfeitModal from "../components/modals/forfeitProgram";
-import RemoveVolunteerModal from "../components/modals/removeVolunteer";
-import VolunteerTable from "../../components/volunteersTable";
-import { Volunteer } from "@/types";
-import DonationsTable from "../../components/DonationsTable";
-import { donors } from "@/lib/mockData";
-import { Donor } from "@/types";
-import DonorCommentModal from "../components/modals/DonorCommentModal";
-import BackButton from "../../../../components/BackButton";
+import { FiCalendar, FiMapPin, FiUsers } from "react-icons/fi";
+import BackButton from "@/components/BackButton";
+import Modal from "@/components/Modal";
+import { AppButton } from "@/components/AppButton";
+import { programs } from "@/lib/mockData";
 
-
+const formatNumberWithCommas = (num: number) => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
 
 export default function ProgramDetailPage() {
+  const router = useRouter();
   const { id } = useParams();
   const program = programs.find((_, index) => index.toString() === id);
-  const router = useRouter();
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
-  const [showRemoveModal, setShowRemoveModal] = useState(false);
-  const [selectedVolunteerIndex, setSelectedVolunteerIndex] = useState<
-    number | null
-        >(null);
-    const [showDonorCommentModal, setShowDonorCommentModal] = useState(false);
-    const [selectedDonorIndex, setSelectedDonorIndex] = useState<number | null>(
-      null
+
+  if (!program) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Program Not Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            The program you&apos;re looking for doesn&apos;t exist.
+          </p>
+          <BackButton />
+        </div>
+      </div>
     );
-
-    const handleViewDonorComment = (donor: Donor, index: number) => {
-      setSelectedDonorIndex(index);
-      setShowDonorCommentModal(true);
-    };
-
-    const handleCloseDonorCommentModal = () => {
-      setShowDonorCommentModal(false);
-      setSelectedDonorIndex(null);
-    };
-
-
-  if (!program) return <ProgramNotFound />;
+  }
 
   const isActive = () => {
     const now = new Date();
@@ -70,19 +59,6 @@ export default function ProgramDetailPage() {
     setShowForfeitModal(false);
   };
 
-  const handleRemoveVolunteer = (volunteer: Volunteer, index: number) => {
-    setSelectedVolunteerIndex(index);
-    setShowRemoveModal(true);
-  };
-
-  const confirmRemoveVolunteer = () => {
-    if (selectedVolunteerIndex !== null) {
-      console.log("Volunteer removed:", volunteers[selectedVolunteerIndex]);
-    }
-    setShowRemoveModal(false);
-    setSelectedVolunteerIndex(null);
-  };
-
   return (
     <>
       <motion.section
@@ -93,23 +69,12 @@ export default function ProgramDetailPage() {
         className="w-full max-w-full px-4 sm:px-6 lg:px-8 pt-6 pb-10 space-y-4 bg-white text-black"
       >
         <div className="flex items-center justify-start gap-4">
-       <BackButton /> <h1 className="text-xl font-bold">Program Overview</h1> 
-       </div>
-
-        {/* Image */}
-        <div className="w-full rounded-lg overflow-hidden">
-          <Image
-            src={program.image}
-            alt={program.title}
-            width={1200}
-            height={600}
-            className="w-full h-60 lg:h-80 object-cover rounded-md"
-          />
+          <BackButton />
+          <h1 className="text-xl font-bold">Program Overview</h1> 
         </div>
 
         {/* Title */}
         <div className="flex items-center justify-start gap-6 w-full flex-wrap">
-         
           <h2 className="text-xl font-bold">{program.title}</h2>
           <span
             className={`inline-block py-3 px-4 text-xs font-medium rounded-[8px] ${
@@ -120,9 +85,11 @@ export default function ProgramDetailPage() {
           >
             {isActive() ? "Active" : "Pending"}
           </span>
-          <button onClick={()=>router.push("/org/programs/edit")} className="bg-[var(--buttonPrimary)] rounded-[8px] text-white text-sm font-medium ml-auto p-3 cursor-pointer hover:opacity-90 transition-class">
-            Edit Program
-          </button>
+          <AppButton
+            text="Edit Program"
+            onClick={() => router.push(`/org/programs/${id}/edit`)}
+            className="!py-3 !px-6 !rounded-xl !text-sm !font-medium"
+          />
         </div>
 
         {/* Metadata */}
@@ -152,8 +119,8 @@ export default function ProgramDetailPage() {
         <div className="space-y-2 lg:w-8/12">
           <h3 className="text-lg font-bold">Donation Target</h3>
           <p className="text-sm mt-1">
-            ₦ {program.raised.toLocaleString()} Raised of ₦
-            {program.donationTarget.toLocaleString()}
+            ${formatNumberWithCommas(program.raised)} Raised of $
+            {formatNumberWithCommas(program.donationTarget)}
           </p>
           <div className="w-full bg-[#D9D9D9] rounded-full h-2 overflow-hidden">
             <div
@@ -171,74 +138,74 @@ export default function ProgramDetailPage() {
           </div>
         </div>
 
-        <div className="space-y-4 py-6">
-          {/* Volunteer Table */}
-          <h3 className="text-lg font-bold">Volunteers</h3>
-          <VolunteerTable data={volunteers} onRemove={handleRemoveVolunteer} />
-        </div>
-        <div className="space-y-4 py-6">
-          {/* Volunteer Table */}
-          <h3 className="text-lg font-bold">Donations</h3>
-          <DonationsTable
-            data={donors}
-            onViewComment={handleViewDonorComment}
-          />
-        </div>
-
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 w-full items-center">
-          <button
+          <AppButton
+            text="Forfeit"
             onClick={() => setShowForfeitModal(true)}
-            className="bg-[#C0C0C0] text-black text-sm font-medium rounded-[8px] py-3 px-8 cursor-pointer hover:opacity-90 transition"
-          >
-            Forfeit
-          </button>
-          <button
+            variant="outline"
+            className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+          />
+          <AppButton
+            text="Delete"
             onClick={() => setShowDeleteModal(true)}
-            className="bg-[#EF5350] text-white text-sm font-medium rounded-[8px] py-3 px-8 cursor-pointer hover:opacity-90 transition"
-          >
-            Delete
-          </button>
+            variant="danger"
+            className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+          />
         </div>
       </motion.section>
 
-      {/* Modals */}
-      <DeleteModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={handleDelete}
-      />
-      <ForfeitModal
-        isOpen={showForfeitModal}
-        onClose={() => setShowForfeitModal(false)}
-        onConfirm={handleForfeit}
-      />
-      <RemoveVolunteerModal
-        isOpen={showRemoveModal}
-        onClose={() => setShowRemoveModal(false)}
-        onConfirm={confirmRemoveVolunteer}
-      />
-      <DonorCommentModal
-        isOpen={showDonorCommentModal}
-        onClose={handleCloseDonorCommentModal}
-        donorName={
-          selectedDonorIndex !== null ? donors[selectedDonorIndex].name : ""
-        }
-        profilePic={
-          selectedDonorIndex !== null
-            ? donors[selectedDonorIndex].profilePic
-            : ""
-        }
-        amount={
-          selectedDonorIndex !== null ? donors[selectedDonorIndex].amount : 0
-        }
-        location={
-          selectedDonorIndex !== null ? donors[selectedDonorIndex].location : ""
-        }
-        comment={
-          selectedDonorIndex !== null ? donors[selectedDonorIndex].comment : ""
-        }
-      />
+      {/* Delete Modal */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
+        <div className="text-center">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Delete Program
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Are you sure you want to delete this program? This action cannot be undone.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <AppButton
+              text="Cancel"
+              onClick={() => setShowDeleteModal(false)}
+              variant="outline"
+              className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+            />
+            <AppButton
+              text="Delete"
+              onClick={handleDelete}
+              variant="danger"
+              className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Forfeit Modal */}
+      <Modal isOpen={showForfeitModal} onClose={() => setShowForfeitModal(false)}>
+        <div className="text-center">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Forfeit Program
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Are you sure you want to forfeit this program? This will mark it as forfeited and cannot be undone.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <AppButton
+              text="Cancel"
+              onClick={() => setShowForfeitModal(false)}
+              variant="outline"
+              className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+            />
+            <AppButton
+              text="Forfeit"
+              onClick={handleForfeit}
+              variant="secondary"
+              className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+            />
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

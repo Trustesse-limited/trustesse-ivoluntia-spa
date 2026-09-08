@@ -1,10 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import ProgramTable from "../components/programTable";
+import ProgramTable from "@/components/organization/programTable";
 import { ProgramItem } from "@/types";
 import { programs } from "@/lib/mockData";
 import { motion } from "framer-motion";
+import { AppButton } from "@/components/AppButton";
 
 type TabKey = "pending" | "active" | "history";
 
@@ -52,12 +53,11 @@ export default function ProgramsPage() {
           </p>
         </div>
         <div className="flex justify-center sm:justify-end w-full sm:w-auto">
-          <button
+          <AppButton
+            text="Create New Program"
             onClick={() => router.push("/org/programs/create")}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--buttonPrimary)] text-sm text-white rounded-md hover:opacity-90 transition cursor-pointer"
-          >
-            <span className="text-lg font-bold">+</span> Create New Program
-          </button>
+            className="!py-2 !px-4 !text-sm"
+          />
         </div>
       </div>
 

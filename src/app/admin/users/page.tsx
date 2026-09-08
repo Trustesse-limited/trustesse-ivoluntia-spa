@@ -96,7 +96,7 @@ export default function UsersPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Active": return "bg-[#E6F0FB] text-[#0E68DC]";
+      case "Active": return "bg-[var(--primary)]/20 text-[var(--buttonPrimary)]";
       case "Blocked": return "bg-red-100 text-red-800";
       default: return "bg-yellow-100 text-yellow-800";
     }
@@ -185,15 +185,15 @@ export default function UsersPage() {
         ) : (
           <div className="overflow-x-auto overflow-y-auto max-h-96 max-md:w-[calc(90vw-2rem)] w-[calc(90vw-13rem)]">
             <table className="w-full min-w-[600px] sm:min-w-[700px]">
-              <thead className="bg-[#E6F0FB] border-b border-gray-200 sticky top-0 z-10">
+              <thead className="bg-[var(--primary)]/20 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-bold text-[#052C57] tracking-wider whitespace-nowrap">User Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-bold text-[#052C57] tracking-wider whitespace-nowrap">Email Address</th>
-                  <th className="px-4 py-3 text-left text-sm font-bold text-[#052C57] tracking-wider whitespace-nowrap">Gender</th>
-                  <th className="px-4 py-3 text-left text-sm font-bold text-[#052C57] tracking-wider whitespace-nowrap">Location</th>
-                  <th className="px-4 py-3 text-left text-sm font-bold text-[#052C57] tracking-wider whitespace-nowrap">Role</th>
-                  <th className="px-4 py-3 text-left text-sm font-bold text-[#052C57] tracking-wider whitespace-nowrap">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-bold text-[#052C57] tracking-wider whitespace-nowrap">
+                  <th className="px-4 py-3 text-left text-sm font-bold text-[var(--buttonPrimary)] tracking-wider whitespace-nowrap">User Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-bold text-[var(--buttonPrimary)] tracking-wider whitespace-nowrap">Email Address</th>
+                  <th className="px-4 py-3 text-left text-sm font-bold text-[var(--buttonPrimary)] tracking-wider whitespace-nowrap">Gender</th>
+                  <th className="px-4 py-3 text-left text-sm font-bold text-[var(--buttonPrimary)] tracking-wider whitespace-nowrap">Location</th>
+                  <th className="px-4 py-3 text-left text-sm font-bold text-[var(--buttonPrimary)] tracking-wider whitespace-nowrap">Role</th>
+                  <th className="px-4 py-3 text-left text-sm font-bold text-[var(--buttonPrimary)] tracking-wider whitespace-nowrap">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-bold text-[var(--buttonPrimary)] tracking-wider whitespace-nowrap">
                     <select className="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-[#FFFFFF]">
                       <option value="all">Filter</option>
                       <option value="active">Active</option>
@@ -242,7 +242,7 @@ export default function UsersPage() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <button 
-                        onClick={() => router.push(`/admin/users/${user.id}`)}
+                        onClick={() => router.push(`/admin-users/${user.id}`)}
                         className="border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-3 py-1 rounded text-sm font-medium transition-colors"
                       >
                         View details

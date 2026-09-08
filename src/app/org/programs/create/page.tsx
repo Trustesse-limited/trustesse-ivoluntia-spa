@@ -1,11 +1,11 @@
 "use client";
 
-import ImageUpload from "@/app/org/programs/create/ImageUpload";
-import BackButton from "../../../../components/BackButton";
+import ImageUpload from "@/components/onboarding/components/ImageUpload";
+import BackButton from "@/components/BackButton";
 
 export default function CreatePage() {
   return (
-    <div className="min-h-screen bg-white bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <div className=" mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
@@ -53,7 +53,7 @@ export default function CreatePage() {
                 />
               </div>
 
-              <ImageUpload />
+              <ImageUpload label="Program Image" onChange={() => {}} />
             </div>
 
             {/* Dates & Category */}

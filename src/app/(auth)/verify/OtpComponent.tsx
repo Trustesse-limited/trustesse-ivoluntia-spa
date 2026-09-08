@@ -5,27 +5,35 @@ import React, { useState, useRef, ChangeEvent, KeyboardEvent } from "react";
 interface OtpInputProps {
   length?: number;
   onChangeOtp: (otp: string) => void;
+  onComplete?: (otp: string) => void;
 }
 
-const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp }) => {
+const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp, onComplete }) => {
   const [otp, setOtp] = useState<string[]>(Array(length).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
     const value = e.target.value;
 
-    // accept only numbers
-    if (/[^0-9]/.test(value)) return;
+    // accept only alphanumeric characters
+    if (/[^0-9a-zA-Z]/.test(value)) return;
 
     const newOtp = [...otp];
-    newOtp[index] = value.slice(-1); // keep only last digit
+    newOtp[index] = value.slice(-1); // keep only last character
     setOtp(newOtp);
 
     // move to next input if not last
     if (value && index < length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
-    onChangeOtp(newOtp.join(""));
+    
+    const otpString = newOtp.join("");
+    onChangeOtp(otpString);
+    
+    // Trigger onComplete when all digits are filled
+    if (otpString.length === length && onComplete) {
+      onComplete(otpString);
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -38,25 +46,31 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp }) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text/plain').trim();
     
-    // Only accept numeric paste
-    if (!/^\d+$/.test(pastedData)) return;
+    // Only accept alphanumeric paste
+    if (!/^[0-9a-zA-Z]+$/.test(pastedData)) return;
     
-    const digits = pastedData.slice(0, length).split('');
+    const characters = pastedData.slice(0, length).split('');
     const newOtp = [...otp];
     
-    digits.forEach((digit, i) => {
-      newOtp[i] = digit;
+    characters.forEach((char, i) => {
+      newOtp[i] = char;
     });
     
     setOtp(newOtp);
-    onChangeOtp(newOtp.join(''));
+    const otpString = newOtp.join('');
+    onChangeOtp(otpString);
     
     // Focus the next empty input or the last input
-    const nextEmptyIndex = digits.length;
+    const nextEmptyIndex = characters.length;
     if (nextEmptyIndex < length) {
       inputRefs.current[nextEmptyIndex]?.focus();
     } else {
       inputRefs.current[length - 1]?.focus();
+    }
+    
+    // Trigger onComplete when all digits are filled
+    if (otpString.length === length && onComplete) {
+      onComplete(otpString);
     }
   };
 

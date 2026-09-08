@@ -5,12 +5,15 @@ export interface VolunteerFormData {
   sex: string;
   dob: string;
   country: string;
+  countryName: string;
   state: string;
   city: string;
   zip: string;
   address: string;
   bio?: string;
-  photo?: File | null; 
+  photo?: File | null;
+  interests: string[];
+  skills: string[];
 }
 
 export interface FormProps {
@@ -26,6 +29,7 @@ export interface OrganizationFormData {
   website: string;
   mission: string;
   country: string;
+  countryName: string;
   state: string;
   city: string;
   zip: string;
