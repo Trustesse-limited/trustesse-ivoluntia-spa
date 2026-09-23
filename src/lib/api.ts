@@ -151,10 +151,29 @@ export const api = {
       apiClient.get(API_ENDPOINTS.programs.getById(id)),
     create: (data: Record<string, unknown>) => 
       apiClient.post(API_ENDPOINTS.programs.create, data),
-    update: (id: string, data: Record<string, unknown>) => 
+    update: (data: Record<string, unknown>) => 
       apiClient.put(API_ENDPOINTS.programs.update, data),
-    delete: (id: string) => 
+    delete: () => 
       apiClient.delete(API_ENDPOINTS.programs.deleteGoal),
+  },
+
+  programs: {
+    getAll: () => 
+      apiClient.get(API_ENDPOINTS.programs.getAll),
+    getById: (id: string) => 
+      apiClient.get(API_ENDPOINTS.programs.getById(id)),
+    create: (data: Record<string, unknown>) => 
+      apiClient.post(API_ENDPOINTS.programs.create, data),
+    update: (data: Record<string, unknown>) => 
+      apiClient.put(API_ENDPOINTS.programs.update, data),
+    deleteGoal: (programGoalId: string) => 
+      apiClient.delete(`${API_ENDPOINTS.programs.deleteGoal}?programGoalId=${programGoalId}`),
+    updateStatus: (data: Record<string, unknown>) => 
+      apiClient.put(API_ENDPOINTS.programs.updateStatus, data),
+    join: (programId: string) => 
+      apiClient.post(`${API_ENDPOINTS.programs.join}?programId=${programId}`),
+    leave: (programId: string) => 
+      apiClient.post(`${API_ENDPOINTS.programs.leave}?programId=${programId}`),
   },
   
   // Additional client-side endpoints can be added here

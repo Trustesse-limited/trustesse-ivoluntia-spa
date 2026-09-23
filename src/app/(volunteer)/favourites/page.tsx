@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FiHeart, FiMapPin, FiUsers, FiClock, FiCalendar, FiSearch, FiGrid, FiList, FiFilter, FiExternalLink, FiTrendingUp } from "react-icons/fi";
 import ProgramCard from "@/components/volunteer/ProgramCard";
-import { ProgramItem } from "@/types";
 import { programs } from "@/lib/mockData";
 
 const mockFavouritePrograms = programs.slice(0, 6).map(program => ({
@@ -194,7 +193,7 @@ export default function VolunteerFavouritesPage() {
                     transition={{ delay: index * 0.05 }}
                     className="relative group"
                   >
-                    <ProgramCard program={program} index={index} />
+                    <ProgramCard program={program} />
                     
                     {/* Quick Actions */}
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">

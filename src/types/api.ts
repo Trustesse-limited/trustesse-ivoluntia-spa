@@ -52,6 +52,88 @@ export interface PaginatedResponse<T> {
   };
 }
 
+// Programs API types
+export interface ProgramApiResponse {
+  id: string;
+  title?: string;
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+  city?: string;
+  donationTarget?: number;
+  targetAmount?: number;
+  raised?: number;
+  raisedAmount?: number;
+  category?: string;
+  foundationCategory?: string;
+  goals?: string;
+  description?: string;
+  mission?: string;
+  image?: string;
+  logo?: string;
+  volunteers?: number;
+  status?: string;
+  organization?: string;
+  organizationName?: string;
+  duration?: string;
+  targetVolunteers?: number;
+  locationId?: string;
+  foundationId?: string;
+  creatorEmail?: string;
+  bannerImage?: string;
+  skillIds?: string[];
+  programGoals?: ProgramGoal[];
+}
+
+export interface ProgramGoal {
+  goal: string;
+  id?: string;
+}
+
+export interface CreateProgramRequest extends Record<string, unknown> {
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  locationId: string;
+  foundationId: string;
+  creatorEmail: string;
+  donationTarget: number;
+  bannerImage?: string;
+  skillIds?: string[];
+  programGoals?: ProgramGoal[];
+}
+
+export interface UpdateProgramRequest extends Record<string, unknown> {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  locationId: string;
+  donationTarget: number;
+  bannerImage?: string;
+}
+
+export interface UpdateProgramStatusRequest {
+  programId: string;
+  status: string;
+  queriedComment?: string;
+}
+
+export interface JoinProgramRequest {
+  programId: string;
+}
+
+export interface LeaveProgramRequest {
+  programId: string;
+}
+
+export interface DeleteProgramGoalRequest {
+  programGoalId: string;
+}
+
 // Volunteer Sign Up DTO based on backend API
 export interface VolunteerSignUpDto {
   metaData: {

@@ -7,10 +7,9 @@ import { RippleEffect } from "@/components/RippleEffect";
 
 type ProgramCardProps = {
   program: ProgramItem;
-  index: number;
 };
 
-export default function ProgramCard({ program, index }: ProgramCardProps) {
+export default function ProgramCard({ program }: ProgramCardProps) {
   const router = useRouter();
   const [isFavourited, setIsFavourited] = useState(false);
 
@@ -20,7 +19,7 @@ export default function ProgramCard({ program, index }: ProgramCardProps) {
   };
 
   const handleLearnMore = () => {
-    router.push(`/programs/${index}`);
+    router.push(`/programs/${program.id}`);
   };
 
   const getProgressPercentage = () => {

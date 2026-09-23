@@ -62,7 +62,10 @@ export interface ProgramItem {
   isFavourited?: boolean;
   duration?: string;
   targetVolunteers?: number;
-};
+}
+
+// Re-export API types for convenience
+export type { ProgramApiResponse } from './api';;
 export interface Volunteer {
   name: string;
   location: string;

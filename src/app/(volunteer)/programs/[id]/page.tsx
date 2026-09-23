@@ -1,17 +1,78 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { FiCalendar, FiMapPin, FiUsers, FiTarget, FiClock } from "react-icons/fi";
 import BackButton from "@/components/BackButton";
-import { programs } from "@/lib/mockData";
+import { api } from "@/lib/api";
+import { ProgramItem } from "@/types";
+import { ProgramApiResponse } from "@/types/api";
+import toast from "react-hot-toast";
 
 export default function ProgramDetailPage() {
   const router = useRouter();
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [program, setProgram] = useState<ProgramItem | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { id } = useParams();
-  const program = programs.find((_, index) => index.toString() === id);
+
+  useEffect(() => {
+    const fetchProgram = async () => {
+      if (!id) return;
+
+      try {
+        setIsLoading(true);
+        const response = await api.programs.getById(Array.isArray(id) ? id[0] : id);
+        
+        if (response.success && response.data) {
+          // Map API response to ProgramItem interface
+          const programData = response.data as ProgramApiResponse;
+          const mappedProgram: ProgramItem = {
+            id: programData.id || (Array.isArray(id) ? id[0] : id),
+            title: programData.title || programData.name || '',
+            startDate: programData.startDate || '',
+            endDate: programData.endDate || '',
+            location: programData.location || programData.city || '',
+            donationTarget: programData.donationTarget || programData.targetAmount || 0,
+            raised: programData.raised || programData.raisedAmount || 0,
+            category: programData.category || programData.foundationCategory || '',
+            goals: programData.goals || '',
+            description: programData.description || programData.mission || '',
+            image: programData.image || programData.logo || '',
+            volunteers: programData.volunteers || 0,
+            status: programData.status || 'Active',
+            organization: programData.organization || programData.organizationName || '',
+            isFavourited: false,
+            duration: programData.duration || '',
+            targetVolunteers: programData.targetVolunteers || 0,
+          };
+          setProgram(mappedProgram);
+        } else {
+          setProgram(null);
+        }
+      } catch (err) {
+        console.error('Error fetching program:', err);
+        setProgram(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProgram();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-gray-400 text-lg">Loading program details...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!program) {
     return (
@@ -21,7 +82,7 @@ export default function ProgramDetailPage() {
             Program Not Found
           </h2>
           <p className="text-gray-600 mb-4">
-            {`The program you're looking for doesn't exist.`}
+            The program you&apos;re looking for doesn&apos;t exist.
           </p>
           <BackButton />
         </div>
@@ -31,9 +92,38 @@ export default function ProgramDetailPage() {
 
   const handleEnroll = async () => {
     setIsEnrolling(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsEnrolling(false);
-    router.push("/volunteer/programs?enrolled=true");
+    try {
+      const response = await api.programs.join(program.id);
+      if (response.success) {
+        toast.success('Successfully enrolled in program');
+        setIsEnrolled(true);
+      } else {
+        toast.error('Failed to enroll in program');
+      }
+    } catch (error) {
+      console.error('Error enrolling in program:', error);
+      toast.error('Failed to enroll in program');
+    } finally {
+      setIsEnrolling(false);
+    }
+  };
+
+  const handleLeave = async () => {
+    setIsLeaving(true);
+    try {
+      const response = await api.programs.leave(program.id);
+      if (response.success) {
+        toast.success('Successfully left program');
+        setIsEnrolled(false);
+      } else {
+        toast.error('Failed to leave program');
+      }
+    } catch (error) {
+      console.error('Error leaving program:', error);
+      toast.error('Failed to leave program');
+    } finally {
+      setIsLeaving(false);
+    }
   };
 
   return (
@@ -59,13 +149,23 @@ export default function ProgramDetailPage() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 lg:w-auto">
-            <button
-              onClick={handleEnroll}
-              disabled={isEnrolling}
-              className="px-6 py-3 bg-[#66BB6A] text-white rounded-md hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isEnrolling ? "Enrolling..." : "Enroll Now"}
-            </button>
+            {isEnrolled ? (
+              <button
+                onClick={handleLeave}
+                disabled={isLeaving}
+                className="px-6 py-3 bg-red-500 text-white rounded-md hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLeaving ? "Leaving..." : "Leave Program"}
+              </button>
+            ) : (
+              <button
+                onClick={handleEnroll}
+                disabled={isEnrolling}
+                className="px-6 py-3 bg-[#66BB6A] text-white rounded-md hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isEnrolling ? "Enrolling..." : "Enroll Now"}
+              </button>
+            )}
             <button
               onClick={() => router.push("/volunteer/programs")}
               className="px-6 py-3 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"

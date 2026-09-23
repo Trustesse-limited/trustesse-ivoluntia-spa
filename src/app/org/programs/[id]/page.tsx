@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { FiCalendar, FiMapPin, FiUsers } from "react-icons/fi";
 import BackButton from "@/components/BackButton";
 import Modal from "@/components/Modal";
 import { AppButton } from "@/components/AppButton";
-import { programs } from "@/lib/mockData";
+import { api } from "@/lib/api";
+import { ProgramItem } from "@/types";
+import { ProgramApiResponse } from "@/types/api";
+import toast from "react-hot-toast";
 
 const formatNumberWithCommas = (num: number) => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -16,10 +19,65 @@ const formatNumberWithCommas = (num: number) => {
 export default function ProgramDetailPage() {
   const router = useRouter();
   const { id } = useParams();
-  const program = programs.find((_, index) => index.toString() === id);
-  
+  const [program, setProgram] = useState<ProgramItem | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
+
+  useEffect(() => {
+    const fetchProgram = async () => {
+      if (!id) return;
+
+      try {
+        setIsLoading(true);
+        const response = await api.programs.getById(Array.isArray(id) ? id[0] : id);
+        
+        if (response.success && response.data) {
+          // Map API response to ProgramItem interface
+          const programData = response.data as ProgramApiResponse;
+          const mappedProgram: ProgramItem = {
+            id: programData.id || (Array.isArray(id) ? id[0] : id),
+            title: programData.title || programData.name || '',
+            startDate: programData.startDate || '',
+            endDate: programData.endDate || '',
+            location: programData.location || programData.city || '',
+            donationTarget: programData.donationTarget || programData.targetAmount || 0,
+            raised: programData.raised || programData.raisedAmount || 0,
+            category: programData.category || programData.foundationCategory || '',
+            goals: programData.goals || '',
+            description: programData.description || programData.mission || '',
+            image: programData.image || programData.logo || '',
+            volunteers: programData.volunteers || 0,
+            status: programData.status || 'Active',
+            organization: programData.organization || programData.organizationName || '',
+            isFavourited: false,
+            duration: programData.duration || '',
+            targetVolunteers: programData.targetVolunteers || 0,
+          };
+          setProgram(mappedProgram);
+        } else {
+          setProgram(null);
+        }
+      } catch (err) {
+        console.error('Error fetching program:', err);
+        setProgram(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProgram();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-gray-400 text-lg">Loading program details...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!program) {
     return (
@@ -49,13 +107,45 @@ export default function ProgramDetailPage() {
     100
   );
 
-  const handleDelete = () => {
-    console.log("Program deleted");
+  const handleDelete = async () => {
+    try {
+      const response = await api.programs.updateStatus({
+        programId: program.id,
+        status: 'Deleted',
+        queriedComment: 'Program deleted by organization'
+      });
+      
+      if (response.success) {
+        toast.success('Program deleted successfully');
+        router.push('/org/programs');
+      } else {
+        toast.error('Failed to delete program');
+      }
+    } catch (error) {
+      console.error('Error deleting program:', error);
+      toast.error('Failed to delete program');
+    }
     setShowDeleteModal(false);
   };
 
-  const handleForfeit = () => {
-    console.log("Program forfeited");
+  const handleForfeit = async () => {
+    try {
+      const response = await api.programs.updateStatus({
+        programId: program.id,
+        status: 'Forfeited',
+        queriedComment: 'Program forfeited by organization'
+      });
+      
+      if (response.success) {
+        toast.success('Program forfeited successfully');
+        router.push('/org/programs');
+      } else {
+        toast.error('Failed to forfeit program');
+      }
+    } catch (error) {
+      console.error('Error forfeiting program:', error);
+      toast.error('Failed to forfeit program');
+    }
     setShowForfeitModal(false);
   };
 
