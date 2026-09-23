@@ -14,8 +14,8 @@ const publicRoutes = [
 // Role-based route groups
 const roleRouteGroups = {
   volunteer: ['/home', '/profile', '/activity', '/favourites', '/achievements', '/settings', '/notifications', '/legal-support'],
-  organization: ['/org'],
-  admin: ['/admin'],
+  organization: ['/org', '/org/dashboard'],
+  admin: ['/admin', '/admin/dashboard'],
 };
 
 // Protected routes that require authentication
@@ -29,7 +29,9 @@ const protectedRoutes = [
   '/notifications',
   '/legal-support',
   '/org',
+  '/org/dashboard',
   '/admin',
+  '/admin/dashboard',
   '/onboarding',
 ];
 
@@ -42,7 +44,10 @@ export function middleware(request: NextRequest) {
   // Get token from cookies (check both auth_token and access_token)
   const token = request.cookies.get('auth_token')?.value || request.cookies.get('access_token')?.value;
   const hasCompletedOnboarding = request.cookies.get('has_completed_onboarding')?.value === 'true';
-  const accountType = request.cookies.get('user_role')?.value;
+  const rawAccountType = request.cookies.get('user_role')?.value;
+  
+  // Normalize account type: treat "foundation" as "organization" (they are interchangeable)
+  const accountType = rawAccountType === 'foundation' ? 'organization' : rawAccountType;
   
   // Log all cookies for debugging
   const allCookies = request.cookies.getAll();
@@ -54,7 +59,8 @@ export function middleware(request: NextRequest) {
   logger.log('All Cookies:', cookieNames || 'NONE');
   logger.log('Auth Token exists:', !!token);
   logger.log('Auth Token value:', token ? `${token.substring(0, 20)}...` : 'NONE');
-  logger.log('User Role:', accountType || 'NONE');
+  logger.log('Raw User Role:', rawAccountType || 'NONE');
+  logger.log('Normalized User Role:', accountType || 'NONE');
   logger.log('Has Completed Onboarding:', hasCompletedOnboarding);
   logger.log('Protected Routes:', protectedRoutes.join(', '));
   logger.log('Is Protected Route:', protectedRoutes.some(route => pathname.startsWith(route)));
@@ -130,29 +136,21 @@ export function middleware(request: NextRequest) {
     }
   }
   
-  // Catch-all for authenticated users: redirect to appropriate route based on onboarding status
-  // This handles cases where user visits any route that's not a protected route they can access
-  if (token && !publicRoutes.includes(pathname) && !protectedRoutes.some(route => pathname.startsWith(route))) {
-    logger.log('Authenticated user accessing non-protected route:', pathname);
-    if (!hasCompletedOnboarding) {
-      logger.log('Redirecting to onboarding (not completed)');
-      return NextResponse.redirect(new URL('/onboarding', request.url));
-    } else {
-      logger.log('Redirecting to dashboard based on account type:', accountType);
-      if (accountType === 'volunteer') {
-        return NextResponse.redirect(new URL('/home', request.url));
-      } else if (accountType === 'organization') {
-        return NextResponse.redirect(new URL('/org/dashboard', request.url));
-      } else {
-        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-      }
-    }
-  }
-  
   // Role-based access control for protected routes (excluding onboarding)
+  // This should take precedence over onboarding status check for protected routes
+  // Users should be able to access their dashboard even if they haven't completed onboarding
   if (token && protectedRoutes.some(route => pathname.startsWith(route)) && !pathname.startsWith('/onboarding')) {
     logger.log('Checking role-based access for:', pathname);
     logger.log('User account type:', accountType);
+    logger.log('Has Completed Onboarding:', hasCompletedOnboarding);
+    
+    // Special case: always allow access to dashboard routes for authenticated users
+    const isDashboardRoute = pathname === '/home' || pathname === '/org/dashboard' || pathname === '/admin/dashboard';
+    if (isDashboardRoute) {
+      logger.log('ALLOWING: User can access dashboard route regardless of onboarding status');
+      return NextResponse.next();
+    }
+    
     if (accountType) {
       // Check if user can access this route based on role
       const allowedRoutes = roleRouteGroups[accountType as keyof typeof roleRouteGroups];
@@ -175,9 +173,29 @@ export function middleware(request: NextRequest) {
         }
       } else {
         logger.log('ALLOWING: User has access to this route');
+        return NextResponse.next();
       }
     } else {
       logger.log('WARNING: Token exists but no account type found');
+    }
+  }
+  
+  // Catch-all for authenticated users: redirect to appropriate route based on onboarding status
+  // This handles cases where user visits any route that's not a protected route they can access
+  if (token && !publicRoutes.includes(pathname) && !protectedRoutes.some(route => pathname.startsWith(route))) {
+    logger.log('Authenticated user accessing non-protected route:', pathname);
+    if (!hasCompletedOnboarding) {
+      logger.log('Redirecting to onboarding (not completed)');
+      return NextResponse.redirect(new URL('/onboarding', request.url));
+    } else {
+      logger.log('Redirecting to dashboard based on account type:', accountType);
+      if (accountType === 'volunteer') {
+        return NextResponse.redirect(new URL('/home', request.url));
+      } else if (accountType === 'organization') {
+        return NextResponse.redirect(new URL('/org/dashboard', request.url));
+      } else {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+      }
     }
   }
   

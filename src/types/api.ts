@@ -68,6 +68,7 @@ export interface VolunteerSignUpDto {
     userId?: string;
     firstName: string;
     lastName: string;
+    otherName?: string;
     gender: number;
     dateOfBirth: string; // ISO 8601 format
   };
@@ -111,6 +112,7 @@ export interface PartialVolunteerSignUpDto {
     userId?: string;
     firstName?: string;
     lastName?: string;
+    otherName?: string;
     gender?: number;
     dateOfBirth?: string;
   };
@@ -229,6 +231,7 @@ export interface VolunteerOnboardingRequest {
   'onboardingMetaData.CurrentPage': number;
   'BioData.FirstName': string;
   'BioData.LastName': string;
+  'BioData.OtherName'?: string;
   'BioData.Gender': number;
   'BioData.DateOfBirth': string;
   'LocationDto.Address': string;

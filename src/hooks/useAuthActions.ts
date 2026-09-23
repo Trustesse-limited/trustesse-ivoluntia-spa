@@ -63,7 +63,7 @@ export interface EnhancedLoginResult {
 export function useAuthActions() {
   const [isLoading, setIsLoading] = useState(false);
   const { login: setLogin, logout: setLogout } = useAuthStore();
-  const { clearOnboarding, clearAllOnboarding, setCurrentStep, setAccountType, updateFormData } = useOnboardingStore();
+  const { clearOnboarding, clearAllOnboarding, initializeFromLoginResponse } = useOnboardingStore();
 
   const volunteerSignUp = async (data: VolunteerSignUpRequest) => {
     setIsLoading(true);
@@ -331,6 +331,19 @@ export function useAuthActions() {
       const result = await loginAction(data);
 
       if (result.success) {
+        // Check if two-factor authentication is required
+        if (result.requiresTwoFactor && result.email) {
+          logger.log('[Login] Two-factor authentication required, redirecting to verify page');
+          toast.success('Two-factor code sent to your email', {
+            duration: 3000,
+          });
+          return {
+            success: true,
+            redirect: `/verify?email=${encodeURIComponent(result.email)}&purpose=Login&resend=true`,
+            requiresTwoFactor: true,
+          } as EnhancedLoginResult;
+        }
+
         // Display the backend success message if available, otherwise fallback
         const successMessage = typeof result.message === 'string' ? result.message : 'Login successful!';
         toast.success(successMessage, {
@@ -356,14 +369,46 @@ export function useAuthActions() {
           // but local form data should be preserved for the user
           
           // Update onboarding store with login API data
-          const normalizedAccountType = accountType?.toLowerCase() as 'volunteer' | 'organization' | undefined;
-          if (normalizedAccountType) {
-            setAccountType(normalizedAccountType);
-            setCurrentStep((lastCompletedPage || 0) + 1);
-            updateFormData({
-              metaData: {
-                accountType: normalizedAccountType,
-                currentPage: (lastCompletedPage || 0) + 1,
+          // Handle both "organization" and "foundation" as organization accounts
+          const normalizedAccountTypeForOnboarding = (() => {
+            const type = accountType?.toLowerCase();
+            if (type === 'foundation' || type === 'organization') {
+              return 'organization';
+            }
+            return type as 'volunteer' | 'organization' | undefined;
+          })();
+          
+          if (normalizedAccountTypeForOnboarding) {
+            // Initialize onboarding store with login response data
+            initializeFromLoginResponse({
+              accountType: normalizedAccountTypeForOnboarding === 'organization' ? 'Organization' : accountType,
+              hasCompletedOnboarding,
+              lastCompletedPage,
+              userProfile: loginData.userProfile as {
+                firstName?: string;
+                lastName?: string;
+                otherName?: string;
+                email?: string;
+                dateOfBirth?: string;
+                gender?: string;
+                address?: string | null;
+                city?: string | null;
+                zipCode?: string | null;
+                country?: string | null;
+                countryName?: string | null;
+                state?: string;
+                stateName?: string | null;
+                interestNames?: string[];
+                skillNames?: string[];
+                bio?: string | null;
+                profileImage?: string;
+                category?: string;
+                website?: string;
+                mission?: string;
+                foundationCountry?: string;
+                foundationState?: string;
+                causeNames?: string[] | null;
+                foundationLogoUrl?: string;
               },
             });
           }
@@ -374,11 +419,33 @@ export function useAuthActions() {
           logger.log('[Login] loginData.extractedUserData:', loginData.extractedUserData);
           
           if (loginData.userProfile && typeof loginData.userProfile === 'object') {
-            const userProfile = loginData.userProfile as User;
-            // Include account type from login response
+            const userProfile = loginData.userProfile as unknown as Record<string, unknown>;
+            // Include account type from login response and map userProfile fields to User interface
+            // Handle both "organization" and "foundation" as organization accounts
+            const normalizedAccountTypeForUser = (() => {
+              const type = accountType?.toLowerCase();
+              if (type === 'foundation' || type === 'organization') {
+                return 'Organization';
+              }
+              return accountType as 'Volunteer' | 'Organization' | 'Admin';
+            })();
+            
             const userWithAccountType: User = {
-              ...userProfile,
-              accountType: accountType as 'Volunteer' | 'Organization' | 'Admin',
+              id: userProfile.email as string || '', // Use email as ID if not provided
+              email: userProfile.email as string || '',
+              // For organizations, use firstName as org name (backend sends it there)
+              firstName: userProfile.firstName as string || '',
+              lastName: userProfile.lastName as string || '',
+              otherName: userProfile.otherName as string || '',
+              organizationName: normalizedAccountTypeForUser === 'Organization' 
+                ? (userProfile.firstName as string || undefined)
+                : undefined,
+              accountType: normalizedAccountTypeForUser,
+              userImage: userProfile.userImage as string | null || null,
+              location: userProfile.city && userProfile.stateName ? `${userProfile.city}, ${userProfile.stateName}` : null,
+              bio: userProfile.bio as string | null || null,
+              skills: userProfile.skillNames as string[] || [],
+              interests: userProfile.interestNames as string[] || [],
             };
             logger.log('[Login] Using userProfile:', userWithAccountType);
             setLogin(userWithAccountType, loginData.accessToken as string || '');
@@ -411,9 +478,17 @@ export function useAuthActions() {
           }
           
           // Determine redirect based on account type and onboarding status
+          // Handle both "organization" and "foundation" as organization accounts
+          const normalizedAccountType = (() => {
+            const type = accountType?.toLowerCase();
+            if (type === 'foundation' || type === 'organization') {
+              return 'organization';
+            }
+            return type as 'volunteer' | 'organization' | 'admin' | undefined;
+          })();
+          
           if (!hasCompletedOnboarding) {
             // Redirect to onboarding (account type is read from cookies)
-            const normalizedAccountType = accountType?.toLowerCase();
             if (normalizedAccountType === 'organization') {
               logger.log('[Login] Redirecting to organization onboarding');
               return {
@@ -441,7 +516,6 @@ export function useAuthActions() {
             }
           } else {
             // User has completed onboarding, redirect to appropriate dashboard
-            const normalizedAccountType = accountType?.toLowerCase();
             if (normalizedAccountType === 'organization') {
               logger.log('[Login] Redirecting to organization dashboard');
               return { 

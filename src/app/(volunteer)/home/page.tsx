@@ -5,8 +5,10 @@ import ProgramCard from "@/components/volunteer/ProgramCard";
 import SearchBar from "@/components/volunteer/SearchBar";
 import { programs } from "@/lib/mockData";
 import { AppButton } from "@/components/AppButton";
+import { useAuthStore } from "@/store";
 
 export default function VolunteerHomePage() {
+  const { user } = useAuthStore();
   const [searchFilters, setSearchFilters] = useState({
     program: "",
     interest: "",
@@ -29,6 +31,8 @@ export default function VolunteerHomePage() {
     setSearchFilters({ program, interest, location });
   };
 
+  const displayName = user?.firstName || user?.email?.split('@')[0] || 'Volunteer';
+
   return (
     <motion.section
       initial={{ opacity: 0 }}
@@ -40,7 +44,7 @@ export default function VolunteerHomePage() {
       {/* Welcome Header */}
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-          Hello, Eva
+          Hello, {displayName}
         </h1>
         
       </div>

@@ -11,7 +11,7 @@ import logger from '@/lib/logger';
 import { VolunteerFormData, OrganizationFormData } from "@/types";
 import { OrganizationOnboardingData } from "@/types/onboarding";
 import { PartialVolunteerSignUpDto, VolunteerOnboardingRequest, OrganizationOnboardingRequest } from "@/types/api";
-import { validateBioDataForm, validateLocationForm, validateOrgAboutForm, ValidationResult } from "@/lib/formValidation";
+import { validateBioDataForm, validateLocationForm, validateOrgAboutForm } from "@/lib/formValidation";
 
 
 // Import volunteer forms
@@ -197,7 +197,20 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
   const { volunteerOnboarding, organizationOnboarding, isLoading } = useAuthActions();
 
   // Determine account type from cookie (most accurate), then auth store, then store
-  const accountType = (accountTypeFromCookie?.toLowerCase() || user?.accountType?.toLowerCase() || onboardingFormData.metaData?.accountType?.toLowerCase() || "volunteer") as "volunteer" | "organization";
+  // Handle both "organization" and "foundation" as organization accounts
+  const accountType = (() => {
+    const cookieType = accountTypeFromCookie?.toLowerCase();
+    const userType = user?.accountType?.toLowerCase();
+    const formType = onboardingFormData.metaData?.accountType?.toLowerCase();
+    
+    const normalizedType = cookieType || userType || formType || "volunteer";
+    
+    // Handle both "organization" and "foundation" as organization accounts
+    if (normalizedType === 'foundation' || normalizedType === 'organization') {
+      return 'organization';
+    }
+    return 'volunteer';
+  })() as "volunteer" | "organization";
   
   logger.log('[Onboarding Client] accountTypeFromCookie prop:', accountTypeFromCookie);
   logger.log('[Onboarding Client] accountType from cookie (lowercased):', accountTypeFromCookie?.toLowerCase());
@@ -250,58 +263,72 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           skills: [],
         }
   );
-  
-  // Track if we've initialized form data from store to prevent overwriting
-  const hasInitializedRef = React.useRef(false);
 
-  // On mount, restore form data from localStorage for the current step
+  // On mount, switch account type and update form data when account type changes
   useEffect(() => {
     switchAccountType(accountType as "volunteer" | "organization");
     
     // Get the account-specific data from localStorage
     const accountSpecificData = accountType === "organization" ? organizationData : volunteerData;
     
-    // Restore form data from store ONLY on first mount
-    // This prevents overwriting user's selections when they navigate back to a step
-    if (!hasInitializedRef.current) {
-      if (accountType === "volunteer") {
-        const volunteerData = accountSpecificData.formData as PartialVolunteerSignUpDto;
-        if (volunteerData.bioData) {
-          setFormData({
-            firstName: volunteerData.bioData.firstName || "",
-            lastName: volunteerData.bioData.lastName || "",
-            otherNames: "",
-            sex: volunteerData.bioData.gender === 1 ? "male" : volunteerData.bioData.gender === 2 ? "female" : "",
-            dob: volunteerData.bioData.dateOfBirth || "",
-            country: volunteerData.locationDto?.countryId || "",
-            countryName: volunteerData.locationDto?.countryName || "",
-            state: volunteerData.locationDto?.stateId || "",
-            city: volunteerData.locationDto?.city || "",
-            zip: volunteerData.locationDto?.zipCode || "",
-            address: volunteerData.locationDto?.address || "",
-            interests: volunteerData.interest?.names || [],
-            skills: volunteerData.skill?.names || [],
-          });
+    logger.log('[OnboardingClient] Account type changed - accountType:', accountType);
+    logger.log('[OnboardingClient] volunteerData:', volunteerData);
+    logger.log('[OnboardingClient] organizationData:', organizationData);
+    
+    // Update form data when account type changes
+    if (accountType === "volunteer") {
+      const volunteerFormData = accountSpecificData.formData as PartialVolunteerSignUpDto;
+      logger.log('[OnboardingClient] volunteerFormData.bioData:', volunteerFormData.bioData);
+      
+      if (volunteerFormData.bioData) {
+        // Handle gender conversion from both string and number formats
+        const genderValue = volunteerFormData.bioData.gender;
+        const genderNum = typeof genderValue === 'string' ? parseInt(genderValue, 10) : genderValue;
+        
+        logger.log('[OnboardingClient] Updating form data - genderValue:', genderValue, 'genderNum:', genderNum);
+        
+        // Format date of birth to YYYY-MM-DD for date input (if it's in ISO format)
+        let formattedDob = volunteerFormData.bioData.dateOfBirth || "";
+        if (formattedDob && formattedDob.includes('T')) {
+          formattedDob = formattedDob.split('T')[0];
         }
-      } else if (accountType === "organization") {
-        const orgData = (accountSpecificData.formData as OrganizationOnboardingData).orgData || {};
+        
+        const sexValue = genderNum === 1 ? "male" : genderNum === 2 ? "female" : "";
+        logger.log('[OnboardingClient] Setting sex value:', sexValue);
+        
         setFormData({
-          name: orgData.name || "",
-          category: orgData.category || "",
-          website: orgData.website || "",
-          mission: orgData.mission || "",
-          country: accountSpecificData.formData?.locationDto?.countryId || "",
-          countryName: accountSpecificData.formData?.locationDto?.countryName || "",
-          state: accountSpecificData.formData?.locationDto?.stateId || "",
-          city: accountSpecificData.formData?.locationDto?.city || "",
-          zip: accountSpecificData.formData?.locationDto?.zipCode || "",
-          address: accountSpecificData.formData?.locationDto?.address || "",
-          causes: orgData.causes || [],
-          logo: null,
-          disclaimerAgreed: orgData.disclaimerAgreed || false,
+          firstName: volunteerFormData.bioData.firstName || "",
+          lastName: volunteerFormData.bioData.lastName || "",
+          otherNames: volunteerFormData.bioData.otherName || "",
+          sex: sexValue,
+          dob: formattedDob,
+          country: volunteerFormData.locationDto?.countryId || "",
+          countryName: volunteerFormData.locationDto?.countryName || "",
+          state: volunteerFormData.locationDto?.stateId || "",
+          city: volunteerFormData.locationDto?.city || "",
+          zip: volunteerFormData.locationDto?.zipCode || "",
+          address: volunteerFormData.locationDto?.address || "",
+          interests: volunteerFormData.interest?.names || [],
+          skills: volunteerFormData.skill?.names || [],
         });
       }
-      hasInitializedRef.current = true;
+    } else if (accountType === "organization") {
+      const orgData = (accountSpecificData.formData as OrganizationOnboardingData).orgData || {};
+      setFormData({
+        name: orgData.name || "",
+        category: orgData.category || "",
+        website: orgData.website || "",
+        mission: orgData.mission || "",
+        country: accountSpecificData.formData?.locationDto?.countryId || "",
+        countryName: accountSpecificData.formData?.locationDto?.countryName || "",
+        state: accountSpecificData.formData?.locationDto?.stateId || "",
+        city: accountSpecificData.formData?.locationDto?.city || "",
+        zip: accountSpecificData.formData?.locationDto?.zipCode || "",
+        address: accountSpecificData.formData?.locationDto?.address || "",
+        causes: orgData.causes || [],
+        logo: null,
+        disclaimerAgreed: orgData.disclaimerAgreed || false,
+      });
     }
   }, [accountType, switchAccountType, volunteerData, organizationData]);
 
@@ -434,6 +461,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'onboardingMetaData.CurrentPage': step + 1,
           'BioData.FirstName': volunteerData.firstName,
           'BioData.LastName': volunteerData.lastName,
+          'BioData.OtherName': volunteerData.otherNames || undefined,
           'BioData.Gender': volunteerData.sex === "male" ? 1 : volunteerData.sex === "female" ? 2 : 0,
           'BioData.DateOfBirth': volunteerData.dob,
           'LocationDto.Address': volunteerData.address,
@@ -481,7 +509,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
         };
         await organizationOnboarding(orgRequest);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to save progress. Please try again.");
       return;
     }
@@ -520,12 +548,19 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
   const saveFormDataToStore = () => {
     if (accountType === "volunteer") {
       const volunteerData = formData as VolunteerFormData;
+      // Format date of birth to ISO format if it's in YYYY-MM-DD format (from date input)
+      let formattedDob = volunteerData.dob;
+      if (formattedDob && !formattedDob.includes('T')) {
+        formattedDob = `${formattedDob}T00:00:00`;
+      }
+      
       updateFormData({
         bioData: {
           firstName: volunteerData.firstName,
           lastName: volunteerData.lastName,
+          otherName: volunteerData.otherNames,
           gender: volunteerData.sex === "male" ? 1 : volunteerData.sex === "female" ? 2 : 0,
-          dateOfBirth: volunteerData.dob,
+          dateOfBirth: formattedDob,
         },
         locationDto: {
           address: volunteerData.address,
@@ -569,6 +604,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'onboardingMetaData.CurrentPage': 6,
           'BioData.FirstName': volunteerData.firstName,
           'BioData.LastName': volunteerData.lastName,
+          'BioData.OtherName': volunteerData.otherNames || undefined,
           'BioData.Gender': volunteerData.sex === "male" ? 1 : volunteerData.sex === "female" ? 2 : 0,
           'BioData.DateOfBirth': volunteerData.dob,
           'LocationDto.Address': volunteerData.address,
@@ -618,6 +654,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
       }
       
       // Redirect based on account type
+      // The onboarding API response will set the has_completed_onboarding cookie
       if (accountType === "volunteer") {
         router.push('/home');
       } else {

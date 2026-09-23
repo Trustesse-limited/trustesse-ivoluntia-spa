@@ -26,10 +26,18 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
+  otherName?: string;
+  organizationName?: string;
   role?: UserRole;
-  accountType?: 'Volunteer' | 'Organization' | 'Admin';
+  accountType?: 'Volunteer' | 'Organization' | 'Foundation' | 'Admin';
   createdAt?: string;
   updatedAt?: string;
+  // Additional fields from userProfile
+  userImage?: string | null;
+  location?: string | null;
+  bio?: string | null;
+  skills?: string[];
+  interests?: string[];
 }
 
 interface AuthState {
@@ -81,8 +89,11 @@ export const useAuthStore = create<AuthState>()(
         // Set cookies for server-side auth
         setAuthCookie(token);
         // Use accountType for user_role cookie, not role (role is from JWT like "FoundationAdmin")
+        // Handle both "organization" and "foundation" as organization accounts
         if (user.accountType) {
-          setUserRoleCookie(user.accountType.toLowerCase());
+          const normalizedAccountType = user.accountType.toLowerCase();
+          const cookieValue = normalizedAccountType === 'foundation' ? 'organization' : normalizedAccountType;
+          setUserRoleCookie(cookieValue);
         }
       },
       
@@ -171,12 +182,12 @@ export const useAuthStore = create<AuthState>()(
           if (state.user && !state.user.accountType) {
             // If accountType is missing, try to infer from role
             if (state.user.role) {
-              const roleToAccountType: Record<string, 'Volunteer' | 'Organization' | 'Admin'> = {
+              const roleToAccountType: Record<string, 'Volunteer' | 'Organization' | 'Foundation' | 'Admin'> = {
                 'volunteer': 'Volunteer',
                 'organization': 'Organization',
                 'admin': 'Admin',
                 'super_admin': 'Admin',
-                'FoundationAdmin': 'Organization',
+                'FoundationAdmin': 'Foundation',
                 'VolunteerAdmin': 'Volunteer',
               };
               state.user.accountType = roleToAccountType[state.user.role] || 'Volunteer';

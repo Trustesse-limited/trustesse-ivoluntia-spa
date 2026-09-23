@@ -17,17 +17,20 @@ function VerifyContent() {
   const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('');
   const [accountType, setAccountType] = useState('');
+  const [purpose, setPurpose] = useState('Signup');
   const [countdown, setCountdown] = useState(30);
   const [canResend, setCanResend] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const emailRef = React.useRef<string | null>(null);
   const accountTypeRef = React.useRef<string | null>(null);
+  const purposeRef = React.useRef<string | null>(null);
   const hasAutoResendedRef = React.useRef(false);
   const isAutoResendRef = React.useRef(false);
 
   useEffect(() => {
     const emailParam = searchParams.get('email');
     const typeParam = searchParams.get('type');
+    const purposeParam = searchParams.get('purpose');
     const resendParam = searchParams.get('resend');
     
     // Redirect to login if email parameter is missing AND not already stored in ref
@@ -45,6 +48,10 @@ function VerifyContent() {
       accountTypeRef.current = typeParam;
       setAccountType(accountTypeRef.current);
     }
+    if (purposeParam && !purposeRef.current) {
+      purposeRef.current = purposeParam;
+      setPurpose(purposeRef.current);
+    }
     
     // Auto-resend OTP if resend param is present and hasn't been done yet
     if (resendParam === 'true' && emailRef.current && !hasAutoResendedRef.current) {
@@ -54,7 +61,7 @@ function VerifyContent() {
     }
     
     // Clean URL by removing query parameters after reading them
-    if (searchParams.has('email') || searchParams.has('type') || searchParams.has('resend')) {
+    if (searchParams.has('email') || searchParams.has('type') || searchParams.has('purpose') || searchParams.has('resend')) {
       router.replace('/verify');
     }
   }, [searchParams, router]);
@@ -92,14 +99,21 @@ function VerifyContent() {
     });
 
     if (result.success) {
-      toast.success('Email verified successfully!');
-      // Redirect to login page after successful OTP verification
-      router.push('/login');
+      toast.success('OTP verified successfully!');
+      // Redirect based on purpose
+      if (purpose === 'Login') {
+        // For login 2FA, redirect to login page with email and a flag to auto-login with the OTP
+        router.push(`/login?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otpToVerify)}&completeLogin=true`);
+      } else {
+        // For signup, redirect to login page
+        router.push('/login');
+      }
     }
   };
 
   const handleResendOtp = async () => {
     const emailToUse = email || emailRef.current;
+    const purposeToUse = purpose || purposeRef.current || 'Signup';
     if (!emailToUse) {
       toast.error('Email is missing. Please go back to signup.');
       return;
@@ -108,7 +122,7 @@ function VerifyContent() {
     setIsResending(true);
     const result = await resendOtp({
       email: emailToUse,
-      purpose: 'Signup',
+      purpose: purposeToUse,
       includeAlphabet: false,
       notificationType: 'email',
     });

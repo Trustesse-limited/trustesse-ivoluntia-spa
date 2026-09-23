@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { InputComponent } from '@/components/input'
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from 'next/link'
@@ -29,6 +29,7 @@ const LoginPageClient = () => {
       email: "",
       password: "",
       rememberMe: false,
+      twoFactorCode: "",
     });
 
   const isFormValid = form.email.trim() !== "" && form.password.trim() !== "";
@@ -36,20 +37,8 @@ const LoginPageClient = () => {
   // SECURITY: On mount, restore email AND decrypted password
   // ONLY if the user previously opted in via the "Remember me" checkbox.
   // Password is encrypted with AES-GCM and decrypted on this device only.
-  useEffect(() => {
-    const restoreRememberMe = async () => {
-      if (hasRememberMe()) {
-        const { email, password } = await getRememberMe();
-        if (email) {
-          setForm((prev) => ({ ...prev, email, password, rememberMe: true }));
-        }
-      }
-    };
-    restoreRememberMe();
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+    if (e) e.preventDefault();
     
     // SECURITY: Sanitize inputs before validation/submission
     const sanitizedEmail = sanitizeEmail(form.email);
@@ -78,17 +67,27 @@ const LoginPageClient = () => {
       email: sanitizedEmail,
       password: sanitizedPassword,
       rememberMe: form.rememberMe,
-      twoFactorCode: undefined,
+      twoFactorCode: form.twoFactorCode || undefined,
       deviceInfo: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
     });
     
     if (result.success) {
       // Use the enhanced redirect information from the login hook
-      const resultData = result as { redirect?: string; requiresOnboarding?: boolean; accountType?: string; lastCompletedPage?: number; hasCompletedOnboarding?: boolean };
+      const resultData = result as { redirect?: string; requiresOnboarding?: boolean; accountType?: string; lastCompletedPage?: number; hasCompletedOnboarding?: boolean; requiresTwoFactor?: boolean };
       
       logger.log('[Login Page] Login successful, resultData:', resultData);
       logger.log('[Login Page] resultData.redirect:', resultData.redirect);
       logger.log('[Login Page] resultData.accountType:', resultData.accountType);
+      logger.log('[Login Page] resultData.requiresTwoFactor:', resultData.requiresTwoFactor);
+      
+      if (resultData.requiresTwoFactor) {
+        logger.log('[Login Page] Two-factor authentication required, redirecting to verify page');
+        // The redirect URL is already set in the login hook
+        if (resultData.redirect) {
+          router.push(resultData.redirect);
+        }
+        return;
+      }
       
       if (resultData.redirect) {
         logger.log('[Login Page] Redirecting to:', resultData.redirect, 'Account Type:', resultData.accountType);
@@ -100,7 +99,6 @@ const LoginPageClient = () => {
         // Fallback to original logic if redirect not provided
         const loginData = result.data as Record<string, unknown> | undefined;
         const hasCompletedOnboarding = loginData?.hasCompletedOnboarding as boolean | undefined;
-        const lastCompletedPage = loginData?.lastCompletedPage as number | undefined;
         const accountType = loginData?.accountType as string | undefined;
         const normalizedAccountType = accountType?.toLowerCase();
 
@@ -145,7 +143,43 @@ const LoginPageClient = () => {
         router.push(resultData.redirect);
       }
     }
-  };
+  }, [form, login, router]);
+
+  useEffect(() => {
+    const restoreRememberMe = async () => {
+      // Check if email is in URL params (from 2FA redirect)
+      const urlParams = new URLSearchParams(window.location.search);
+      const emailFromUrl = urlParams.get('email');
+      const otpFromUrl = urlParams.get('otp');
+      const completeLogin = urlParams.get('completeLogin');
+      
+      if (emailFromUrl) {
+        setForm((prev) => ({ ...prev, email: emailFromUrl }));
+        
+        // If returning from 2FA verification with OTP, auto-complete login
+        if (otpFromUrl && completeLogin === 'true') {
+          setForm((prev) => ({ ...prev, twoFactorCode: otpFromUrl }));
+          // Auto-submit the form after a short delay
+          setTimeout(() => {
+            const formElement = document.querySelector('form') as HTMLFormElement;
+            if (formElement) {
+              formElement.requestSubmit();
+            }
+          }, 100);
+        }
+        return;
+      }
+      
+      // Otherwise, restore from remember me
+      if (hasRememberMe()) {
+        const { email, password } = await getRememberMe();
+        if (email) {
+          setForm((prev) => ({ ...prev, email, password, rememberMe: true }));
+        }
+      }
+    };
+    restoreRememberMe();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

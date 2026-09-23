@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { FormProps } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,10 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import logger from '@/lib/logger';
 
 const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
   const [dobError, setDobError] = useState<string>("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    logger.log('[BioDataForm] formData.sex:', formData.sex);
+    logger.log('[BioDataForm] formData.dob:', formData.dob);
+    logger.log('[BioDataForm] formData:', formData);
+  }, [formData]);
 
   useEffect(() => {
     if (formData.dob) {
@@ -28,7 +35,7 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
   }, [formData.dob]);
 
   // Export validation function
-  const validate = (): boolean => {
+  const validate = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.firstName.trim()) {
@@ -79,12 +86,12 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData]);
 
   // Expose validate function to parent
   React.useEffect(() => {
     (window as unknown as Record<string, unknown>).validateBioDataForm = validate;
-  }, [formData]);
+  }, [validate]);
 
   const validateDOB = (dateString: string): boolean => {
     if (!dateString) {

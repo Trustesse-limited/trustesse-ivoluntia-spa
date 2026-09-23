@@ -119,4 +119,35 @@ export interface OnboardingState {
   checkOnboardingStatus: (type?: 'volunteer' | 'organization') => { shouldRedirect: boolean; step: number; route: string };
   canProceedToStep: (step: number) => boolean;
   switchAccountType: (type: 'volunteer' | 'organization') => void;
+  initializeFromLoginResponse: (loginResponse: {
+    accountType?: string;
+    hasCompletedOnboarding?: boolean;
+    lastCompletedPage?: number;
+    userProfile?: {
+      firstName?: string;
+      lastName?: string;
+      otherName?: string;
+      email?: string;
+      dateOfBirth?: string;
+      gender?: string;
+      address?: string | null;
+      city?: string | null;
+      zipCode?: string | null;
+      country?: string | null;
+      countryName?: string | null;
+      state?: string;
+      stateName?: string | null;
+      interestNames?: string[];
+      skillNames?: string[];
+      bio?: string | null;
+      profileImage?: string;
+      category?: string;
+      website?: string;
+      mission?: string;
+      foundationCountry?: string;
+      foundationState?: string;
+      causeNames?: string[] | null;
+      foundationLogoUrl?: string;
+    };
+  }) => void;
 }

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { AppButton } from "@/components/AppButton";
+import { useAuthStore } from "@/store";
 import { 
   FiUser, 
   FiDollarSign, 
@@ -22,24 +23,36 @@ import {
 } from "react-icons/fi";
 
 export default function VolunteerProfilePage() {
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState('date');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [newSkill, setNewSkill] = useState('');
   
-  // Mock data
+  // Use user data from auth store or fallback to mock data
   const profile = {
-    name: "Eva Johnson",
-    email: "eva.johnson@email.com",
-    location: "New York, NY",
-    memberSince: "January 2024",
-    bio: "Passionate about environmental conservation and community development. Looking to make a positive impact through meaningful volunteer work.",
-    totalDonations: 12500,
-    totalHours: 156,
-    badgesEarned: 12,
-    programsJoined: 8
+    name: user?.firstName && user?.lastName 
+      ? `${user.firstName} ${user.lastName}` 
+      : user?.email?.split('@')[0] || 'Volunteer',
+    email: user?.email || '',
+    location: user?.location || 'Not specified',
+    memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'January 2024',
+    bio: user?.bio || 'No bio provided',
+    totalDonations: 12500, // These would come from actual API
+    totalHours: 156, // These would come from actual API
+    badgesEarned: 12, // These would come from actual API
+    programsJoined: 8 // These would come from actual API
   };
+  
+  // Use user skills from auth store or fallback to mock data
+  const [skills, setSkills] = useState(user?.skills || [
+    "Environmental Science",
+    "Community Outreach", 
+    "Event Planning",
+    "Teaching",
+    "First Aid"
+  ]);
 
   const historyData = [
     { date: "2024-02-15", program: "Community Tree Planting", role: "Team Leader", status: "completed" },
@@ -47,14 +60,6 @@ export default function VolunteerProfilePage() {
     { date: "2024-03-01", program: "Clean Water Access Project", role: "Volunteer", status: "ongoing" },
     { date: "2024-02-10", program: "School Renovation Drive", role: "Coordinator", status: "withdrawn" }
   ];
-
-  const [skills, setSkills] = useState([
-    "Environmental Science",
-    "Community Outreach", 
-    "Event Planning",
-    "Teaching",
-    "First Aid"
-  ]);
 
   const [accountSettings, setAccountSettings] = useState({
     twoFactorAuth: true,
@@ -112,13 +117,23 @@ export default function VolunteerProfilePage() {
           {/* Profile Image */}
           <div className="relative">
             <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gray-200 overflow-hidden border-4 border-white/20">
-              <Image
-                src="/images/default-avatar.jpg"
-                alt="Profile"
-                width={128}
-                height={128}
-                className="w-full h-full object-cover"
-              />
+              {user?.userImage ? (
+                <Image
+                  src={user.userImage}
+                  alt="Profile"
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Image
+                  src="/images/default-avatar.jpg"
+                  alt="Profile"
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
           </div>
 

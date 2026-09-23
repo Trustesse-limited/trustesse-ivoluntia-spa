@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 
-export type UserRole = 'volunteer' | 'organization' | 'admin' | null;
+export type UserRole = 'volunteer' | 'organization' | 'admin' | 'foundation' | null;
 
 export interface AuthInfo {
   isAuthenticated: boolean;
@@ -18,7 +18,12 @@ export async function getServerAuthInfo(): Promise<AuthInfo> {
   const userRole = cookieStore.get('user_role')?.value;
 
   const isAuthenticated = !!token;
-  const normalizedRole = userRole?.toLowerCase() as UserRole || null;
+  let normalizedRole = userRole?.toLowerCase() as UserRole || null;
+  
+  // Normalize "foundation" to "organization" - they are interchangeable
+  if (normalizedRole === 'foundation') {
+    normalizedRole = 'organization';
+  }
 
   return {
     isAuthenticated,
@@ -29,10 +34,13 @@ export async function getServerAuthInfo(): Promise<AuthInfo> {
 
 /**
  * Check if user is authenticated with a specific role
+ * Handles normalization of "foundation" to "organization"
  */
 export async function hasRole(role: UserRole): Promise<boolean> {
   const authInfo = await getServerAuthInfo();
-  return authInfo.isAuthenticated && authInfo.userRole === role;
+  // Normalize the requested role too in case it's "foundation"
+  const normalizedRequestedRole = role === 'foundation' ? 'organization' : role;
+  return authInfo.isAuthenticated && authInfo.userRole === normalizedRequestedRole;
 }
 
 /**
@@ -50,11 +58,15 @@ export async function requireAuth(): Promise<AuthInfo> {
 
 /**
  * Require specific role - redirects if user doesn't have the required role
+ * Handles normalization of "foundation" to "organization"
  */
 export async function requireRole(role: UserRole): Promise<AuthInfo> {
   const authInfo = await requireAuth();
   
-  if (authInfo.userRole !== role) {
+  // Normalize the requested role in case it's "foundation"
+  const normalizedRequestedRole = role === 'foundation' ? 'organization' : role;
+  
+  if (authInfo.userRole !== normalizedRequestedRole) {
     throw new Error('FORBIDDEN');
   }
   

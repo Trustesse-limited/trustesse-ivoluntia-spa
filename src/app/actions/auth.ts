@@ -273,6 +273,8 @@ export async function loginAction(data: LoginRequestModel): Promise<{
   data?: unknown;
   message?: string;
   error?: string;
+  requiresTwoFactor?: boolean;
+  email?: string;
 }> {
   try {
     logger.log('[Server Action] loginAction called');
@@ -296,6 +298,19 @@ export async function loginAction(data: LoginRequestModel): Promise<{
     const response: ApiResponse<unknown> = await login(sanitizedData);
     logger.log('[Server Action] loginAction completed');
     logger.log('[Server Action] Full login response:', JSON.stringify(response.data, null, 2));
+
+    // Check if the response indicates two-factor authentication is required
+    // Only require 2FA if not provided (i.e., this is the initial login attempt)
+    if (!sanitizedData.twoFactorCode && response.message && response.message.toLowerCase().includes('two factor code sent')) {
+      logger.log('[Server Action] Two-factor authentication required');
+      return {
+        success: true,
+        data: null,
+        message: response.message,
+        requiresTwoFactor: true,
+        email: sanitizedData.email,
+      };
+    }
 
     // SECURITY: Store tokens in HTTP-only cookies for security
     const loginData = response.data as Record<string, unknown> | undefined;
@@ -359,8 +374,11 @@ export async function loginAction(data: LoginRequestModel): Promise<{
       }
       
       // Store user role in cookie if available
+      // Handle both "organization" and "foundation" as organization accounts
       if ('accountType' in loginData && typeof loginData.accountType === 'string') {
-        cookieStore.set('user_role', loginData.accountType.toLowerCase().replace(' ', '_'), {
+        const accountType = loginData.accountType.toLowerCase().replace(' ', '_');
+        const normalizedAccountType = accountType === 'foundation' ? 'organization' : accountType;
+        cookieStore.set('user_role', normalizedAccountType, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
@@ -740,7 +758,7 @@ export async function validateTokenAction(): Promise<{
         isValid: true,
         user: data,
       };
-    } catch (fetchError) {
+    } catch {
       // If fetch fails, assume token is invalid
       logger.error('Token validation failed, assuming token is invalid');
       return {
@@ -780,6 +798,7 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
       'onboardingMetaData.CurrentPage': data['onboardingMetaData.CurrentPage'],
       'BioData.FirstName': data['BioData.FirstName'].trim(),
       'BioData.LastName': data['BioData.LastName'].trim(),
+      'BioData.OtherName': data['BioData.OtherName']?.trim() || undefined,
       'BioData.Gender': data['BioData.Gender'],
       'BioData.DateOfBirth': data['BioData.DateOfBirth'],
       'LocationDto.Address': data['LocationDto.Address']?.trim() || '',
@@ -795,6 +814,7 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
 
     const response: ApiResponse<unknown> = await volunteerOnboarding(sanitizedData);
     logger.log('[Server Action] volunteerOnboardingAction completed');
+    logger.log('[Server Action] Onboarding response data:', JSON.stringify(response.data, null, 2));
 
     // Set user role cookie for volunteer
     const cookieStore = await cookies();
@@ -805,6 +825,20 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
       maxAge: 60 * 60 * 24 * 7, // 1 week
       path: '/',
     });
+
+    // Set onboarding status from API response if available
+    const responseData = response.data as Record<string, unknown> | undefined;
+    if (responseData && 'hasCompletedOnboarding' in responseData) {
+      const hasCompletedOnboarding = responseData.hasCompletedOnboarding as boolean;
+      cookieStore.set('has_completed_onboarding', String(hasCompletedOnboarding), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        path: '/',
+      });
+      logger.log('[Server Action] Set has_completed_onboarding cookie:', hasCompletedOnboarding);
+    }
 
     return {
       success: true,
@@ -873,6 +907,7 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
 
     const response: ApiResponse<unknown> = await organizationOnboarding(sanitizedData);
     logger.log('[Server Action] organizationOnboardingAction completed');
+    logger.log('[Server Action] Onboarding response data:', JSON.stringify(response.data, null, 2));
 
     // Set user role cookie for organization
     const cookieStore = await cookies();
@@ -883,6 +918,20 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
       maxAge: 60 * 60 * 24 * 7, // 1 week
       path: '/',
     });
+
+    // Set onboarding status from API response if available
+    const responseData = response.data as Record<string, unknown> | undefined;
+    if (responseData && 'hasCompletedOnboarding' in responseData) {
+      const hasCompletedOnboarding = responseData.hasCompletedOnboarding as boolean;
+      cookieStore.set('has_completed_onboarding', String(hasCompletedOnboarding), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        path: '/',
+      });
+      logger.log('[Server Action] Set has_completed_onboarding cookie:', hasCompletedOnboarding);
+    }
 
     return {
       success: true,

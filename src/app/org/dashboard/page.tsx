@@ -4,9 +4,17 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { organizationProjects } from "@/lib/mockData";
+import { useAuthStore } from "@/store";
+import { useOnboardingStore } from "@/store";
 
 
 export default function OrgDashboardPage() {
+  const { user } = useAuthStore();
+  const { organizationData } = useOnboardingStore();
+  
+  // Get organization name from auth store (user.organizationName or user.firstName) or onboarding store (formData.orgData.name)
+  const organizationName = user?.organizationName || user?.firstName || organizationData?.formData?.orgData?.name || 'Organization';
+
    {/* Mock data for statistics and pie chart */}
   const orgStats = [
   { title: "Total Donations", value: '₦ 10,234,567', icon:"/org/donation.svg" },
@@ -54,7 +62,7 @@ const projectsToRender = isViewingAll
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-xl sm:text-2xl font-bold text-[#161616] mb-2">Welcome Trustesse,</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#161616] mb-2">Welcome {organizationName},</h2>
           <p className="text-gray-600 text-sm sm:text-base">See your progress, insights, and recent actions</p>
         </motion.div>
         
