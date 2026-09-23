@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PartialVolunteerSignUpDto } from '@/types/api';
 import { OnboardingState, OnboardingFormData, OrganizationOnboardingData } from '@/types/onboarding';
+import logger from '@/lib/logger';
 
 const initialFormData: PartialVolunteerSignUpDto = {
   metaData: {
@@ -17,6 +18,7 @@ const initialFormData: PartialVolunteerSignUpDto = {
   bioData: {
     firstName: '',
     lastName: '',
+    otherName: '',
     gender: 0,
     dateOfBirth: '',
   },
@@ -25,6 +27,7 @@ const initialFormData: PartialVolunteerSignUpDto = {
     city: '',
     zipCode: '',
     countryId: '',
+    countryName: '',
     stateId: '',
   },
   interest: {
@@ -64,6 +67,7 @@ const initialOrgData: OrganizationOnboardingData = {
     city: '',
     zipCode: '',
     countryId: '',
+    countryName: '',
     stateId: '',
   },
 };
@@ -77,6 +81,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       formData: initialFormData,
       lastVisited: Date.now(),
       accountType: null,
+      currentUserEmail: null,
       
       // Separate data for each account type
       volunteerData: {
@@ -140,8 +145,14 @@ export const useOnboardingStore = create<OnboardingState>()(
         // SECURITY: Sanitize data to remove password fields before storing
         const sanitizedData = { ...data };
         if (sanitizedData.authInfo) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { password, confirmPassword, ...secureAuthInfo } = sanitizedData.authInfo;
           sanitizedData.authInfo = secureAuthInfo;
+          
+          // Store the email if available
+          if (secureAuthInfo.email && !state.currentUserEmail) {
+            set({ currentUserEmail: secureAuthInfo.email });
+          }
         }
         
         const newFormData = { ...state.formData, ...sanitizedData };
@@ -167,7 +178,7 @@ export const useOnboardingStore = create<OnboardingState>()(
             volunteerData: {
               currentStep: 0,
               isComplete: false,
-              formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'volunteer' } },
+              formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'volunteer' }, bioData: { ...initialFormData.bioData, otherName: '' } },
               lastVisited: Date.now(),
             }
           } : state.accountType === 'organization' ? {
@@ -181,18 +192,54 @@ export const useOnboardingStore = create<OnboardingState>()(
         });
       },
       
-      clearOnboarding: () => {
+      clearOnboarding: (email?: string) => {
         const state = get();
+        // Only clear if the email is different from the stored email
+        if (email && state.currentUserEmail === email) {
+          logger.log('[Onboarding] Same user logged in, preserving onboarding data');
+          return;
+        }
+        
+        logger.log('[Onboarding] Different user or no email, clearing onboarding data');
         set({
           currentStep: 0,
           isComplete: false,
           formData: initialFormData,
           lastVisited: Date.now(),
           accountType: null,
+          currentUserEmail: email || null,
           volunteerData: {
             currentStep: 0,
             isComplete: false,
-            formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'volunteer' } },
+            formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'volunteer' }, bioData: { ...initialFormData.bioData, otherName: '' } },
+            lastVisited: Date.now(),
+          },
+          organizationData: {
+            currentStep: 0,
+            isComplete: false,
+            formData: { ...initialOrgData, metaData: { ...initialOrgData.metaData, accountType: 'organization' } },
+            lastVisited: Date.now(),
+          },
+        });
+        // Clear localStorage to prevent persist middleware from restoring old data
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('onboarding-storage');
+        }
+      },
+
+      clearAllOnboarding: () => {
+        logger.log('[Onboarding] Force clearing all onboarding data');
+        set({
+          currentStep: 0,
+          isComplete: false,
+          formData: initialFormData,
+          lastVisited: Date.now(),
+          accountType: null,
+          currentUserEmail: null,
+          volunteerData: {
+            currentStep: 0,
+            isComplete: false,
+            formData: { ...initialFormData, metaData: { ...initialFormData.metaData, accountType: 'volunteer' }, bioData: { ...initialFormData.bioData, otherName: '' } },
             lastVisited: 0,
           },
           organizationData: {
@@ -202,6 +249,10 @@ export const useOnboardingStore = create<OnboardingState>()(
             lastVisited: 0,
           },
         });
+        // Clear persisted storage
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('onboarding-storage');
+        }
       },
       
       setComplete: () => {
@@ -242,6 +293,127 @@ export const useOnboardingStore = create<OnboardingState>()(
           lastVisited: Date.now(),
         });
       },
+
+      initializeFromLoginResponse: (loginResponse) => {
+        // Handle both "organization" and "foundation" as organization accounts
+        const accountType = (() => {
+          const type = loginResponse.accountType?.toLowerCase();
+          if (type === 'foundation' || type === 'organization') {
+            return 'organization';
+          }
+          return 'volunteer';
+        })();
+        const lastCompletedPage = loginResponse.lastCompletedPage || 0;
+        const hasCompletedOnboarding = loginResponse.hasCompletedOnboarding || false;
+        const userProfile = loginResponse.userProfile || {};
+
+        logger.log('[Onboarding] Initializing from login response:', {
+          accountType,
+          lastCompletedPage,
+          hasCompletedOnboarding,
+          userProfile: !!userProfile,
+        });
+
+        if (accountType === 'volunteer') {
+          // Update volunteer data with login response
+          // Handle gender conversion from both string and number formats
+          const genderValue = userProfile.gender;
+          const genderNum = genderValue ? (typeof genderValue === 'string' ? parseInt(genderValue, 10) : genderValue) : 0;
+          
+          logger.log('[Onboarding] Gender conversion - genderValue:', genderValue, 'genderNum:', genderNum);
+          
+          // Format date of birth to YYYY-MM-DD for date input
+          let formattedDob = userProfile.dateOfBirth || '';
+          if (formattedDob && formattedDob.includes('T')) {
+            formattedDob = formattedDob.split('T')[0];
+          }
+          
+          const volunteerFormData: PartialVolunteerSignUpDto = {
+            metaData: {
+              accountType: 'volunteer',
+              currentPage: lastCompletedPage,
+            },
+            bioData: {
+              firstName: userProfile.firstName || '',
+              lastName: userProfile.lastName || '',
+              otherName: userProfile.otherName || '',
+              gender: genderNum,
+              dateOfBirth: formattedDob,
+            },
+            locationDto: {
+              address: userProfile.address || '',
+              city: userProfile.city || '',
+              zipCode: userProfile.zipCode || '',
+              countryId: userProfile.country || '',
+              countryName: userProfile.countryName || '',
+              stateId: userProfile.state || '',
+            },
+            interest: {
+              names: userProfile.interestNames || [],
+            },
+            skill: {
+              names: userProfile.skillNames || [],
+            },
+            profileAndBioData: {
+              bio: userProfile.bio || '',
+              profileImageurl: userProfile.profileImage || '',
+            },
+          };
+
+          set({
+            accountType: 'volunteer',
+            currentStep: lastCompletedPage,
+            isComplete: hasCompletedOnboarding,
+            formData: volunteerFormData,
+            volunteerData: {
+              currentStep: lastCompletedPage,
+              isComplete: hasCompletedOnboarding,
+              formData: volunteerFormData,
+              lastVisited: Date.now(),
+            },
+            lastVisited: Date.now(),
+          });
+        } else {
+          // Update organization data with login response
+          const orgFormData: OrganizationOnboardingData = {
+            metaData: {
+              accountType: 'organization',
+              currentPage: lastCompletedPage,
+            },
+            orgData: {
+              name: userProfile.firstName || '', // Use firstName as org name (backend sends it here)
+              category: userProfile.category || '',
+              website: userProfile.website || '',
+              mission: userProfile.mission || '',
+              causes: userProfile.causeNames || [],
+              logo: null,
+              disclaimerAgreed: false,
+            },
+            locationDto: {
+              address: userProfile.address || '',
+              city: userProfile.city || '',
+              zipCode: userProfile.zipCode || '',
+              countryId: userProfile.foundationCountry || '',
+              countryName: userProfile.countryName || '',
+              stateId: userProfile.foundationState || '',
+            },
+          };
+
+          set({
+            accountType: 'organization',
+            currentStep: lastCompletedPage,
+            isComplete: hasCompletedOnboarding,
+            formData: orgFormData,
+            organizationData: {
+              currentStep: lastCompletedPage,
+              isComplete: hasCompletedOnboarding,
+              formData: orgFormData,
+              lastVisited: Date.now(),
+            },
+            lastVisited: Date.now(),
+          });
+        }
+      },
       
       checkOnboardingStatus: (type?: 'volunteer' | 'organization') => {
         const state = get();
@@ -262,15 +434,15 @@ export const useOnboardingStore = create<OnboardingState>()(
         if (hasStartedOnboarding && !accountData.isComplete) {
           if (checkType === 'volunteer') {
             if (accountData.currentStep === 0) {
-              route = '/onboarding/signup/volunteer';
+              route = '/signup?type=volunteer';
             } else {
-              route = '/onboarding/volunteer';
+              route = '/onboarding?type=volunteer';
             }
           } else {
             if (accountData.currentStep === 0) {
-              route = '/onboarding/signup/org';
+              route = '/signup?type=organization';
             } else {
-              route = '/onboarding/org';
+              route = '/onboarding?type=organization';
             }
           }
         }
@@ -312,6 +484,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         isComplete: state.isComplete,
         lastVisited: state.lastVisited,
         accountType: state.accountType,
+        currentUserEmail: state.currentUserEmail,
         formData: state.formData,
         volunteerData: state.volunteerData,
         organizationData: {

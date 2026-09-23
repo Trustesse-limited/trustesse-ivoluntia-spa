@@ -14,7 +14,7 @@ export function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerPr
 
   return (
     <div
-      className={`inline-block animate-spin rounded-full border-solid border-current border-r-transparent align-middle motion-reduce:animate-[spin_1.5s_linear_infinite] ${sizeClasses[size]} ${className}`}
+      className={`inline-block animate-spin rounded-full border-solid border-current border-r-transparent align-middle motion-reduce:animate-[spin_0.5s_linear_infinite] ml-2 ${sizeClasses[size]} ${className}`}
       style={{
         borderTopColor: '#42A5F5',
       }}

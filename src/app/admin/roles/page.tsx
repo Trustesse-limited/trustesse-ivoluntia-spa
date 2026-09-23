@@ -147,7 +147,7 @@ export default function RolesPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full">
-            <div className="overflow-x-auto overflow-y-auto max-h-96 max-md:w-[calc(90vw-2rem)] w-[calc(90vw-13rem)]">
+            <div className="overflow-x-auto overflow-y-auto max-h-96 max-sm:max-w-[90vw]">
               <table className="w-full min-w-[700px] sm:min-w-[800px] lg:min-w-[900px]">
                 <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                   <tr>

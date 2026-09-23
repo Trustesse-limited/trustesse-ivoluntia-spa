@@ -1,27 +1,73 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ProgramTable from "../components/programTable";
+import ProgramTable from "@/components/organization/programTable";
 import { ProgramItem } from "@/types";
-import { programs } from "@/lib/mockData";
+import { ProgramApiResponse } from "@/types/api";
+import { api } from "@/lib/api";
 import { motion } from "framer-motion";
+import { AppButton } from "@/components/AppButton";
 
 type TabKey = "pending" | "active" | "history";
 
-const programStats = [
-  { title: "Total Programs", value: 0, color: "bg-blue-500" },
-  { title: "Active Programs", value: 0, color: "bg-green-500" },
-  { title: "Pending Programs", value: 0, color: "bg-yellow-500" },
+const getProgramStats = (programs: ProgramItem[]) => [
+  { title: "Total Programs", value: programs.length, color: "bg-blue-500" },
+  { title: "Active Programs", value: programs.filter(p => p.status?.toLowerCase() === 'active').length, color: "bg-green-500" },
+  { title: "Pending Programs", value: programs.filter(p => p.status?.toLowerCase() === 'pending').length, color: "bg-yellow-500" },
 ];
 
 export default function ProgramsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("pending");
+  const [programs, setPrograms] = useState<ProgramItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.programs.getAll();
+        
+        if (response.success && response.data) {
+          // Map API response to ProgramItem interface
+          const mappedPrograms = (response.data as ProgramApiResponse[]).map((program: ProgramApiResponse): ProgramItem => ({
+            id: program.id || '',
+            title: program.title || program.name || '',
+            startDate: program.startDate || '',
+            endDate: program.endDate || '',
+            location: program.location || program.city || '',
+            donationTarget: program.donationTarget || program.targetAmount || 0,
+            raised: program.raised || program.raisedAmount || 0,
+            category: program.category || program.foundationCategory || '',
+            goals: program.goals || '',
+            description: program.description || program.mission || '',
+            image: program.image || program.logo || '',
+            volunteers: program.volunteers || 0,
+            status: program.status || 'Active',
+            organization: program.organization || program.organizationName || '',
+            isFavourited: false,
+            duration: program.duration || '',
+            targetVolunteers: program.targetVolunteers || 0,
+          }));
+          setPrograms(mappedPrograms);
+        } else {
+          setPrograms([]);
+        }
+      } catch (err) {
+        console.error('Error fetching programs:', err);
+        setPrograms([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPrograms();
+  }, []);
 
   const programData: Record<TabKey, ProgramItem[]> = {
-    pending: [],
-    active: programs,
-    history: programs,
+    pending: programs.filter(p => p.status?.toLowerCase() === 'pending'),
+    active: programs.filter(p => p.status?.toLowerCase() === 'active'),
+    history: programs.filter(p => ['completed', 'forfeited', 'cancelled'].includes(p.status?.toLowerCase() || '')),
   };
 
   const tabs = [
@@ -52,18 +98,17 @@ export default function ProgramsPage() {
           </p>
         </div>
         <div className="flex justify-center sm:justify-end w-full sm:w-auto">
-          <button
+          <AppButton
+            text="Create New Program"
             onClick={() => router.push("/org/programs/create")}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--buttonPrimary)] text-sm text-white rounded-md hover:opacity-90 transition cursor-pointer"
-          >
-            <span className="text-lg font-bold">+</span> Create New Program
-          </button>
+            className="!py-2 !px-4 !text-sm"
+          />
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {programStats.map((stat) => (
+        {getProgramStats(programs).map((stat) => (
           <div
             key={stat.title}
             className="bg-white rounded-lg shadow p-6 flex flex-col justify-between w-full"
@@ -101,7 +146,11 @@ export default function ProgramsPage() {
         </div>
 
         {/* Tab Content */}
-        {programData[activeTab].length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-lg">Loading programs...</div>
+          </div>
+        ) : programData[activeTab].length === 0 ? (
           <div className="text-center text-gray-400 italic py-12">
             {getEmptyMessage()}
           </div>
@@ -109,7 +158,7 @@ export default function ProgramsPage() {
           <ProgramTable data={programData.history} showDeleteButton showStatus/>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {<ProgramTable data={programData.history} />}
+            {<ProgramTable data={programData[activeTab]} />}
           </div>
         )}
       </div>

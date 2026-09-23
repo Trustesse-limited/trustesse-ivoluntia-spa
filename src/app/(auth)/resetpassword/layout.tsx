@@ -1,9 +1,4 @@
 
-export const metadata = {
-  title: "Ivoluntia | Reset Password",
-  description:
-    "Ivoluntia reset password page",
-};
 
 
 export default function loginLayout({

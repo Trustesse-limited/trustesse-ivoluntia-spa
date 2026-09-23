@@ -16,6 +16,8 @@ const Button: React.FC<ButtonProps> = ({ text, href, type = "button", disabled =
   const baseClasses =
     "bg-[#0E68DC] text-white rounded-2xl py-3 font-[600] md:text-xl text-lg cursor-pointer px-6 text-center inline-flex items-center justify-center gap-2";
 
+  const disabledClasses = "opacity-50 cursor-not-allowed";
+
   if (href) {
     // Renders a link styled like a button
     return (
@@ -27,7 +29,7 @@ const Button: React.FC<ButtonProps> = ({ text, href, type = "button", disabled =
 
   return (
     <button 
-      className={baseClasses} 
+      className={`${baseClasses} ${disabled || isLoading ? disabledClasses : ''}`} 
       type={type} 
       disabled={disabled || isLoading}
       onClick={onClick}

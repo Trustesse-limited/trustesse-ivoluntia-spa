@@ -18,6 +18,7 @@ export interface FullVolunteerSignUpRequest {
     city: string;
     zipCode: string;
     countryId: string;
+    countryName: string;
     stateId: string;
   };
 }
@@ -43,6 +44,7 @@ export interface FullOrganizationSignUpRequest {
     city: string;
     zipCode: string;
     countryId: string;
+    countryName: string;
     stateId: string;
   };
 }
@@ -74,6 +76,7 @@ export interface OrganizationOnboardingData {
     city?: string;
     zipCode?: string;
     countryId?: string;
+    countryName?: string;
     stateId?: string;
   };
 }
@@ -89,6 +92,7 @@ export interface OnboardingState {
   formData: OnboardingFormData;
   lastVisited: number;
   accountType: 'volunteer' | 'organization' | null;
+  currentUserEmail: string | null;
   
   volunteerData: {
     currentStep: number;
@@ -108,10 +112,42 @@ export interface OnboardingState {
   previousStep: () => void;
   updateFormData: (data: OnboardingFormData) => void;
   resetOnboarding: () => void;
-  clearOnboarding: () => void;
+  clearOnboarding: (email?: string) => void;
+  clearAllOnboarding: () => void;
   setComplete: () => void;
   setAccountType: (type: 'volunteer' | 'organization') => void;
   checkOnboardingStatus: (type?: 'volunteer' | 'organization') => { shouldRedirect: boolean; step: number; route: string };
   canProceedToStep: (step: number) => boolean;
   switchAccountType: (type: 'volunteer' | 'organization') => void;
+  initializeFromLoginResponse: (loginResponse: {
+    accountType?: string;
+    hasCompletedOnboarding?: boolean;
+    lastCompletedPage?: number;
+    userProfile?: {
+      firstName?: string;
+      lastName?: string;
+      otherName?: string;
+      email?: string;
+      dateOfBirth?: string;
+      gender?: string;
+      address?: string | null;
+      city?: string | null;
+      zipCode?: string | null;
+      country?: string | null;
+      countryName?: string | null;
+      state?: string;
+      stateName?: string | null;
+      interestNames?: string[];
+      skillNames?: string[];
+      bio?: string | null;
+      profileImage?: string;
+      category?: string;
+      website?: string;
+      mission?: string;
+      foundationCountry?: string;
+      foundationState?: string;
+      causeNames?: string[] | null;
+      foundationLogoUrl?: string;
+    };
+  }) => void;
 }

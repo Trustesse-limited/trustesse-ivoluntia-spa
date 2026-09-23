@@ -1,3 +1,5 @@
+'use server';
+
 import { cookies } from 'next/headers';
 
 // Server-side auth utilities for better security

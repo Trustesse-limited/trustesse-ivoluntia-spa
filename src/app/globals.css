@@ -79,6 +79,8 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --buttonPrimary:#0E68DC;
+  --buttonDanger:#EF5350;
+  --buttonDangerHover:#E53935;
 }
 
 .dark {
@@ -126,7 +128,7 @@
 }
 
 .transition-class{
-  transition: all 0.4s ease-in-out;
+  transition: all 0.3s ease-in-out;
 }
 
 /* GLOBAL SCROLLBAR STYLING */

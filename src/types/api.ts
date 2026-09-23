@@ -6,6 +6,28 @@ export interface ApiResponse<T> {
   success: boolean;
 }
 
+// Auth-related types
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
+  tokenType?: string;
+}
+
+export interface TokenRefreshRequest {
+  refreshToken: string;
+}
+
+export interface TokenRefreshResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
+}
+
+export interface AuthHeaders {
+  Authorization: string;
+}
+
 export interface ApiError {
   message: string;
   status: number;
@@ -30,6 +52,88 @@ export interface PaginatedResponse<T> {
   };
 }
 
+// Programs API types
+export interface ProgramApiResponse {
+  id: string;
+  title?: string;
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+  city?: string;
+  donationTarget?: number;
+  targetAmount?: number;
+  raised?: number;
+  raisedAmount?: number;
+  category?: string;
+  foundationCategory?: string;
+  goals?: string;
+  description?: string;
+  mission?: string;
+  image?: string;
+  logo?: string;
+  volunteers?: number;
+  status?: string;
+  organization?: string;
+  organizationName?: string;
+  duration?: string;
+  targetVolunteers?: number;
+  locationId?: string;
+  foundationId?: string;
+  creatorEmail?: string;
+  bannerImage?: string;
+  skillIds?: string[];
+  programGoals?: ProgramGoal[];
+}
+
+export interface ProgramGoal {
+  goal: string;
+  id?: string;
+}
+
+export interface CreateProgramRequest extends Record<string, unknown> {
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  locationId: string;
+  foundationId: string;
+  creatorEmail: string;
+  donationTarget: number;
+  bannerImage?: string;
+  skillIds?: string[];
+  programGoals?: ProgramGoal[];
+}
+
+export interface UpdateProgramRequest extends Record<string, unknown> {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  locationId: string;
+  donationTarget: number;
+  bannerImage?: string;
+}
+
+export interface UpdateProgramStatusRequest {
+  programId: string;
+  status: string;
+  queriedComment?: string;
+}
+
+export interface JoinProgramRequest {
+  programId: string;
+}
+
+export interface LeaveProgramRequest {
+  programId: string;
+}
+
+export interface DeleteProgramGoalRequest {
+  programGoalId: string;
+}
+
 // Volunteer Sign Up DTO based on backend API
 export interface VolunteerSignUpDto {
   metaData: {
@@ -46,6 +150,7 @@ export interface VolunteerSignUpDto {
     userId?: string;
     firstName: string;
     lastName: string;
+    otherName?: string;
     gender: number;
     dateOfBirth: string; // ISO 8601 format
   };
@@ -55,6 +160,7 @@ export interface VolunteerSignUpDto {
     city: string;
     zipCode: string;
     countryId: string;
+    countryName: string;
     stateId: string;
   };
   interest: {
@@ -88,6 +194,7 @@ export interface PartialVolunteerSignUpDto {
     userId?: string;
     firstName?: string;
     lastName?: string;
+    otherName?: string;
     gender?: number;
     dateOfBirth?: string;
   };
@@ -97,6 +204,7 @@ export interface PartialVolunteerSignUpDto {
     city?: string;
     zipCode?: string;
     countryId?: string;
+    countryName?: string;
     stateId?: string;
   };
   interest?: {
@@ -125,19 +233,24 @@ export interface AuthInfo {
 // Volunteer Sign Up Request (initial signup - auth info only)
 // POST /api/v1/Auth/volunteer-signup
 export interface VolunteerSignUpRequest {
-  authInfo: AuthInfo;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  hasAgreedToTermsAndCondition: boolean;
 }
 
 // Organization Sign Up Request (initial signup - foundation admin info)
 // POST /api/v1/Auth/organization-signup
 export interface OrganizationSignUpRequest {
-  foundationAdminInfo: AuthInfo;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  hasAgreedToTermsAndCondition: boolean;
 }
 
 // OTP Verification Request
-// POST /api/v1/Auth/verify-otp
+// POST /api/v1/Otp/verify-email-confirm-otp
 export interface OtpVerificationRequest {
-  email: string;
   otpCode: string;
 }
 
@@ -152,7 +265,9 @@ export interface OtpVerificationResponse {
 // POST /api/v1/Otp/resendotp
 export interface ResendOtpRequest {
   email: string;
-  purpose: number; // Available values: 1, 2, 3, 4, 5, 6
+  purpose: string; // e.g., "verify-email"
+  includeAlphabet: boolean;
+  notificationType: string; // e.g., "email" or "sms"
 }
 
 // Login Request Model based on backend API
@@ -166,7 +281,10 @@ export interface LoginRequestModel {
 
 // Login Response
 export interface LoginResponse {
-  token?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  tokenType?: string;
   user?: {
     id: string;
     email: string;
@@ -175,6 +293,7 @@ export interface LoginResponse {
     role?: string;
   };
   requiresTwoFactor?: boolean;
+  accountType?: string;
 }
 
 // Reset Password Request
@@ -188,35 +307,24 @@ export interface ResetPasswordResponse {
   message?: string;
 }
 
-// Volunteer Onboarding Request
+// Volunteer Onboarding Request (multipart/form-data format)
 export interface VolunteerOnboardingRequest {
-  onboardingMetaData: {
-    accountType: string;
-    currentPage: number;
-  };
-  bioData: {
-    firstName: string;
-    lastName: string;
-    gender: number;
-    dateOfBirth: string;
-  };
-  locationDto: {
-    address: string;
-    city: string;
-    zipCode: string;
-    countryId: string;
-    stateId: string;
-  };
-  interest: {
-    names: string[];
-  };
-  skill: {
-    names: string[];
-  };
-  profileAndBioData: {
-    bio: string;
-    profileImageurl?: string;
-  };
+  'onboardingMetaData.AccountType': string;
+  'onboardingMetaData.CurrentPage': number;
+  'BioData.FirstName': string;
+  'BioData.LastName': string;
+  'BioData.OtherName'?: string;
+  'BioData.Gender': number;
+  'BioData.DateOfBirth': string;
+  'LocationDto.Address': string;
+  'LocationDto.City': string;
+  'LocationDto.ZipCode': string;
+  'LocationDto.Country': string;
+  'LocationDto.State': string;
+  'Interest.Names': string[];
+  'Skill.Names': string[];
+  'ProfileAndBioData.Bio': string;
+  'ProfileAndBioData.ProfileImage'?: File[];
 }
 
 // Organization Onboarding Request
@@ -245,7 +353,7 @@ export interface OrganizationOnboardingRequest {
     names: string[];
   };
   profileLogo: {
-    logo?: string;
+    logo?: File[];
   };
   disclaimer: {
     hasAgreedToDisclaimer: boolean;
@@ -259,6 +367,7 @@ export interface User {
   name?: string;
   createdAt: string;
   updatedAt: string;
+  accountType?: 'Volunteer' | 'Organization' | 'Admin';
 }
 
 export interface Volunteer {
@@ -288,18 +397,28 @@ export interface Opportunity {
 // Country and State types - using API response field names
 export interface Country {
   id: string;
+  name: string;
   countryId: string;
   countryName: string;
-  name: string;
-  code?: string;
-  isoCode?: string;
+  code: string;
 }
 
 export interface State {
   id: string;
+  name: string;
   stateId: string;
   stateName: string;
-  name: string;
   countryId: string;
-  code?: string;
+}
+
+export interface Cause {
+  causeId: string | null;
+  name: string;
+  description: string | null;
+}
+
+export interface Skill {
+  id: string;
+  name: string;
+  description: string | null;
 }

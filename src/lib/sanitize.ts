@@ -184,11 +184,11 @@ export function sanitizeZipCode(value: string): string {
 }
 
 /**
- * Sanitizes an OTP / numeric code, allowing only digits.
+ * Sanitizes an OTP / numeric code, allowing only alphanumeric characters.
  */
 export function sanitizeOtp(value: string): string {
   const noControl = stripControlCharacters(value);
-  return noControl.replace(/[^0-9]/g, '').slice(0, OTP_MAX_LENGTH);
+  return noControl.replace(/[^0-9a-zA-Z]/g, '').slice(0, OTP_MAX_LENGTH);
 }
 
 /**

@@ -1,0 +1,39 @@
+@property --a {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spin {
+  to {
+    --a: 360deg;
+  }
+}
+
+.imageupload::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 0.375rem;
+  background: conic-gradient(
+    from var(--a, 0deg),
+    transparent 0deg,
+    transparent 270deg,
+    #4A90D9 360deg
+  );
+  animation: spin 2s linear infinite;
+  z-index: -1;
+}
+
+.imageupload::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 0.375rem;
+  background: white;
+  z-index: -1;
+}
+
+.imageupload {
+  background-color: #E8F4FD;
+}

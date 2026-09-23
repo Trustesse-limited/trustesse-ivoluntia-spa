@@ -1,33 +1,11 @@
- "use client";
+"use client";
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FiChevronDown, FiChevronUp, FiDollarSign, FiUsers, FiCalendar, FiTrendingUp } from "react-icons/fi";
+import { FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { api } from "@/lib/api";
+import { ProgramApiResponse } from "@/types/api";
 
-// Sample data
-const donationsData = [
-  { program: "Feed the Future", date: "11/04/25", amount: "100,000" },
-  { program: "Padher Project", date: "11/04/25", amount: "70,000" },
-  { program: "Women Thrive Initiative", date: "10/04/25", amount: "20,000" },
-  { program: "Green Lagos Drive", date: "10/04/25", amount: "50,000" },
-  { program: "Books & Beyond Campaign", date: "09/04/25", amount: "100,000" },
-  { program: "Clean Up Lagos Drive", date: "09/04/25", amount: "500,000" },
-];
-
-const topOrganizations = [
-  "Rise & Shine Foundation",
-  "Education First NGO", 
-  "Healthcare Plus",
-  "Community Helpers",
-  "Youth Development Center",
-];
-
-const topVolunteers = [
-  "Sarah Johnson",
-  "Michael Chen",
-  "Emma Williams",
-  "James Rodriguez",
-  "Lisa Anderson",
-];
+// Sample data - will be replaced with API data
 
 export default function AdminDashboard() {
   const [donationsFilter, setDonationsFilter] = useState("thisWeek");
@@ -36,6 +14,30 @@ export default function AdminDashboard() {
   const [donationsDropdownOpen, setDonationsDropdownOpen] = useState(false);
   const [organizationsDropdownOpen, setOrganizationsDropdownOpen] = useState(false);
   const [volunteersDropdownOpen, setVolunteersDropdownOpen] = useState(false);
+  const [programs, setPrograms] = useState<ProgramApiResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.programs.getAll();
+        
+        if (response.success && response.data) {
+          setPrograms(response.data as ProgramApiResponse[]);
+        } else {
+          setPrograms([]);
+        }
+      } catch (err) {
+        console.error('Error fetching programs:', err);
+        setPrograms([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPrograms();
+  }, []);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -105,16 +107,14 @@ export default function AdminDashboard() {
     { title: "Total Donations", value: "₦2,450,000", subtitle: "+12% from last month" },
     { title: "Active Volunteers", value: "1,234", subtitle: "+8% from last month" },
     { title: "Organizations", value: "89", subtitle: "+3 new this month" },
-    { title: "Programs", value: "156", subtitle: "+12 this month" },
+    { title: "Programs", value: isLoading ? "..." : programs.length.toString(), subtitle: isLoading ? "Loading..." : `Total programs` },
   ];
 
-  const donationsData = [
-    { program: "Community Tree Planting", date: "2024-03-15", amount: "₦50,000" },
-    { program: "Youth Education Program", date: "2024-03-14", amount: "₦25,000" },
-    { program: "Healthcare Awareness Camp", date: "2024-03-13", amount: "₦75,000" },
-    { program: "Food Drive Initiative", date: "2024-03-12", amount: "₦15,000" },
-    { program: "Digital Skills Workshop", date: "2024-03-11", amount: "₦35,000" },
-  ];
+  const donationsData = programs.slice(0, 5).map(program => ({
+    program: program.title || program.name || 'Unknown Program',
+    date: program.startDate ? new Date(program.startDate).toLocaleDateString() : 'N/A',
+    amount: program.donationTarget ? `₦${program.donationTarget.toLocaleString()}` : '₦0',
+  }));
 
   const topOrganizations = [
     "Green Earth Foundation",
@@ -195,27 +195,37 @@ export default function AdminDashboard() {
             <h3 className="text-sm sm:text-base lg:text-lg font-bold text-[#073B78] text-center truncate w-full">Recent Donations</h3>
           </div>
           <div className="overflow-x-auto overflow-y-auto max-h-96 max-sm:max-w-[90vw]">
-            <table className="w-full min-w-[500px] sm:min-w-[600px]">
-              <thead className="bg-[#0E68DC] border-b border-gray-200 sticky top-0 z-10">
-                <tr>
-                  <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-sm font-semibold text-[#FFFFFF]   whitespace-nowrap">Program</th>
-                  <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-sm font-semibold text-[#FFFFFF]   whitespace-nowrap">Date</th>
-                  <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-sm font-semibold text-[#FFFFFF]   whitespace-nowrap">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {donationsData.map((donation, index) => (
-                  <tr
-                    key={index}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm text-[#161616] whitespace-nowrap min-w-[120px] sm:min-w-[150px] max-w-[200px] sm:max-w-[250px]">{donation.program}</td>
-                    <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm text-[#161616] whitespace-nowrap min-w-[80px] sm:min-w-[100px]">{donation.date}</td>
-                    <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm font-medium text-[#161616] whitespace-nowrap min-w-[80px] sm:min-w-[100px]">{donation.amount}</td>
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 text-lg">Loading donations...</div>
+              </div>
+            ) : donationsData.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 text-lg">No recent donations</div>
+              </div>
+            ) : (
+              <table className="w-full min-w-[500px] sm:min-w-[600px]">
+                <thead className="bg-[#0E68DC] border-b border-gray-200 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-sm font-semibold text-[#FFFFFF]   whitespace-nowrap">Program</th>
+                    <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-sm font-semibold text-[#FFFFFF]   whitespace-nowrap">Date</th>
+                    <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-sm font-semibold text-[#FFFFFF]   whitespace-nowrap">Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {donationsData.map((donation, index) => (
+                    <tr
+                      key={index}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm text-[#161616] whitespace-nowrap min-w-[120px] sm:min-w-[150px] max-w-[200px] sm:max-w-[250px]">{donation.program}</td>
+                      <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm text-[#161616] whitespace-nowrap min-w-[80px] sm:min-w-[100px]">{donation.date}</td>
+                      <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm font-medium text-[#161616] whitespace-nowrap min-w-[80px] sm:min-w-[100px]">{donation.amount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </motion.div>
 
