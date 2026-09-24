@@ -50,11 +50,11 @@ const RootPageClient = () => {
         </p>
 
         {/* User Type Cards - uniform width, 2 columns on ≥320px, wraps only on <320px */}
-        <div className="flex flex-row flex-wrap justify-center items-center gap-4 w-full">
+        <div className="flex flex-row justify-center items-center gap-4 w-full">
           {userType.map((user, index) => (
             <div
               key={index}
-              className="cursor-pointer"
+              className="cursor-pointer flex-1 min-w-[140px] max-w-[180px]"
               onClick={index === 0 ? handleVolunteerClick : handleOrganizationClick}
             >
               <UserTypeCard>
@@ -81,8 +81,8 @@ const RootPageClient = () => {
         </p>
       </div>
 
-      {/* Illustration - fixed at bottom center */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 z-0 w-full max-w-[446px] flex justify-center">
+      {/* Illustration - absolute at bottom center */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-0 w-full max-w-[446px] flex justify-center">
         <Image
           src="/user.svg"
           alt="illustration-svg"
