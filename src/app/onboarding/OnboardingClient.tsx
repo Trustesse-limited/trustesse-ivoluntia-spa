@@ -454,6 +454,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
     
     // Call onboarding API for current step before proceeding
     try {
+      let apiResult;
       if (accountType === "volunteer") {
         const volunteerData = formData as VolunteerFormData;
         const volunteerRequest: VolunteerOnboardingRequest = {
@@ -474,7 +475,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'ProfileAndBioData.Bio': volunteerData.bio || "",
           'ProfileAndBioData.ProfileImage': volunteerData.photo ? [volunteerData.photo] : undefined,
         };
-        await volunteerOnboarding(volunteerRequest);
+        apiResult = await volunteerOnboarding(volunteerRequest);
       } else {
         const orgData = formData as OrganizationFormData;
         const orgRequest: OrganizationOnboardingRequest = {
@@ -507,9 +508,18 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
             hasAgreedToDisclaimer: orgData.disclaimerAgreed,
           },
         };
-        await organizationOnboarding(orgRequest);
+        apiResult = await organizationOnboarding(orgRequest);
       }
-    } catch {
+      
+      // Only proceed to next step if API returns success
+      if (!apiResult.success) {
+        logger.log('[Onboarding Client] API call failed, staying on current step');
+        return;
+      }
+      
+      logger.log('[Onboarding Client] API call successful, proceeding to next step');
+    } catch (error) {
+      logger.log('[Onboarding Client] API call error:', error);
       toast.error("Failed to save progress. Please try again.");
       return;
     }

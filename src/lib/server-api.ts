@@ -29,6 +29,7 @@ import {
   State,
   Cause,
   Skill,
+  CategoryApiResponse,
 } from '@/types/api';
 import {
   getServerAccessToken,
@@ -631,6 +632,27 @@ export async function getSkills(): Promise<Skill[]> {
     
     const response = await serverAxiosInstance.get<ApiResponse<Skill[]>>(
       API_ENDPOINTS.skill.getAll
+    );
+    
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    
+    return response.data.data || [];
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get all categories
+ * GET /api/Category/get-all-category
+ */
+export async function getCategories(): Promise<CategoryApiResponse[]> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.category.getAll);
+    
+    const response = await serverAxiosInstance.get<ApiResponse<CategoryApiResponse[]>>(
+      API_ENDPOINTS.category.getAll
     );
     
     logger.log('[API] Response Status:', response.status);

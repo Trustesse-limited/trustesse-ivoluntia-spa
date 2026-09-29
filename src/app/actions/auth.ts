@@ -15,6 +15,7 @@ import {
   getStates,
   getCauses,
   getSkills,
+  getCategories,
   uploadFile,
 } from '@/lib/server-api';
 import {
@@ -31,6 +32,7 @@ import {
   State,
   Cause,
   Skill,
+  CategoryApiResponse,
 } from '@/types/api';
 import { cookies } from 'next/headers';
 import {
@@ -1062,6 +1064,35 @@ export async function getSkillsAction(): Promise<{
     return {
       success: false,
       error: apiError.message || 'Failed to fetch skills',
+    };
+  }
+}
+
+/**
+ * Server Action to Get All Categories
+ * This can be called from client components but executes on the server
+ * GET /api/Category/get-all-category
+ */
+export async function getCategoriesAction(): Promise<{
+  success: boolean;
+  data?: CategoryApiResponse[];
+  error?: string;
+}> {
+  try {
+    logger.log('[Server Action] getCategoriesAction called');
+    const categories = await getCategories();
+    logger.log('[Server Action] getCategoriesAction completed');
+
+    return {
+      success: true,
+      data: categories,
+    };
+  } catch (error) {
+    logger.log('[Server Action] getCategoriesAction error:', error);
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch categories',
     };
   }
 }

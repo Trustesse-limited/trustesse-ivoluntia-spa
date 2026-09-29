@@ -134,6 +134,13 @@ export interface DeleteProgramGoalRequest {
   programGoalId: string;
 }
 
+// Category API types
+export interface CategoryApiResponse {
+  id: string;
+  name: string;
+  description?: string | null;
+}
+
 // Volunteer Sign Up DTO based on backend API
 export interface VolunteerSignUpDto {
   metaData: {

@@ -176,6 +176,11 @@ export const api = {
       apiClient.post(`${API_ENDPOINTS.programs.leave}?programId=${programId}`),
   },
   
+  category: {
+    getAll: () => 
+      apiClient.get(API_ENDPOINTS.category.getAll),
+  },
+  
   // Additional client-side endpoints can be added here
   // using the API_ENDPOINTS from api-config.ts
 };
