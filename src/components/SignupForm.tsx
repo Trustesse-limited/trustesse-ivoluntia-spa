@@ -21,9 +21,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
   const router = useRouter();
   const { updateFormData, switchAccountType, formData: onboardingFormData } = useOnboardingStore();
   const { volunteerSignUp, organizationSignUp, isLoading } = useAuthActions();
-  const [signupEmail, setSignupEmail] = useState('');
 
-  //for the social icons login
   const socialIcons = [
     { img: '/google.svg', alt: 'google-svg', link: '/' },
     { img: '/apple.svg', alt: 'apple-svg', link: '/' },
@@ -78,12 +76,8 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
     return '';
   };
 
-  // On mount, switch to the appropriate account type.
-  // SECURITY: Email is NOT restored from any store on signup screens.
   useEffect(() => {
     switchAccountType(type);
-    
-    // SECURITY: Restore TOC acceptance from store ONLY (no email from store).
     setForm((prev) => ({
       ...prev,
       hasAcceptedTOC: onboardingFormData.authInfo?.hasAcceptedTOC || false,
@@ -93,7 +87,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // SECURITY: Sanitize inputs before validation
     const sanitizedEmail = sanitizeEmail(form.email);
     const sanitizedPassword = sanitizePassword(form.password);
     const sanitizedConfirmPassword = sanitizePassword(form.confirmPassword);
@@ -118,7 +111,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
       return;
     }
     
-    // Call appropriate signup API based on type
     const result = type === 'volunteer' 
       ? await volunteerSignUp({
           email: sanitizedEmail,
@@ -134,23 +126,16 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
         });
 
     if (result.success) {
-      // Store email for OTP verification
-      setSignupEmail(sanitizedEmail);
-      
-      // SECURITY: Only store non-sensitive data - passwords are never stored in client-side state
       updateFormData({
         authInfo: {
           email: sanitizedEmail,
-          // Password and confirmPassword intentionally excluded for security
           hasAcceptedTOC: form.hasAcceptedTOC,
         },
         metaData: {
           accountType: type,
-          currentPage: 1,
         },
       });
 
-      // SECURITY: Clear password fields from local state after submission
       setForm((prev) => ({
         ...prev,
         email: sanitizedEmail,
@@ -158,7 +143,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
         confirmPassword: "",
       }));
 
-      // Redirect to OTP verification page
       router.push(`/verify?email=${encodeURIComponent(sanitizedEmail)}&type=${type}`);
     }
   };
@@ -166,14 +150,12 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
-    // SECURITY: Sanitize as the user types (first line of defense).
     if (name === 'email') {
       setForm({ ...form, email: sanitizeEmail(value) });
     } else if (name === 'password') {
       const sanitizedPassword = sanitizePassword(value);
       setForm({ ...form, password: sanitizedPassword });
       setPasswordError(validatePassword(sanitizedPassword));
-      // Also validate confirm password if it has a value
       if (form.confirmPassword) {
         setConfirmPasswordError(sanitizedPassword !== form.confirmPassword ? 'Passwords do not match' : '');
       }
@@ -202,7 +184,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
           ? 'Join our community of volunteers and make a difference' 
           : 'Register your organization and connect with volunteers'}
       </p>
-      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] md:mx-auto'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-6 md:mx-auto'>
         <InputComponent
           label="Email Address"
           placeholder="Enter your email address"
@@ -242,7 +224,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Checkbox id='terms' className='rounded-full border-black' onCheckedChange={handleTermsChange} />
+          <Checkbox id='terms' className='rounded-full border-black' checked={form.hasAcceptedTOC} onCheckedChange={handleTermsChange} />
           <label htmlFor="terms" className="text-sm">
             I agree to the <span className='text-[#163752]'><Link href='/'>Terms & Conditions</Link></span>
           </label>
@@ -268,4 +250,4 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
   )
 }
 
-export default SignupForm;
+export default SignupForm

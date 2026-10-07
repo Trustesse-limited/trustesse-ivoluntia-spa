@@ -16,11 +16,6 @@ const openSans = Open_Sans({
 export const metadata: Metadata = {
   title: `${BRAND_NAME} | Empowering Volunteers & NGOs to Create Impact`,
   description: `${BRAND_NAME} is a platform that connects passionate volunteers with impactful NGOs. Discover opportunities, manage campaigns, and build a community driven by purpose and change.`,
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-  },
 };
 
 export default function RootLayout({

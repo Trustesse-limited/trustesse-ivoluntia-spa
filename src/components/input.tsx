@@ -14,15 +14,15 @@ import { useState } from "react";
        onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     }
 
-    export function InputComponent({
+    export const InputComponent = ({
       label,
       placeholder,
       name,
       htmlFor,
       type = "text",
       value,
-       onChange ,
-    }: InputComponentProps) {
+       onChange,
+    }: InputComponentProps) => {
       const [showPassword, setShowPassword] = useState(false);
       const isPassword = type === "password";
 
@@ -53,4 +53,4 @@ import { useState } from "react";
           </div>
         </div>
       );
-    }
+    };

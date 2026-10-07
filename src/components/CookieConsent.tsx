@@ -47,7 +47,7 @@ const CookieConsent = () => {
   return (
     <div
       className={`fixed inset-0 z-50 bg-black/60 transition-all duration-300 ease-in-out ${
-        isAnimating ? 'opacity-100' : 'opacity-0'
+        isAnimating ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
     >
       <div
@@ -57,36 +57,36 @@ const CookieConsent = () => {
       >
         <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-w-2xl mx-auto p-6 sm:p-8">
           {/* Icon and Content */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6">
+          <div className="flex items-start gap-3 mb-6">
             <div className="shrink-0">
-              <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center">
-                <FiInfo className="w-7 h-7 text-gray-500" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-2xl flex items-center justify-center">
+                <FiInfo className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
                 Cookie Preferences
               </h3>
-              <p className="text-base text-gray-600 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                 We use cookies to keep you logged in and improve your experience. Please choose your preference to continue.
               </p>
             </div>
           </div>
 
           {/* Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-row gap-2 sm:gap-3">
             <button
               onClick={handleAcceptEssential}
-              className="flex-1 px-5 py-3 text-base font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-colors duration-200 cursor-pointer"
+              className="flex-1 px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-colors duration-200 cursor-pointer whitespace-nowrap"
             >
               Essential Only
             </button>
             <button
               onClick={handleAcceptAll}
-              className="flex-1 px-5 py-3 text-base font-medium text-white bg-[#0E68DC] hover:bg-[#0b5cc4] rounded-2xl transition-colors duration-200 flex items-center justify-center gap-2 shadow-md cursor-pointer"
+              className="flex-1 px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base font-medium text-white bg-[#0E68DC] hover:bg-[#0b5cc4] rounded-2xl transition-colors duration-200 flex items-center justify-center gap-1.5 sm:gap-2 shadow-md cursor-pointer whitespace-nowrap"
             >
               Accept All
-              <FiCheck className="w-5 h-5" />
+              <FiCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
