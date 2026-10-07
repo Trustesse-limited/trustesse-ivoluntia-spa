@@ -3,14 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { FiCalendar, FiMapPin, FiUsers } from "react-icons/fi";
+import { FiCalendar, FiMapPin, FiUsers, FiTrash2 } from "react-icons/fi";
 import BackButton from "@/components/BackButton";
 import Modal from "@/components/Modal";
 import { AppButton } from "@/components/AppButton";
 import { api } from "@/lib/api";
 import { ProgramItem } from "@/types";
-import { ProgramApiResponse } from "@/types/api";
+import { ProgramApiResponse, ProgramGoal } from "@/types/api";
 import toast from "react-hot-toast";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 const formatNumberWithCommas = (num: number) => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -20,6 +21,7 @@ export default function ProgramDetailPage() {
   const router = useRouter();
   const { id } = useParams();
   const [program, setProgram] = useState<ProgramItem | null>(null);
+  const [programGoals, setProgramGoals] = useState<ProgramGoal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
@@ -55,12 +57,15 @@ export default function ProgramDetailPage() {
             targetVolunteers: programData.targetVolunteers || 0,
           };
           setProgram(mappedProgram);
+          setProgramGoals(programData.programGoals || []);
         } else {
           setProgram(null);
+          setProgramGoals([]);
         }
       } catch (err) {
         console.error('Error fetching program:', err);
         setProgram(null);
+        setProgramGoals([]);
       } finally {
         setIsLoading(false);
       }
@@ -72,9 +77,7 @@ export default function ProgramDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="text-gray-400 text-lg">Loading program details...</div>
-        </div>
+        <LoadingSpinner size="xl" opacity={0.8} />
       </div>
     );
   }
@@ -89,7 +92,7 @@ export default function ProgramDetailPage() {
           <p className="text-gray-600 mb-4">
             The program you&apos;re looking for doesn&apos;t exist.
           </p>
-          <BackButton />
+          <BackButton to="/org/programs" />
         </div>
       </div>
     );
@@ -149,6 +152,21 @@ export default function ProgramDetailPage() {
     setShowForfeitModal(false);
   };
 
+  const handleDeleteGoal = async (goalId: string) => {
+    try {
+      const response = await api.programs.deleteGoal(goalId);
+      if (response.success) {
+        toast.success('Goal deleted successfully');
+        setProgramGoals(prev => prev.filter(goal => goal.id !== goalId));
+      } else {
+        toast.error('Failed to delete goal');
+      }
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      toast.error('Failed to delete goal');
+    }
+  };
+
   return (
     <>
       <motion.section
@@ -159,7 +177,7 @@ export default function ProgramDetailPage() {
         className="w-full max-w-full px-4 sm:px-6 lg:px-8 pt-6 pb-10 space-y-4 bg-white text-black"
       >
         <div className="flex items-center justify-start gap-4">
-          <BackButton />
+          <BackButton to="/org/programs" />
           <h1 className="text-xl font-bold">Program Overview</h1> 
         </div>
 
@@ -223,9 +241,28 @@ export default function ProgramDetailPage() {
         {/* Goals */}
         <div className="space-y-2">
           <h3 className="text-lg font-bold">Goals</h3>
-          <div className="text-sm rendered-list [&>ul]:list-disc pl-5">
-            <div dangerouslySetInnerHTML={{ __html: program.goals }} />
-          </div>
+          {programGoals.length > 0 ? (
+            <div className="space-y-2">
+              {programGoals.map((goal, index) => (
+                <div key={goal.id || index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                  <span className="text-sm">{goal.goal}</span>
+                  {goal.id && (
+                    <button
+                      onClick={() => handleDeleteGoal(goal.id!)}
+                      className="text-red-500 hover:text-red-700 p-1"
+                      title="Delete goal"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm rendered-list [&>ul]:list-disc pl-5">
+              <div dangerouslySetInnerHTML={{ __html: program.goals }} />
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}

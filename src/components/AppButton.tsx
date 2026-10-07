@@ -66,7 +66,7 @@ export function AppButton({
   const buttonContent = isLoading ? (
     <>
       {text || children}
-      <LoadingSpinner size="sm" />
+      <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} />
     </>
   ) : (
     <>

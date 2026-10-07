@@ -3,6 +3,9 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProgramItem } from "@/types";
 import { formatNumberWithCommas } from "@/lib/utils";
+import { api } from "@/lib/api";
+import toast from "react-hot-toast";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 type ProgramTableProps = {
   data: ProgramItem[];
@@ -28,10 +31,21 @@ export default function ProgramTable({
 
   const handleEnrollClick = async (index: number) => {
     setEnrollingIndex(index);
-    // Simulate enrollment process
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    onEnroll?.(data[index], index);
-    setEnrollingIndex(null);
+    try {
+      const program = data[index];
+      const response = await api.programs.join(program.id);
+      if (response.success) {
+        toast.success('Successfully enrolled in program');
+        onEnroll?.(program, index);
+      } else {
+        toast.error('Failed to enroll in program');
+      }
+    } catch (error) {
+      console.error('Error enrolling in program:', error);
+      toast.error('Failed to enroll in program');
+    } finally {
+      setEnrollingIndex(null);
+    }
   };
 
   const getProgressWidth = (program: ProgramItem) => {
@@ -146,9 +160,16 @@ export default function ProgramTable({
                   <button
                     onClick={() => handleEnrollClick(index)}
                     disabled={enrollingIndex === index}
-                    className="px-4 py-2 text-sm bg-[#66BB6A] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer disabled:opacity-50"
+                    className="px-4 py-2 text-sm bg-[#66BB6A] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer disabled:opacity-50 inline-flex items-center justify-center"
                   >
-                    {enrollingIndex === index ? "Enrolling..." : "Enroll"}
+                    {enrollingIndex === index ? (
+                      <>
+                        Enroll
+                        <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} />
+                      </>
+                    ) : (
+                      "Enroll"
+                    )}
                   </button>
                 )}
                 {showCertificate && program.status === "completed" && (

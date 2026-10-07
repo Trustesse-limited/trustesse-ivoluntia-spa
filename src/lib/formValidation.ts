@@ -82,9 +82,7 @@ export function validateLocationForm(formData: {
 }): ValidationResult {
   const errors: Record<string, string> = {};
 
-  if (!formData.address.trim()) {
-    errors.address = "Address is required";
-  }
+  // Address is optional, so no validation for it
 
   if (!formData.city.trim()) {
     errors.city = "City is required";

@@ -1,8 +1,7 @@
-import { redirect } from 'next/navigation';
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FiHome, FiBriefcase, FiUsers, FiHeart, FiRadio, FiStar, FiHelpCircle, FiSettings } from 'react-icons/fi';
-import { requireRole } from '@/lib/auth.server';
+import { requireRoleOrRedirect } from '@/lib/auth.server';
 
 const navLinks = [
   { label: 'Dashboard', href: '/org/dashboard', icon: <FiHome /> },
@@ -16,15 +15,10 @@ const navLinks = [
 ];
 
 async function OrganizationAuthWrapper({ children }: { children: React.ReactNode }) {
-  try {
-    await requireRole('organization');
-  } catch (error) {
-    if (error instanceof Error && (error.message === 'UNAUTHORIZED' || error.message === 'FORBIDDEN')) {
-      redirect('/login');
-    }
-    throw error;
-  }
-  
+  // Server-side guard: organization accounts only. Other roles are redirected
+  // to their own dashboard, unauthenticated users to /login.
+  await requireRoleOrRedirect('organization');
+
   return <>{children}</>;
 }
 

@@ -14,8 +14,10 @@ import {
   getCountries,
   getStates,
   getCauses,
+  getInterests,
   getSkills,
-  uploadFile,
+  getCategories,
+  uploadFile as uploadFileServer,
 } from '@/lib/server-api';
 import {
   VolunteerSignUpRequest,
@@ -30,7 +32,9 @@ import {
   Country,
   State,
   Cause,
+  Interest,
   Skill,
+  CategoryApiResponse,
 } from '@/types/api';
 import { cookies } from 'next/headers';
 import {
@@ -637,6 +641,8 @@ export async function logoutAction(): Promise<{
     const cookieStore = await cookies();
     
     // Delete all auth-related cookies by setting them to expire immediately
+    // NOTE: 'cookieConsent' is intentionally excluded - it's a browser-level preference
+    // that should persist across login/logout cycles for legal compliance and UX
     const cookiesToDelete = [
       'auth_token',
       'access_token',
@@ -1038,6 +1044,64 @@ export async function getCausesAction(): Promise<{
 }
 
 /**
+ * Server Action to Get All Interests
+ * This can be called from client components but executes on the server
+ * GET /api/Interest/get-interests
+ */
+export async function getInterestsAction(): Promise<{
+  success: boolean;
+  data?: Interest[];
+  error?: string;
+}> {
+  try {
+    logger.log('[Server Action] getInterestsAction called');
+    const interests = await getInterests();
+    logger.log('[Server Action] getInterestsAction completed');
+
+    return {
+      success: true,
+      data: interests,
+    };
+  } catch (error) {
+    logger.log('[Server Action] getInterestsAction error:', error);
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch interests',
+    };
+  }
+}
+
+/**
+ * Server Action to Upload a File
+ * This can be called from client components but executes on the server
+ * POST /api/FileUploads/file-upload
+ */
+export async function uploadFileAction(file: File): Promise<{
+  success: boolean;
+  data?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[Server Action] uploadFileAction called');
+    const url = await uploadFileServer(file);
+    logger.log('[Server Action] uploadFileAction completed, URL:', url);
+
+    return {
+      success: true,
+      data: url,
+    };
+  } catch (error) {
+    logger.log('[Server Action] uploadFileAction error:', error);
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to upload file',
+    };
+  }
+}
+
+/**
  * Server Action to Get All Skills
  * This can be called from client components but executes on the server
  * GET /api/Skill/get-all-skill
@@ -1067,30 +1131,30 @@ export async function getSkillsAction(): Promise<{
 }
 
 /**
- * Server Action to Upload File
+ * Server Action to Get All Categories
  * This can be called from client components but executes on the server
- * POST /api/FileUploads/file-upload
+ * GET /api/Category/get-all-category
  */
-export async function uploadFileAction(file: File): Promise<{
+export async function getCategoriesAction(): Promise<{
   success: boolean;
-  data?: string;
+  data?: CategoryApiResponse[];
   error?: string;
 }> {
   try {
-    logger.log('[Server Action] uploadFileAction called');
-    const fileUrl = await uploadFile(file);
-    logger.log('[Server Action] uploadFileAction completed');
+    logger.log('[Server Action] getCategoriesAction called');
+    const categories = await getCategories();
+    logger.log('[Server Action] getCategoriesAction completed');
 
     return {
       success: true,
-      data: fileUrl,
+      data: categories,
     };
   } catch (error) {
-    logger.log('[Server Action] uploadFileAction error:', error);
+    logger.log('[Server Action] getCategoriesAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,
-      error: apiError.message || 'Failed to upload file',
+      error: apiError.message || 'Failed to fetch categories',
     };
   }
 }

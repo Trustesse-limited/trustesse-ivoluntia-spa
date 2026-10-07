@@ -12,13 +12,11 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { sanitizeEmail, sanitizePassword, isValidEmail } from '@/lib/sanitize';
 import { getRememberMe, saveRememberMe, clearRememberMe, hasRememberMe } from '@/lib/rememberMe';
-import logger from '@/lib/logger';
 
 const LoginPageClient = () => {
   const router = useRouter();
   const { login, isLoading } = useAuthActions();
 
-  //for the social icons login
   const socialIcons = [
     { img: '/google.svg', alt: 'google-svg', link: '/' },
     { img: '/apple.svg', alt: 'apple-svg', link: '/' },
@@ -34,13 +32,9 @@ const LoginPageClient = () => {
 
   const isFormValid = form.email.trim() !== "" && form.password.trim() !== "";
 
-  // SECURITY: On mount, restore email AND decrypted password
-  // ONLY if the user previously opted in via the "Remember me" checkbox.
-  // Password is encrypted with AES-GCM and decrypted on this device only.
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     if (e) e.preventDefault();
     
-    // SECURITY: Sanitize inputs before validation/submission
     const sanitizedEmail = sanitizeEmail(form.email);
     const sanitizedPassword = sanitizePassword(form.password);
 
@@ -54,15 +48,12 @@ const LoginPageClient = () => {
       return;
     }
 
-    // SECURITY: Persist email + encrypted password ONLY when "Remember me" is explicitly ticked.
-    // Password is encrypted with AES-GCM using a device-specific key.
     if (form.rememberMe) {
       await saveRememberMe(sanitizedEmail, sanitizedPassword);
     } else {
       clearRememberMe();
     }
 
-    // Call the API
     const result = await login({
       email: sanitizedEmail,
       password: sanitizedPassword,
@@ -72,17 +63,9 @@ const LoginPageClient = () => {
     });
     
     if (result.success) {
-      // Use the enhanced redirect information from the login hook
       const resultData = result as { redirect?: string; requiresOnboarding?: boolean; accountType?: string; lastCompletedPage?: number; hasCompletedOnboarding?: boolean; requiresTwoFactor?: boolean };
       
-      logger.log('[Login Page] Login successful, resultData:', resultData);
-      logger.log('[Login Page] resultData.redirect:', resultData.redirect);
-      logger.log('[Login Page] resultData.accountType:', resultData.accountType);
-      logger.log('[Login Page] resultData.requiresTwoFactor:', resultData.requiresTwoFactor);
-      
       if (resultData.requiresTwoFactor) {
-        logger.log('[Login Page] Two-factor authentication required, redirecting to verify page');
-        // The redirect URL is already set in the login hook
         if (resultData.redirect) {
           router.push(resultData.redirect);
         }
@@ -90,56 +73,37 @@ const LoginPageClient = () => {
       }
       
       if (resultData.redirect) {
-        logger.log('[Login Page] Redirecting to:', resultData.redirect, 'Account Type:', resultData.accountType);
-        logger.log('[Login Page] Calling router.push to:', resultData.redirect);
         router.push(resultData.redirect);
-        return; // Important: return early to prevent fallback logic
+        return;
       } else {
-        logger.log('[Login Page] No redirect provided, using fallback logic');
-        // Fallback to original logic if redirect not provided
         const loginData = result.data as Record<string, unknown> | undefined;
         const hasCompletedOnboarding = loginData?.hasCompletedOnboarding as boolean | undefined;
         const accountType = loginData?.accountType as string | undefined;
         const normalizedAccountType = accountType?.toLowerCase();
 
-        logger.log('[Login Page] Fallback - hasCompletedOnboarding:', hasCompletedOnboarding);
-        logger.log('[Login Page] Fallback - accountType:', accountType);
-        logger.log('[Login Page] Fallback - normalizedAccountType:', normalizedAccountType);
-
         if (hasCompletedOnboarding) {
-          // User completed onboarding, redirect to appropriate dashboard
           if (normalizedAccountType === 'organization') {
-            logger.log('[Login Page] Fallback redirect to /org/dashboard');
             router.push('/org/dashboard');
           } else if (normalizedAccountType === 'volunteer') {
-            logger.log('[Login Page] Fallback redirect to /home');
             router.push('/home');
           } else if (normalizedAccountType === 'admin') {
-            logger.log('[Login Page] Fallback redirect to /admin/dashboard');
             router.push('/admin/dashboard');
           } else {
-            logger.log('[Login Page] Fallback redirect to /home');
             router.push('/home');
           }
         } else {
-          // Redirect to appropriate onboarding based on account type
           if (normalizedAccountType === 'organization') {
-            logger.log('[Login Page] Fallback redirect to /onboarding?type=organization');
             router.push('/onboarding?type=organization');
           } else if (normalizedAccountType === 'volunteer') {
-            logger.log('[Login Page] Fallback redirect to /onboarding?type=volunteer');
             router.push('/onboarding?type=volunteer');
           } else {
-            logger.log('[Login Page] Fallback redirect to /onboarding');
             router.push('/onboarding');
           }
         }
       }
     } else {
-      // Check if login failed due to account not active requiring verification
       const resultData = result as { requiresVerification?: boolean; emailForVerification?: string; redirect?: string };
       if (resultData.requiresVerification && resultData.redirect) {
-        logger.log('[Login Page] Account not active, redirecting to verification');
         router.push(resultData.redirect);
       }
     }
@@ -147,7 +111,6 @@ const LoginPageClient = () => {
 
   useEffect(() => {
     const restoreRememberMe = async () => {
-      // Check if email is in URL params (from 2FA redirect)
       const urlParams = new URLSearchParams(window.location.search);
       const emailFromUrl = urlParams.get('email');
       const otpFromUrl = urlParams.get('otp');
@@ -156,10 +119,8 @@ const LoginPageClient = () => {
       if (emailFromUrl) {
         setForm((prev) => ({ ...prev, email: emailFromUrl }));
         
-        // If returning from 2FA verification with OTP, auto-complete login
         if (otpFromUrl && completeLogin === 'true') {
           setForm((prev) => ({ ...prev, twoFactorCode: otpFromUrl }));
-          // Auto-submit the form after a short delay
           setTimeout(() => {
             const formElement = document.querySelector('form') as HTMLFormElement;
             if (formElement) {
@@ -170,7 +131,6 @@ const LoginPageClient = () => {
         return;
       }
       
-      // Otherwise, restore from remember me
       if (hasRememberMe()) {
         const { email, password } = await getRememberMe();
         if (email) {
@@ -183,10 +143,6 @@ const LoginPageClient = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
-    // SECURITY: Sanitize as the user types (first line of defense).
-    // Emails are lowercased + stripped of dangerous payloads;
-    // passwords only have control characters stripped (characters preserved).
     if (name === 'email') {
       setForm({ ...form, email: sanitizeEmail(value) });
     } else if (name === 'password') {
@@ -198,7 +154,6 @@ const LoginPageClient = () => {
 
   const handleRememberMeChange = (checked: boolean) => {
     setForm({ ...form, rememberMe: checked });
-    // SECURITY: If user unchecks "Remember me", immediately remove stored data.
     if (!checked) {
       clearRememberMe();
     }
@@ -207,10 +162,10 @@ const LoginPageClient = () => {
   return (
     <>
     <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md mx-auto px-4 flex-grow'>
-      <h1 className='md:text-[32px] text-2xl text-center font-[600] mt-16'>Welcome Back</h1>
-      <p className='text-center'>Please enter your details</p>
-      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 md:mx-auto'>
+      <div className='flex flex-col items-center w-full max-w-md mx-auto px-6 sm:px-4 flex-grow'>
+      <h1 className='md:text-[32px] text-xl sm:text-2xl text-center font-[600] sm:mt-16'>Welcome Back</h1>
+      <p className='text-center text-sm sm:text-base'>Please enter your details</p>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-6 mt-9 md:mx-auto'>
          <InputComponent
                   label="Email Address"
                   placeholder="Enter email address"

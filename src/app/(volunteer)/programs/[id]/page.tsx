@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse } from "@/types/api";
 import toast from "react-hot-toast";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function ProgramDetailPage() {
   const router = useRouter();
@@ -67,9 +68,7 @@ export default function ProgramDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="text-gray-400 text-lg">Loading program details...</div>
-        </div>
+        <LoadingSpinner size="xl" opacity={0.8} />
       </div>
     );
   }
@@ -139,7 +138,7 @@ export default function ProgramDetailPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center justify-start gap-4 mb-4">
-              <BackButton />
+              <BackButton to="/volunteer/programs" />
               <h1 className="text-3xl font-bold text-gray-900">
                 {program.title}
               </h1>
@@ -153,17 +152,31 @@ export default function ProgramDetailPage() {
               <button
                 onClick={handleLeave}
                 disabled={isLeaving}
-                className="px-6 py-3 bg-red-500 text-white rounded-md hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-red-500 text-white rounded-md hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
               >
-                {isLeaving ? "Leaving..." : "Leave Program"}
+                {isLeaving ? (
+                  <>
+                    Leave Program
+                    <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} />
+                  </>
+                ) : (
+                  "Leave Program"
+                )}
               </button>
             ) : (
               <button
                 onClick={handleEnroll}
                 disabled={isEnrolling}
-                className="px-6 py-3 bg-[#66BB6A] text-white rounded-md hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-[#66BB6A] text-white rounded-md hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
               >
-                {isEnrolling ? "Enrolling..." : "Enroll Now"}
+                {isEnrolling ? (
+                  <>
+                    Enroll Now
+                    <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} />
+                  </>
+                ) : (
+                  "Enroll Now"
+                )}
               </button>
             )}
             <button

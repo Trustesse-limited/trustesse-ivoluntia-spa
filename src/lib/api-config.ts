@@ -73,6 +73,11 @@ export const API_ENDPOINTS = {
     delete: buildApiEndpointNoVersion('Cause/delete-cause-by-id'),
   },
 
+  // Category endpoints (non-versioned)
+  category: {
+    getAll: buildApiEndpointNoVersion('Category/get-all-category'),
+  },
+
   // Country endpoints (versioned)
   countries: {
     create: buildApiEndpoint('countries/create-country'),

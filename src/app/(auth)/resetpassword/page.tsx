@@ -141,9 +141,9 @@ const Page = () => {
   return (
     <>
     <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md mx-auto px-4 flex-grow'>
-      <h1 className='text-center md:text-[32px] text-2xl font-[600] mt-16'>Reset Password</h1>
-      <p className='text-center'>Enter your new password below</p>
+      <div className='flex flex-col items-center w-full max-w-md mx-auto px-6 sm:px-4 flex-grow'>
+      <h1 className='text-center md:text-[32px] text-xl sm:text-2xl font-[600] sm:mt-16'>Reset Password</h1>
+      <p className='text-center text-sm sm:text-base'>Enter your new password below</p>
       <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-4 md:mx-auto'>
         <div>
           <InputComponent

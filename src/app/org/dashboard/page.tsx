@@ -1,5 +1,6 @@
 'use client'
 import Image from "next/image";
+import { SmartImage } from "@/components/SmartImage";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
@@ -110,12 +111,14 @@ const projectsToRender = isViewingAll
 
     return (
       <div key={project.id} className="py-4 px-11 flex md:flex-row flex-col gap-6 border-gray-200">
-        <Image
+        <SmartImage
           src={project.image}
           alt={project.title}
           width={126}
           height={90}
-          className="w-full md:w-[126px] h-[180px] md:h-[90px] object-cover rounded-md mb-4"
+          className="w-full md:w-[126px] h-[180px] md:h-[90px] rounded-md mb-4"
+          objectFit="cover"
+          fallbackSrc="/placeholder.svg"
         />
 
         <div className="flex flex-col gap-[4px] md:w-[calc(100%-126px)]">

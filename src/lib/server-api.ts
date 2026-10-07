@@ -28,7 +28,9 @@ import {
   Country,
   State,
   Cause,
+  Interest,
   Skill,
+  CategoryApiResponse,
 } from '@/types/api';
 import {
   getServerAccessToken,
@@ -392,14 +394,11 @@ export async function volunteerOnboarding(
     Object.entries(data).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         value.forEach((item, index) => {
-          if (item instanceof File) {
-            formData.append(`${key}[${index}]`, item);
-          } else {
+          // Don't send Files anymore - we send URLs after upload
+          if (item) {
             formData.append(`${key}[${index}]`, item);
           }
         });
-      } else if (value instanceof File) {
-        formData.append(key, value);
       } else if (value !== undefined && value !== null) {
         formData.append(key, String(value));
       }
@@ -476,8 +475,10 @@ export async function organizationOnboarding(
     }
     
     if (data.profileLogo && data.profileLogo.logo) {
-      data.profileLogo.logo.forEach((file, index) => {
-        formData.append(`ProfileLogo.Logo[${index}]`, file);
+      data.profileLogo.logo.forEach((url, index) => {
+        if (url) {
+          formData.append(`ProfileLogo.Logo[${index}]`, url);
+        }
       });
     }
     
@@ -607,15 +608,73 @@ export async function getStates(countryId: string): Promise<State[]> {
 export async function getCauses(): Promise<Cause[]> {
   try {
     logger.log('[API] GET', API_ENDPOINTS.cause.getAll);
-    
+
     const response = await serverAxiosInstance.get<ApiResponse<Cause[]>>(
       API_ENDPOINTS.cause.getAll
     );
-    
+
     logger.log('[API] Response Status:', response.status);
     logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
-    
+
     return response.data.data || [];
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get all interests
+ * GET /api/Interest/get-interests
+ */
+export async function getInterests(): Promise<Interest[]> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.interest.getAll);
+
+    const response = await serverAxiosInstance.get<ApiResponse<Interest[]>>(
+      API_ENDPOINTS.interest.getAll
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data.data || [];
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Upload a file
+ * POST /api/FileUploads/file-upload (multipart/form-data)
+ */
+export async function uploadFile(file: File): Promise<string> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.fileUploads.upload);
+    logger.log('[API] Uploading file:', file.name, file.type, file.size);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await serverAxiosInstance.post<ApiResponse<string[]>>(
+      API_ENDPOINTS.fileUploads.upload,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    // The API returns an array of URLs, we take the first one
+    const urls = response.data.data || [];
+    if (urls.length === 0) {
+      throw new Error('No URL returned from upload API');
+    }
+
+    return urls[0];
   } catch (error) {
     throw handleServerError(error);
   }
@@ -643,35 +702,21 @@ export async function getSkills(): Promise<Skill[]> {
 }
 
 /**
- * Upload file
- * POST /api/FileUploads/file-upload
+ * Get all categories
+ * GET /api/Category/get-all-category
  */
-export async function uploadFile(file: File): Promise<string> {
+export async function getCategories(): Promise<CategoryApiResponse[]> {
   try {
-    logger.log('[API] POST', API_ENDPOINTS.fileUploads.upload);
-    logger.log('[API] File:', file.name, file.type, file.size);
+    logger.log('[API] GET', API_ENDPOINTS.category.getAll);
     
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await serverAxiosInstance.post<ApiResponse<string[]>>(
-      API_ENDPOINTS.fileUploads.upload,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
+    const response = await serverAxiosInstance.get<ApiResponse<CategoryApiResponse[]>>(
+      API_ENDPOINTS.category.getAll
     );
     
     logger.log('[API] Response Status:', response.status);
     logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
-    if (response.data.data && response.data.data.length > 0) {
-      return response.data.data[0];
-    }
-    
-    throw new Error('No file URL returned from server');
+    return response.data.data || [];
   } catch (error) {
     throw handleServerError(error);
   }

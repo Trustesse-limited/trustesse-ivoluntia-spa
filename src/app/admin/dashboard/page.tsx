@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { api } from "@/lib/api";
 import { ProgramApiResponse } from "@/types/api";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 // Sample data - will be replaced with API data
 
@@ -107,7 +108,7 @@ export default function AdminDashboard() {
     { title: "Total Donations", value: "₦2,450,000", subtitle: "+12% from last month" },
     { title: "Active Volunteers", value: "1,234", subtitle: "+8% from last month" },
     { title: "Organizations", value: "89", subtitle: "+3 new this month" },
-    { title: "Programs", value: isLoading ? "..." : programs.length.toString(), subtitle: isLoading ? "Loading..." : `Total programs` },
+    { title: "Programs", value: isLoading ? "..." : programs.length.toString(), subtitle: isLoading ? "..." : `Total programs` },
   ];
 
   const donationsData = programs.slice(0, 5).map(program => ({
@@ -196,8 +197,8 @@ export default function AdminDashboard() {
           </div>
           <div className="overflow-x-auto overflow-y-auto max-h-96 max-sm:max-w-[90vw]">
             {isLoading ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 text-lg">Loading donations...</div>
+              <div className="flex items-center justify-center py-12">
+                <LoadingSpinner size="xl" opacity={0.8} />
               </div>
             ) : donationsData.length === 0 ? (
               <div className="text-center py-12">

@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Donor } from "@/types";
-import Image from "next/image";
+import { SmartImage } from "@/components/SmartImage";
 
 type DonationsTableProps = {
   data: Donor[];
@@ -44,12 +44,14 @@ export default function DonationsTable({
           {data.map((donor, index) => (
             <tr key={index}>
               <td className="px-4 py-2 text-sm text-[#373737] whitespace-nowrap flex-row flex gap-4 self-center items-center">
-                <span className="rounded-full h-6 w-6 bg-gray-300 relative">
-                  <Image
+                <span className="rounded-full h-6 w-6 bg-gray-300 relative overflow-hidden">
+                  <SmartImage
                     src={donor.profilePic}
                     alt="Donor"
-                    width={24}
-                    height={24}
+                    fill
+                    sizes="24px"
+                    objectFit="cover"
+                    fallbackSrc="/images/donor.png"
                   />
                 </span>
                 <span>{donor.name}</span>

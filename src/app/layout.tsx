@@ -4,6 +4,7 @@ import "./globals.css";
 import { BRAND_NAME } from "../../constants";
 import { Toaster } from "@/components/Toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
+import CookieConsent from "@/components/CookieConsent";
 
 const openSans = Open_Sans({
   subsets: ["latin"],
@@ -26,11 +27,12 @@ export default function RootLayout({
     <html lang="en" className={openSans.variable}>
       <body className="antialiased font-sans">
         <AuthProvider>
-          <div className="font-openSans min-h-screen flex flex-col justify-start items-center relative w-[100%]">
+          <div className="font-openSans min-h-screen flex flex-col justify-start items-center relative w-full">
             {children}
           </div>
         </AuthProvider>
         <Toaster />
+        <CookieConsent />
       </body>
     </html>
   );

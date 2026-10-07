@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store";
 import { api } from "@/lib/api";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse } from "@/types/api";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function VolunteerHomePage() {
   const { user } = useAuthStore();
@@ -102,8 +103,8 @@ export default function VolunteerHomePage() {
 
       {/* Loading State */}
       {isLoading && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 text-lg">Loading programs...</div>
+        <div className="flex items-center justify-center py-12">
+          <LoadingSpinner size="xl" opacity={0.8} />
         </div>
       )}
 

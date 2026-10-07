@@ -19,7 +19,7 @@ export default function CertificatePage() {
           <p className="text-gray-600 mb-4">
             The program you&apos;re looking for doesn&apos;t exist.
           </p>
-          <BackButton />
+          <BackButton to="/volunteer/programs" />
         </div>
       </div>
     );
@@ -34,7 +34,7 @@ export default function CertificatePage() {
       className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8 overflow-hidden"
     >
       <div className="flex items-center justify-start gap-4 mb-6">
-        <BackButton />
+        <BackButton to="/volunteer/programs" />
         <h1 className="text-2xl font-bold text-gray-900">Certificate</h1>
       </div>
 

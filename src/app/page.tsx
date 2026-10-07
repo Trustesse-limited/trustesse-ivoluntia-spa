@@ -7,7 +7,13 @@ async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get('auth_token')?.value || cookieStore.get('access_token')?.value;
   const hasCompletedOnboarding = cookieStore.get('has_completed_onboarding')?.value === 'true';
-  const accountType = cookieStore.get('user_role')?.value;
+  const rawAccountType = cookieStore.get('user_role')?.value;
+  // Normalize: "foundation" → "organization", super admin variants → "admin"
+  const accountType = rawAccountType === 'foundation'
+    ? 'organization'
+    : rawAccountType === 'super_admin' || rawAccountType === 'superadmin' || rawAccountType === 'Super Admin'
+      ? 'admin'
+      : rawAccountType;
   const lastCompletedPage = cookieStore.get('last_completed_page')?.value || '0';
   
   logger.log('=== ROOT PAGE SERVER-SIDE AUTH CHECK ===');

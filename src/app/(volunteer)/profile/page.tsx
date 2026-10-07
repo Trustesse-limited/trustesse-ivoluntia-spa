@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { SmartImage } from "@/components/SmartImage";
 import Link from "next/link";
 import { AppButton } from "@/components/AppButton";
 import { useAuthStore } from "@/store";
@@ -116,18 +117,19 @@ export default function VolunteerProfilePage() {
         <div className="flex flex-col lg:flex-row items-center lg:items-center gap-6">
           {/* Profile Image */}
           <div className="relative">
-            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gray-200 overflow-hidden border-4 border-white/20">
+            <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gray-200 overflow-hidden border-4 border-white/20">
               {user?.userImage ? (
-                <Image
+                <SmartImage
                   src={user.userImage}
                   alt="Profile"
-                  width={128}
-                  height={128}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="128px"
+                  objectFit="cover"
+                  fallbackSrc="/images/Ellipse 1.png"
                 />
               ) : (
                 <Image
-                  src="/images/default-avatar.jpg"
+                  src="/images/Ellipse 1.png"
                   alt="Profile"
                   width={128}
                   height={128}
