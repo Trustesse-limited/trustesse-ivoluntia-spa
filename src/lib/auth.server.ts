@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export type UserRole = 'volunteer' | 'organization' | 'admin' | 'foundation' | null;
 
@@ -18,11 +19,17 @@ export async function getServerAuthInfo(): Promise<AuthInfo> {
   const userRole = cookieStore.get('user_role')?.value;
 
   const isAuthenticated = !!token;
-  let normalizedRole = userRole?.toLowerCase() as UserRole || null;
+  const rawRole = userRole?.toLowerCase().replace(/\s+/g, '_') || null;
+  let normalizedRole: UserRole = rawRole as UserRole;
   
   // Normalize "foundation" to "organization" - they are interchangeable
-  if (normalizedRole === 'foundation') {
+  if (rawRole === 'foundation') {
     normalizedRole = 'organization';
+  }
+
+  // Normalize super admin variants to "admin"
+  if (rawRole === 'super_admin' || rawRole === 'superadmin') {
+    normalizedRole = 'admin';
   }
 
   return {
@@ -30,6 +37,23 @@ export async function getServerAuthInfo(): Promise<AuthInfo> {
     userRole: normalizedRole,
     token: token || null,
   };
+}
+
+/**
+ * Dashboard ("home") route for each role.
+ * Unknown roles fall back to the landing page.
+ */
+export function getRoleHome(role: UserRole): string {
+  switch (role) {
+    case 'volunteer':
+      return '/home';
+    case 'organization':
+      return '/org/dashboard';
+    case 'admin':
+      return '/admin/dashboard';
+    default:
+      return '/';
+  }
 }
 
 /**
@@ -71,4 +95,25 @@ export async function requireRole(role: UserRole): Promise<AuthInfo> {
   }
   
   return authInfo;
+}
+
+/**
+ * Layout guard: requires auth + role, redirecting instead of throwing.
+ * - Not signed in → /login
+ * - Signed in with a different role → their own dashboard
+ *   (a user is never shown a route that belongs to another account type)
+ */
+export async function requireRoleOrRedirect(role: UserRole): Promise<void> {
+  try {
+    await requireRole(role);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+      redirect('/login');
+    }
+    if (error instanceof Error && error.message === 'FORBIDDEN') {
+      const { userRole } = await getServerAuthInfo();
+      redirect(getRoleHome(userRole));
+    }
+    throw error;
+  }
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import ImageUpload from "@/components/onboarding/components/ImageUpload";
-import { OrganizationFormData } from "@/types"; 
+import { OrganizationFormData } from "@/types";
 
 interface LogoFormProps {
   formData: OrganizationFormData;
@@ -24,9 +24,10 @@ const SetupProfileForm: React.FC<LogoFormProps> = ({
       </div>
 
       <div className="max-w-2xl mx-auto space-y-6">
-        <ImageUpload 
-          label="Organization Logo" 
-          onChange={(file) => setFormData({ ...formData, logo: file })} 
+        <ImageUpload
+          label="Organization Logo"
+          initialUrl={formData.logo as string}
+          onChange={(url: string | null) => setFormData({ ...formData, logo: url })}
         />
       </div>
     </form>

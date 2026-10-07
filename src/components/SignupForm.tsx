@@ -193,11 +193,11 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
   return (
     <>
     <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md mx-auto px-4 flex-grow'>
-      <h1 className='text-3xl text-center font-[600] mb-2 mt-16'>
+      <div className='flex flex-col items-center w-full max-w-md mx-auto px-6 sm:px-4 flex-grow'>
+      <h1 className='text-xl sm:text-2xl md:text-3xl text-center font-[600] mb-2 sm:mt-16'>
         {type === 'volunteer' ? 'Volunteer Sign Up' : 'Organization Sign Up'}
       </h1>
-      <p className='text-sm text-[#000000] text-center mb-8'>
+      <p className='text-sm sm:text-base text-[#000000] text-center mb-8'>
         {type === 'volunteer' 
           ? 'Join our community of volunteers and make a difference' 
           : 'Register your organization and connect with volunteers'}

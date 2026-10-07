@@ -29,6 +29,7 @@ const initialFormData: PartialVolunteerSignUpDto = {
     countryId: '',
     countryName: '',
     stateId: '',
+    stateName: '',
   },
   interest: {
     names: [],
@@ -69,13 +70,14 @@ const initialOrgData: OrganizationOnboardingData = {
     countryId: '',
     countryName: '',
     stateId: '',
+    stateName: '',
   },
 };
 
 export const useOnboardingStore = create<OnboardingState>()(
   persist(
     (set, get) => ({
-      currentStep: 0, // Step 0 = signup, Steps 1-5 = onboarding screens
+      currentStep: 0, // 0-based UI step index (0-4 for onboarding screens)
       totalSteps: 6, // 0 (signup) + 5 onboarding screens
       isComplete: false,
       formData: initialFormData,
@@ -307,27 +309,34 @@ export const useOnboardingStore = create<OnboardingState>()(
         const hasCompletedOnboarding = loginResponse.hasCompletedOnboarding || false;
         const userProfile = loginResponse.userProfile || {};
 
-        logger.log('[Onboarding] Initializing from login response:', {
+        logger.log('[Onboarding] INITIALIZE FROM LOGIN RESPONSE:', {
           accountType,
           lastCompletedPage,
           hasCompletedOnboarding,
           userProfile: !!userProfile,
+          userProfileData: userProfile,
         });
 
+        // Set currentStep for redirection
+        // lastCompletedPage is 1-based API page, currentStep is 0-based UI step
+        // If lastCompletedPage is 1, we want to show step 1 (page 2), so currentStep = lastCompletedPage
+        const currentStep = lastCompletedPage;
+
+        // Populate form data from login response for completed pages
+        // This allows users to see their previously entered data
         if (accountType === 'volunteer') {
-          // Update volunteer data with login response
           // Handle gender conversion from both string and number formats
           const genderValue = userProfile.gender;
           const genderNum = genderValue ? (typeof genderValue === 'string' ? parseInt(genderValue, 10) : genderValue) : 0;
-          
+
           logger.log('[Onboarding] Gender conversion - genderValue:', genderValue, 'genderNum:', genderNum);
-          
+
           // Format date of birth to YYYY-MM-DD for date input
           let formattedDob = userProfile.dateOfBirth || '';
           if (formattedDob && formattedDob.includes('T')) {
             formattedDob = formattedDob.split('T')[0];
           }
-          
+
           const volunteerFormData: PartialVolunteerSignUpDto = {
             metaData: {
               accountType: 'volunteer',
@@ -347,6 +356,7 @@ export const useOnboardingStore = create<OnboardingState>()(
               countryId: userProfile.country || '',
               countryName: userProfile.countryName || '',
               stateId: userProfile.state || '',
+              stateName: userProfile.stateName || '',
             },
             interest: {
               names: userProfile.interestNames || [],
@@ -362,11 +372,11 @@ export const useOnboardingStore = create<OnboardingState>()(
 
           set({
             accountType: 'volunteer',
-            currentStep: lastCompletedPage,
+            currentStep,
             isComplete: hasCompletedOnboarding,
             formData: volunteerFormData,
             volunteerData: {
-              currentStep: lastCompletedPage,
+              currentStep,
               isComplete: hasCompletedOnboarding,
               formData: volunteerFormData,
               lastVisited: Date.now(),
@@ -386,7 +396,7 @@ export const useOnboardingStore = create<OnboardingState>()(
               website: userProfile.website || '',
               mission: userProfile.mission || '',
               causes: userProfile.causeNames || [],
-              logo: null,
+              logo: userProfile.foundationLogoUrl || null,
               disclaimerAgreed: false,
             },
             locationDto: {
@@ -401,11 +411,11 @@ export const useOnboardingStore = create<OnboardingState>()(
 
           set({
             accountType: 'organization',
-            currentStep: lastCompletedPage,
+            currentStep,
             isComplete: hasCompletedOnboarding,
             formData: orgFormData,
             organizationData: {
-              currentStep: lastCompletedPage,
+              currentStep,
               isComplete: hasCompletedOnboarding,
               formData: orgFormData,
               lastVisited: Date.now(),

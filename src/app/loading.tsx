@@ -5,7 +5,7 @@ export default function Loading() {
     <div className="flex flex-col items-center justify-center min-h-screen w-full relative p-4 mx-auto bg-white">
       {/* Loading Spinner */}
       <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-4xl mx-auto">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner size="xl" opacity={0.8} />
         
         <p className="text-sm sm:text-base text-[#666666] text-center max-w-md mt-8">
           Please wait while we prepare your experience

@@ -99,6 +99,8 @@ export const useAuthStore = create<AuthState>()(
       
       logout: () => {
         // Clear all persisted storage first to prevent re-hydration
+        // NOTE: localStorage clearing does NOT affect browser cookies
+        // The 'cookieConsent' cookie is stored in document.cookie and will persist
         if (typeof window !== 'undefined') {
           localStorage.removeItem('auth-storage');
         }
@@ -111,6 +113,8 @@ export const useAuthStore = create<AuthState>()(
         });
         
         // Remove cookies (server-side token management)
+        // NOTE: 'cookieConsent' cookie is NOT removed here - it's a browser-level
+        // preference that should persist across login/logout for legal compliance
         removeAuthCookie();
         removeUserRoleCookie();
         

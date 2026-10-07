@@ -207,9 +207,9 @@ const LoginPageClient = () => {
   return (
     <>
     <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md mx-auto px-4 flex-grow'>
-      <h1 className='md:text-[32px] text-2xl text-center font-[600] mt-16'>Welcome Back</h1>
-      <p className='text-center'>Please enter your details</p>
+      <div className='flex flex-col items-center w-full max-w-md mx-auto px-6 sm:px-4 flex-grow'>
+      <h1 className='md:text-[32px] text-xl sm:text-2xl text-center font-[600] sm:mt-16'>Welcome Back</h1>
+      <p className='text-center text-sm sm:text-base'>Please enter your details</p>
       <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 md:mx-auto'>
          <InputComponent
                   label="Email Address"
@@ -232,8 +232,8 @@ const LoginPageClient = () => {
                 <div className='flex justify-between items-center w-full md:text-sm text-[11px] '>
                    <div className="flex items-center space-x-2">
           <Checkbox id='remember-me' className='rounded-full border-black' checked={form.rememberMe} onCheckedChange={handleRememberMeChange} />
-          <label htmlFor="remember-me">
-            <Link href='/'>Remember me</Link>
+          <label htmlFor="remember-me" className="cursor-pointer select-none">
+            Remember me
           </label>
         </div>
          <Link href='/forgotpassword' className='text-[#163752] font-medium hover:underline'>Forgot Password</Link>

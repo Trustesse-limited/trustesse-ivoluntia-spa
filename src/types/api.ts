@@ -213,6 +213,7 @@ export interface PartialVolunteerSignUpDto {
     countryId?: string;
     countryName?: string;
     stateId?: string;
+    stateName?: string;
   };
   interest?: {
     userId?: string;
@@ -331,7 +332,7 @@ export interface VolunteerOnboardingRequest {
   'Interest.Names': string[];
   'Skill.Names': string[];
   'ProfileAndBioData.Bio': string;
-  'ProfileAndBioData.ProfileImage'?: File[];
+  'ProfileAndBioData.ProfileImage'?: string[];
 }
 
 // Organization Onboarding Request
@@ -360,7 +361,7 @@ export interface OrganizationOnboardingRequest {
     names: string[];
   };
   profileLogo: {
-    logo?: File[];
+    logo?: string[];
   };
   disclaimer: {
     hasAgreedToDisclaimer: boolean;
@@ -420,6 +421,12 @@ export interface State {
 
 export interface Cause {
   causeId: string | null;
+  name: string;
+  description: string | null;
+}
+
+export interface Interest {
+  id: string;
   name: string;
   description: string | null;
 }

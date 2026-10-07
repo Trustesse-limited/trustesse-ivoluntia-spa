@@ -130,12 +130,12 @@ const Page = () => {
   return (
     <>
     <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md px-4 md:mx-auto mt-20 flex-grow'>
+      <div className='flex flex-col items-center w-full max-w-md px-6 sm:px-4 md:mx-auto sm:mt-20 flex-grow'>
       
       {!showOtpInput ? (
         <>
-          <h1 className='text-center md:text-[32px] text-2xl font-[600] mt-16'>Forgot Password?</h1>
-          <p className='text-center'>Don&apos;t worry, we will send you a reset code</p>
+          <h1 className='text-center md:text-[32px] text-xl sm:text-2xl font-[600] sm:mt-16'>Forgot Password?</h1>
+          <p className='text-center text-sm sm:text-base'>Don&apos;t worry, we will send you a reset code</p>
           <form onSubmit={handleEmailSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 md:mx-auto'>
             <InputComponent
               label="Email Address"
@@ -146,12 +146,12 @@ const Page = () => {
               onChange={handleChange}
               value={form.email}
             />
-            <AppButton text={isLoading ? 'Sending' : 'Send OTP'} type='submit' isLoading={isLoading} disabled={isLoading || !isEmailValid} />
+            <AppButton text="Send OTP" type='submit' isLoading={isLoading} disabled={isLoading || !isEmailValid} />
           </form>
         </>
       ) : (
         <>
-          <h1 className='text-center md:text-[32px] text-2xl font-[600] mt-16'>Forgot Password?</h1>
+          <h1 className='text-center md:text-[32px] text-xl sm:text-2xl font-[600] sm:mt-16'>Forgot Password?</h1>
           <p className='text-sm text-[#424242] text-left pt-3'>
             Enter the 6-digit OTP code sent to {maskedEmail}
           </p>
@@ -162,8 +162,9 @@ const Page = () => {
           />
           <div className='w-full flex flex-col justify-center mt-9'>
             <AppButton 
-              text={isLoading ? 'Continuing...' : 'Continue'} 
+              text="Continue" 
               onClick={handleOtpSubmit}
+              isLoading={isLoading}
               disabled={isLoading || !isOtpValid}
             />
           </div>

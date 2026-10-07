@@ -45,7 +45,7 @@ import { useState } from "react";
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-2 top-0 bottom-0 text-gray-500 hover:text-gray-700"
+                className="absolute right-2 top-0 bottom-0 text-gray-500 hover:text-gray-700 min-h-12 min-w-12 flex items-center justify-center touch-manipulation"
               >
                 {showPassword ? <EyeOff size={20}  color="black" /> : <Eye size={28} stroke="white" fill='black' />}
               </button>

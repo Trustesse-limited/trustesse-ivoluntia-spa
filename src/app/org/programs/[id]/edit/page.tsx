@@ -3,15 +3,19 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import BackButton from "@/components/BackButton";
+import DatePicker from "@/components/DatePicker";
 import { api } from "@/lib/api";
 import { ProgramItem } from "@/types";
-import { ProgramApiResponse, UpdateProgramRequest } from "@/types/api";
+import { ProgramApiResponse, UpdateProgramRequest, ProgramGoal } from "@/types/api";
 import toast from "react-hot-toast";
+import { FiTrash2 } from "react-icons/fi";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function EditProgramPage() {
   const router = useRouter();
   const { id } = useParams();
   const [program, setProgram] = useState<ProgramItem | null>(null);
+  const [programGoals, setProgramGoals] = useState<ProgramGoal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -58,6 +62,7 @@ export default function EditProgramPage() {
             targetVolunteers: programData.targetVolunteers || 0,
           };
           setProgram(mappedProgram);
+          setProgramGoals(programData.programGoals || []);
           setFormData({
             title: mappedProgram.title,
             description: mappedProgram.description,
@@ -73,10 +78,12 @@ export default function EditProgramPage() {
           });
         } else {
           setProgram(null);
+          setProgramGoals([]);
         }
       } catch (err) {
         console.error('Error fetching program:', err);
         setProgram(null);
+        setProgramGoals([]);
       } finally {
         setIsLoading(false);
       }
@@ -131,12 +138,25 @@ export default function EditProgramPage() {
     }
   };
 
+  const handleDeleteGoal = async (goalId: string) => {
+    try {
+      const response = await api.programs.deleteGoal(goalId);
+      if (response.success) {
+        toast.success('Goal deleted successfully');
+        setProgramGoals(prev => prev.filter(goal => goal.id !== goalId));
+      } else {
+        toast.error('Failed to delete goal');
+      }
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      toast.error('Failed to delete goal');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="text-gray-400 text-lg">Loading program details...</div>
-        </div>
+        <LoadingSpinner size="xl" opacity={0.8} />
       </div>
     );
   }
@@ -151,7 +171,7 @@ export default function EditProgramPage() {
           <p className="text-gray-600 mb-4">
             The program you&apos;re looking for doesn&apos;t exist.
           </p>
-          <BackButton />
+          <BackButton to="/org/programs" />
         </div>
       </div>
     );
@@ -163,7 +183,7 @@ export default function EditProgramPage() {
         {/* Header */}
         <header className="mb-10">
           <div className="flex items-center justify-start gap-4 mb-4">
-            <BackButton />
+            <BackButton to="/org/programs" />
             <h1 className="text-2xl font-bold text-gray-900">Edit Program</h1>
           </div>
           <p className="text-lg text-black mt-1">Program Details</p>
@@ -223,38 +243,20 @@ export default function EditProgramPage() {
             {/* Section 2: Dates, Location, Category */}
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <DatePicker
+                  label="Start Date"
+                  required
+                  value={formData.startDate}
+                  onChange={(date) => setFormData(prev => ({ ...prev, startDate: date }))}
+                />
                 <div>
-                  <label
-                    htmlFor="startDate"
-                    className="block text-sm font-medium text-black"
-                  >
-                    Start Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="startDate"
-                    name="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    className="mt-2 w-full rounded-lg border text-gray-600 border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="endDate"
-                    className="block text-sm font-medium text-black"
-                  >
-                    End Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="endDate"
-                    name="endDate"
-                    type="date"
+                  <DatePicker
+                    label="End Date"
+                    required
                     value={formData.endDate}
-                    onChange={handleInputChange}
-                    className="mt-2 w-full text-gray-600 rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(date) => setFormData(prev => ({ ...prev, endDate: date }))}
                   />
-                  <p className="text-xs  text-gray-600 mt-1">
+                  <p className="text-xs text-gray-600 mt-1">
                     Dates cannot be changed for Active, Completed or Forfeited
                     programs.
                   </p>
@@ -338,6 +340,25 @@ export default function EditProgramPage() {
                 onChange={handleInputChange}
                 className="mt-2 w-full rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400"
               />
+              {programGoals.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm font-medium text-black">Existing Goals:</p>
+                  {programGoals.map((goal, index) => (
+                    <div key={goal.id || index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                      <span className="text-sm">{goal.goal}</span>
+                      {goal.id && (
+                        <button
+                          onClick={() => handleDeleteGoal(goal.id!)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Delete goal"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -372,18 +393,32 @@ export default function EditProgramPage() {
               type="button"
               onClick={(e) => handleSubmit(e, true)}
               disabled={isSaving}
-              className="px-5 py-2 rounded-lg font-semibold text-black"
+              className="px-5 py-2 rounded-lg font-semibold text-black inline-flex items-center justify-center"
               style={{ backgroundColor: "#42A5F566" }}
             >
-              {isSaving ? 'Saving...' : 'Save as Draft'}
+              {isSaving ? (
+                <>
+                  Save as Draft
+                  <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} />
+                </>
+              ) : (
+                "Save as Draft"
+              )}
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="px-5 py-2 rounded-lg font-semibold text-white"
+              className="px-5 py-2 rounded-lg font-semibold text-white inline-flex items-center justify-center"
               style={{ backgroundColor: "#0E68DC" }}
             >
-              {isSaving ? 'Publishing...' : 'Publish'}
+              {isSaving ? (
+                <>
+                  Publish
+                  <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} />
+                </>
+              ) : (
+                "Publish"
+              )}
             </button>
           </div>
         </form>

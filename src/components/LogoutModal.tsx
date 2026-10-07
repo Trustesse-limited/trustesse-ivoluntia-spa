@@ -17,7 +17,7 @@ export default function LogoutModal({ isOpen, onClose, onConfirm, isLoading }: L
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="text-center py-4 px-4">
+      <div className="text-center py-4 px-2">
         <h2 className="text-xl font-semibold text-gray-900 mb-3">Are you sure you want to log out?</h2>
         <p className="text-base text-gray-600 mb-8">This will clear all your data and redirect you to the login screen.</p>
         

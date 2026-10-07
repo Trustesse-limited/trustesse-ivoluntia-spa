@@ -63,7 +63,7 @@ export interface EnhancedLoginResult {
 export function useAuthActions() {
   const [isLoading, setIsLoading] = useState(false);
   const { login: setLogin, logout: setLogout } = useAuthStore();
-  const { clearOnboarding, clearAllOnboarding, initializeFromLoginResponse } = useOnboardingStore();
+  const { clearOnboarding, clearAllOnboarding, setCurrentStep, switchAccountType } = useOnboardingStore();
 
   const volunteerSignUp = async (data: VolunteerSignUpRequest) => {
     setIsLoading(true);
@@ -379,38 +379,13 @@ export function useAuthActions() {
           })();
           
           if (normalizedAccountTypeForOnboarding) {
-            // Initialize onboarding store with login response data
-            initializeFromLoginResponse({
-              accountType: normalizedAccountTypeForOnboarding === 'organization' ? 'Organization' : accountType,
-              hasCompletedOnboarding,
-              lastCompletedPage,
-              userProfile: loginData.userProfile as {
-                firstName?: string;
-                lastName?: string;
-                otherName?: string;
-                email?: string;
-                dateOfBirth?: string;
-                gender?: string;
-                address?: string | null;
-                city?: string | null;
-                zipCode?: string | null;
-                country?: string | null;
-                countryName?: string | null;
-                state?: string;
-                stateName?: string | null;
-                interestNames?: string[];
-                skillNames?: string[];
-                bio?: string | null;
-                profileImage?: string;
-                category?: string;
-                website?: string;
-                mission?: string;
-                foundationCountry?: string;
-                foundationState?: string;
-                causeNames?: string[] | null;
-                foundationLogoUrl?: string;
-              },
-            });
+            // Only set the currentStep for redirection, don't populate form data
+            // Form data should only be populated when the onboarding API succeeds or when user navigates to a page
+            switchAccountType(normalizedAccountTypeForOnboarding === 'organization' ? 'organization' : 'volunteer');
+            // lastCompletedPage is 1-based (API page), currentStep is 0-based (UI step)
+            // If lastCompletedPage is 1, we want to show step 1 (page 2), so currentStep = lastCompletedPage
+            setCurrentStep(lastCompletedPage || 0);
+            logger.log('[Login] Set onboarding currentStep to:', lastCompletedPage || 0);
           }
           
           // Update auth store with user data
@@ -631,12 +606,17 @@ export function useAuthActions() {
       }
 
       // Step 3: Clear ALL cookies (both HTTP-only and regular)
+      // NOTE: 'cookieConsent' is intentionally excluded - it's a browser-level preference
+      // that should persist across login/logout cycles for legal compliance and UX
       if (typeof window !== 'undefined') {
         const cookies = document.cookie.split(';');
         cookies.forEach(cookie => {
           const cookieName = cookie.split('=')[0].trim();
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;`;
+          // Skip cookieConsent - it should persist across login/logout
+          if (cookieName !== 'cookieConsent') {
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;`;
+          }
         });
       }
 
@@ -645,6 +625,11 @@ export function useAuthActions() {
 
       // Step 5: Clear ALL onboarding store data (force clear)
       clearAllOnboarding();
+
+      // Clear onboarding localStorage directly to ensure it's gone
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('onboarding-storage');
+      }
 
       // Step 6: Call server logout to clear HTTP cookies
       const result = await authLogoutAction();
@@ -659,11 +644,14 @@ export function useAuthActions() {
           localStorage.clear();
           
           // Double-check and clear any remaining cookies
+          // NOTE: 'cookieConsent' is intentionally excluded - it should persist
           const cookies = document.cookie.split(';');
           cookies.forEach(cookie => {
             const cookieName = cookie.split('=')[0].trim();
-            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;`;
+            if (cookieName !== 'cookieConsent') {
+              document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+              document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=localhost;`;
+            }
           });
         }
 

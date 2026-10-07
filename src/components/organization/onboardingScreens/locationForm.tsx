@@ -22,6 +22,7 @@ const LocationForm: React.FC<OrganizationFormProps> = ({
   const [states, setStates] = useState<State[]>([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(false);
   const [isLoadingStates, setIsLoadingStates] = useState(false);
+  const [hasMatchedState, setHasMatchedState] = useState(false);
 
   // Fetch countries on component mount
   useEffect(() => {
@@ -73,6 +74,30 @@ const LocationForm: React.FC<OrganizationFormProps> = ({
       }
     }
   }, [countries, formData.country]);
+
+  // Match country by name when countries are loaded (for pre-filled data from login)
+  useEffect(() => {
+    if (formData.countryName && countries.length > 0 && !formData.country) {
+      const matchedCountry = countries.find(c => c.name === formData.countryName);
+      if (matchedCountry) {
+        logger.log('[LocationForm] Matched country by name:', formData.countryName, '-> ID:', matchedCountry.id);
+        setFormData({ ...formData, country: matchedCountry.id });
+        setHasMatchedState(false); // Reset state matching flag when country changes
+      }
+    }
+  }, [countries, formData.countryName, formData.country]);
+
+  // Match state by name when states are loaded AND country is already set (for pre-filled data from login)
+  useEffect(() => {
+    if (formData.stateName && states.length > 0 && !formData.state && formData.country && !hasMatchedState) {
+      const matchedState = states.find(s => s.name === formData.stateName);
+      if (matchedState) {
+        logger.log('[LocationForm] Matched state by name:', formData.stateName, '-> ID:', matchedState.name);
+        setFormData({ ...formData, state: matchedState.name });
+        setHasMatchedState(true); // Mark state as matched to prevent re-matching
+      }
+    }
+  }, [states, formData.stateName, formData.state, formData.country, hasMatchedState]);
 
   return (
     <form className="space-y-6 pb-16 sm:px-6 md:px-8 max-w-6xl mx-auto">

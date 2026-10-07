@@ -67,7 +67,7 @@ export interface OrganizationOnboardingData {
     website?: string;
     mission?: string;
     causes?: string[];
-    logo?: File | null;
+    logo?: string | null;
     disclaimerAgreed?: boolean;
   };
   locationDto?: {
@@ -78,6 +78,7 @@ export interface OrganizationOnboardingData {
     countryId?: string;
     countryName?: string;
     stateId?: string;
+    stateName?: string;
   };
 }
 

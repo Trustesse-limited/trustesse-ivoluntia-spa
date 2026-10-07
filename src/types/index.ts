@@ -7,11 +7,12 @@ export interface VolunteerFormData {
   country: string;
   countryName: string;
   state: string;
+  stateName: string;
   city: string;
   zip: string;
   address: string;
   bio?: string;
-  photo?: File | null;
+  photo?: string | null;
   interests: string[];
   skills: string[];
 }
@@ -31,11 +32,12 @@ export interface OrganizationFormData {
   country: string;
   countryName: string;
   state: string;
+  stateName: string;
   city: string;
   zip: string;
   address: string;
   causes: string[];
-  logo?: File | null;
+  logo?: string | null;
   disclaimerAgreed: boolean;
 }
 

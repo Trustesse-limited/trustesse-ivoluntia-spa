@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { FormProps } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import DatePicker from "@/components/DatePicker";
 import {
   Select,
   SelectContent,
@@ -137,8 +138,7 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
     return true;
   };
 
-  const handleDOBChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  const handleDOBChange = (value: string) => {
     setFormData({ ...formData, dob: value });
     if (value) {
       validateDOB(value);
@@ -247,15 +247,11 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
 
           {/* Date of Birth Field */}
           <div className="flex-1 space-y-2">
-            <Label htmlFor="dob" className="text-[#212121] font-normal text-sm">
-              Date of Birth <span className="text-[#EF5350]">*</span>
-            </Label>
-            <Input
-              id="dob"
-              type="date"
+            <DatePicker
+              label="Date of Birth"
+              required
               value={formData.dob}
               onChange={handleDOBChange}
-              className={`w-full placeholder:text-sm ${dobError ? 'border-red-500' : ''}`}
             />
             {dobError && (
               <p className="text-red-500 text-xs mt-1">{dobError}</p>

@@ -1,7 +1,7 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import ImageUpload from "@/components/onboarding/components/ImageUpload";
-import { VolunteerFormData } from "@/types"; 
+import { VolunteerFormData } from "@/types";
 
 interface ProfileFormProps {
   formData: VolunteerFormData;
@@ -27,9 +27,10 @@ const SetupProfileForm: React.FC<ProfileFormProps> = ({
       </div>
 
       <div className="max-w-2xl mx-auto space-y-6">
-        <ImageUpload 
-          label="Profile Photo" 
-          onChange={(file: File | null) => setFormData({ ...formData, photo: file })} 
+        <ImageUpload
+          label="Profile Photo"
+          initialUrl={formData.photo as string}
+          onChange={(url: string | null) => setFormData({ ...formData, photo: url })}
         />
 
         <div className="space-y-2">

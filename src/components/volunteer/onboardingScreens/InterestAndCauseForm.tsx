@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { AppButton } from "@/components/AppButton";
-import { getCausesAction } from "@/app/actions/auth";
-import { Cause } from "@/types/api";
+import { getInterestsAction } from "@/app/actions/auth";
+import { Interest } from "@/types/api";
 import { VolunteerFormData } from "@/types";
 import { motion } from "framer-motion";
 
@@ -15,27 +15,27 @@ interface InterestAndCauseFormProps {
 const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, setFormData }) => {
   const [selected, setSelected] = useState<string[]>(formData.interests || []);
   const [showMore, setShowMore] = useState<boolean>(false);
-  const [causes, setCauses] = useState<Cause[]>([]);
+  const [interests, setInterests] = useState<Interest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCauses = async () => {
+    const fetchInterests = async () => {
       setIsLoading(true);
       try {
-        const result = await getCausesAction();
+        const result = await getInterestsAction();
         if (result.success && result.data) {
-          setCauses(result.data);
+          setInterests(result.data);
         } else {
-          setError(result.error || 'Failed to fetch causes');
+          setError(result.error || 'Failed to fetch interests');
         }
       } catch (err) {
-        setError('Failed to fetch causes');
+        setError('Failed to fetch interests');
       } finally {
         setIsLoading(false);
       }
     };
-    fetchCauses();
+    fetchInterests();
   }, []);
 
   const toggleInterest = (interest: string) => {
@@ -46,7 +46,7 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
     setFormData({ ...formData, interests: updated });
   };
 
-  const displayedCauses = showMore ? causes : causes.slice(0, 24);
+  const displayedInterests = showMore ? interests : interests.slice(0, 24);
 
   if (isLoading) {
     return (
@@ -108,15 +108,15 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
           </legend>
 
           <div className="flex flex-wrap gap-3 justify-center mt-2">
-            {displayedCauses.map((cause) => {
-              const isSelected = selected.includes(cause.name);
+            {displayedInterests.map((interest) => {
+              const isSelected = selected.includes(interest.name);
 
               return (
                 <AppButton
-                  key={cause.name}
+                  key={interest.name}
                   type="button"
                   variant="custom"
-                  onClick={() => toggleInterest(cause.name)}
+                  onClick={() => toggleInterest(interest.name)}
                   isLoading={false}
                   className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px]  transition-colors duration-200 ${
                     isSelected
@@ -124,16 +124,16 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
                       : "bg-[#F3F3F3] text-[#161616]"
                   }`}
                   aria-pressed={isSelected}
-                  aria-label={`Toggle ${cause.name}`}
+                  aria-label={`Toggle ${interest.name}`}
                 >
                   <span className={`text-sm font-normal ${
                     isSelected
                       ?  "text-blue-700"
                       : "text-[#161616]"
-                  }`}>{cause.name}</span>
+                  }`}>{interest.name}</span>
                   <motion.div
                     initial={false}
-                    animate={{ 
+                    animate={{
                       scale: isSelected ? [1, 0.8, 1] : [1, 0.8, 1],
                       rotate: isSelected ? [0, 180] : [180, 0]
                     }}
@@ -153,7 +153,7 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
           </div>
         </fieldset>
 
-        {causes.length > 24 && (
+        {interests.length > 24 && (
           <div className="flex justify-center">
             <AppButton
               type="button"

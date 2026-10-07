@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { FiFilter, FiEye, FiEdit, FiTrash2, FiMoreVertical } from "react-icons/fi";
+import { SmartImage } from "@/components/SmartImage";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -213,10 +214,14 @@ export default function UsersPage() {
                   >
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <img 
-                          src={user.profilePicture} 
+                        <SmartImage
+                          src={user.profilePicture}
                           alt={user.userName}
-                          className="w-10 h-10 rounded-full object-cover"
+                          width={40}
+                          height={40}
+                          className="w-10 h-10 shrink-0 rounded-full"
+                          objectFit="cover"
+                          fallbackSrc="/images/Ellipse 1.png"
                         />
                         <span className="text-sm font-medium text-gray-900">{user.userName}</span>
                       </div>

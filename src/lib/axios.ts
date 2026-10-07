@@ -22,11 +22,12 @@ import {
   isPublicEndpoint,
   getCookieAuthConfig,
 } from '@/lib/authToken.client';
+import { API_CONFIG } from '@/lib/api-config';
 import logger from '@/lib/logger';
 
 // Create axios instance with base configuration (client-side)
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || API_CONFIG.baseURL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Server Actions receive the uploaded file in the request body.
+  // Next.js defaults bodySizeLimit to 1MB, which rejects images >1MB with a 413.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // matches the ImageUpload 10MB client-side limit
+    },
+  },
   images: {
     remotePatterns: [
       {

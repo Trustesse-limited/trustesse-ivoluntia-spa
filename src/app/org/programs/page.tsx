@@ -7,6 +7,7 @@ import { ProgramApiResponse } from "@/types/api";
 import { api } from "@/lib/api";
 import { motion } from "framer-motion";
 import { AppButton } from "@/components/AppButton";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 type TabKey = "pending" | "active" | "history";
 
@@ -97,7 +98,7 @@ export default function ProgramsPage() {
             Plan, publish and track programs in one place
           </p>
         </div>
-        <div className="flex justify-center sm:justify-end w-full sm:w-auto">
+        <div className="flex justify-center justify-end w-full sm:w-auto">
           <AppButton
             text="Create New Program"
             onClick={() => router.push("/org/programs/create")}
@@ -147,8 +148,8 @@ export default function ProgramsPage() {
 
         {/* Tab Content */}
         {isLoading ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-lg">Loading programs...</div>
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner size="xl" opacity={0.8} />
           </div>
         ) : programData[activeTab].length === 0 ? (
           <div className="text-center text-gray-400 italic py-12">

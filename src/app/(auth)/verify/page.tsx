@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react'
 import OtpInput from './OtpComponent'
 import { AppButton } from '@/components/AppButton'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthActions } from '@/hooks/useAuthActions'
@@ -149,8 +150,8 @@ function VerifyContent() {
   return (
     <>
     <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md px-4 md:mx-auto mt-20 flex-grow'>
-        <h1 className='text-3xl text-center font-medium mt-16'>Verify email</h1>
+      <div className='flex flex-col items-center w-full max-w-md px-6 sm:px-4 md:mx-auto mt-20 flex-grow'>
+        <h1 className='text-xl sm:text-2xl md:text-3xl text-center font-medium sm:mt-16'>Verify email</h1>
         <p className='text-sm text-[#424242] text-left pt-3'>
           We sent an OTP code to {maskedEmail}. Please enter it below to continue
         </p>
@@ -162,7 +163,7 @@ function VerifyContent() {
         />
            <div className='w-full flex flex-col justify-center mt-9'>
           <AppButton 
-            text={isLoading ? 'Verifying...' : 'Verify'} 
+            text="Verify" 
             onClick={handleVerify}
             disabled={isLoading || !isFormValid}
           />
@@ -184,7 +185,7 @@ function VerifyContent() {
 
 function Page() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><LoadingSpinner size="xl" opacity={0.8} /></div>}>
       <VerifyContent />
     </Suspense>
   );

@@ -85,12 +85,12 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
 
         {/* Navigation Buttons */}
         {step < totalSteps - 1 && (
-          <div className="flex justify-end gap-4  mt-6">
+          <div className="flex justify-end gap-4 mt-6">
             {step > 0 && (
               <Button
                 onClick={onBack}
                 variant="outline"
-                className="lg:w-40 flex items-center justify-center w-1/2 text-lg relative font-semibold h-12 text-[#0E68DC] z-[100] border border-[#0E68DC]"
+                className="lg:w-40 flex items-center justify-center w-1/2 text-lg relative font-semibold h-12 text-[#0E68DC] border border-[#0E68DC]"
               >
                 <Image
                   src="/icons/arrow-left.svg"
@@ -107,7 +107,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
               onClick={onNext}
               isLoading={isLoading}
               disabled={!isStepValid || isLoading}
-              className="lg:w-68 w-1/2 text-lg relative font-semibold z-[1000] h-12"
+              className="lg:w-68 w-1/2 text-lg relative font-semibold h-12"
             />
           </div>
         )}

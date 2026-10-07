@@ -1,13 +1,17 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { AppButton } from '@/components/AppButton';
 import { useAuthStore } from '@/store';
 
 export default function NotFound() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuthStore();
+
+  // The path that did not resolve (hidden for the bare root path)
+  const attemptedPath = pathname && pathname !== '/' ? pathname : null;
 
   const getButtonProps = () => {
     if (!user) {
@@ -17,7 +21,13 @@ export default function NotFound() {
       };
     }
 
-    const accountType = user.accountType?.toLowerCase();
+    // Normalize account type: "foundation" → organization, super admin variants → admin
+    const rawType = user.accountType?.toLowerCase().replace(/\s+/g, '_');
+    const accountType = rawType === 'foundation'
+      ? 'organization'
+      : rawType === 'super_admin' || rawType === 'superadmin'
+        ? 'admin'
+        : rawType;
 
     switch (accountType) {
       case 'volunteer':
@@ -56,10 +66,16 @@ export default function NotFound() {
           Page Not Found
         </h2>
         <p className="text-sm sm:text-base text-[#666666] text-center mb-8 max-w-md leading-relaxed">
-          {isAuthenticated 
-            ? "The page you are looking for was not found"
-            : "The page you are looking for was not found. Please sign in to access your account."
-          }
+          {attemptedPath ? (
+            <>
+              The page <span className="font-medium text-[#424242] break-all">{attemptedPath}</span> does
+              not exist or may have been moved.
+            </>
+          ) : isAuthenticated ? (
+            "The page you are looking for was not found."
+          ) : (
+            "The page you are looking for was not found. Please sign in to access your account."
+          )}
         </p>
 
         {/* Action Button */}
