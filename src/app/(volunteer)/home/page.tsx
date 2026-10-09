@@ -5,6 +5,7 @@ import ProgramCard from "@/components/volunteer/ProgramCard";
 import SearchBar from "@/components/volunteer/SearchBar";
 import { AppButton } from "@/components/AppButton";
 import { useAuthStore } from "@/store";
+import { useOnboardingStore } from "@/store";
 import { api } from "@/lib/api";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse } from "@/types/api";
@@ -12,6 +13,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function VolunteerHomePage() {
   const { user } = useAuthStore();
+  const { volunteerData } = useOnboardingStore();
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchFilters, setSearchFilters] = useState({
@@ -80,7 +82,7 @@ export default function VolunteerHomePage() {
     setSearchFilters({ program, interest, location });
   };
 
-  const displayName = user?.firstName || user?.email?.split('@')[0] || 'Volunteer';
+  const displayName = user?.firstName || volunteerData?.formData?.bioData?.firstName || user?.email?.split('@')[0] || 'Volunteer';
 
   return (
     <motion.section

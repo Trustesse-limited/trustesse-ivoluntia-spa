@@ -21,6 +21,7 @@ interface OnboardingLayoutProps {
   };
   isStepValid?: boolean;
   isLoading?: boolean;
+  isCongratulations?: boolean;
 }
 
 const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
@@ -33,6 +34,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   illustration,
   isStepValid = true,
   isLoading = false,
+  isCongratulations = false,
 }) => {
   // Scroll to top on step change
   useEffect(() => {
@@ -84,20 +86,20 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
         </AnimatePresence>
 
         {/* Navigation Buttons */}
-        {step < totalSteps - 1 && (
-          <div className="flex justify-end gap-4 mt-6">
+        {step < totalSteps - 1 && !isCongratulations && (
+          <div className="flex justify-end gap-2 sm:gap-4 mt-6">
             {step > 0 && (
               <Button
                 onClick={onBack}
                 variant="outline"
-                className="lg:w-40 flex items-center justify-center w-1/2 text-lg relative font-semibold h-12 text-[#0E68DC] z-10 border border-[#0E68DC]"
+                className="lg:w-40 flex items-center justify-center w-1/2 text-sm sm:text-base relative font-semibold h-10 sm:h-12 text-[#0E68DC] z-10 border border-[#0E68DC] px-2 sm:px-4"
               >
                 <Image
                   src="/icons/arrow-left.svg"
                   alt="arrow"
-                  width={14}
-                  height={14}
-                  className="left-0"
+                  width={12}
+                  height={12}
+                  className="left-0 sm:w-3.5 sm:h-3.5"
                 />
                 Back
               </Button>
@@ -107,7 +109,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
               onClick={onNext}
               isLoading={isLoading}
               disabled={!isStepValid || isLoading}
-              className="lg:w-68 w-1/2 text-lg relative font-semibold z-10 h-12"
+              className="lg:w-68 w-1/2 text-sm sm:text-base relative font-semibold z-10 h-10 sm:h-12 px-2 sm:px-4"
             />
           </div>
         )}

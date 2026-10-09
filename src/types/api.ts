@@ -322,7 +322,7 @@ export interface VolunteerOnboardingRequest {
   'BioData.FirstName': string;
   'BioData.LastName': string;
   'BioData.OtherName'?: string;
-  'BioData.Gender': number;
+  'BioData.Gender': string;
   'BioData.DateOfBirth': string;
   'LocationDto.Address': string;
   'LocationDto.City': string;
@@ -332,40 +332,25 @@ export interface VolunteerOnboardingRequest {
   'Interest.Names': string[];
   'Skill.Names': string[];
   'ProfileAndBioData.Bio': string;
-  'ProfileAndBioData.ProfileImage'?: string[];
+  'ProfileAndBioData.ImageUrl'?: string;
 }
 
 // Organization Onboarding Request
 export interface OrganizationOnboardingRequest {
-  metaData: {
-    accountType: string;
-    currentPage: number;
-  };
-  foundationBioData: {
-    name: string;
-    foundationCategory: string;
-    website?: string;
-    mission: string;
-  };
-  foundationLocationDto: {
-    address?: string;
-    city: string;
-    zipcode: string;
-    foundationCountry: string;
-    foundationState: string;
-    countryId?: string;
-    stateId?: string;
-    userId?: string;
-  };
-  causeDto: {
-    names: string[];
-  };
-  profileLogo: {
-    logo?: string[];
-  };
-  disclaimer: {
-    hasAgreedToDisclaimer: boolean;
-  };
+  'MetaData.AccountType': string;
+  'MetaData.CurrentPage': number;
+  'foundationBioData.Name': string;
+  'foundationBioData.FoundationCategory': string;
+  'foundationBioData.Website'?: string;
+  'foundationBioData.Mission': string;
+  'FoundationLocationDto.Address': string;
+  'FoundationLocationDto.City': string;
+  'FoundationLocationDto.Zipcode': string;
+  'FoundationLocationDto.FoundationCountry': string;
+  'FoundationLocationDto.FoundationState': string;
+  'CauseDto.Names': string[];
+  'ProfileLogo.LogoUrl'?: string;
+  'Disclaimer.HasAgreedToDisclaimer': boolean;
 }
 
 // Common entity types (adjust based on your actual API)

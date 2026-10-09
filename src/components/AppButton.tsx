@@ -57,7 +57,7 @@ export function AppButton({
     }
   };
 
-  const baseClasses = getVariantClasses() === 'custom' ? '' : `${getVariantClasses()} rounded-2xl py-3 font-[600] md:text-xl text-lg px-6 text-center inline-flex items-center justify-center gap-2 transition-class`;
+  const baseClasses = getVariantClasses() === 'custom' ? '' : `${getVariantClasses()} rounded-2xl py-2 sm:py-3 font-[600] text-sm sm:text-base md:text-xl px-3 sm:px-6 text-center inline-flex items-center justify-center gap-1 sm:gap-2 transition-class`;
   const disabledClasses = "opacity-50 cursor-not-allowed";
   const enabledClasses = "cursor-pointer";
 
@@ -66,7 +66,7 @@ export function AppButton({
   const buttonContent = isLoading ? (
     <>
       {text || children}
-      <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} />
+      <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} className="w-3 h-3 sm:w-4 sm:h-4 border-2" />
     </>
   ) : (
     <>

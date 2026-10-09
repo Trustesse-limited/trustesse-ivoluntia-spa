@@ -796,7 +796,7 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
 }> {
   try {
     logger.log('[Server Action] volunteerOnboardingAction called');
-    
+
     // SECURITY: Server-side sanitization
     // Convert nested structure to flat multipart/form-data format
     const sanitizedData: VolunteerOnboardingRequest = {
@@ -815,7 +815,7 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
       'Interest.Names': data['Interest.Names'] || [],
       'Skill.Names': data['Skill.Names'] || [],
       'ProfileAndBioData.Bio': data['ProfileAndBioData.Bio']?.trim() || '',
-      'ProfileAndBioData.ProfileImage': data['ProfileAndBioData.ProfileImage'],
+      'ProfileAndBioData.ImageUrl': data['ProfileAndBioData.ImageUrl'] || undefined,
     };
 
     const response: ApiResponse<unknown> = await volunteerOnboarding(sanitizedData);
@@ -877,38 +877,23 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
 }> {
   try {
     logger.log('[Server Action] organizationOnboardingAction called');
-    
+
     // SECURITY: Server-side sanitization
     const sanitizedData: OrganizationOnboardingRequest = {
-      metaData: {
-        accountType: data.metaData.accountType,
-        currentPage: data.metaData.currentPage,
-      },
-      foundationBioData: {
-        name: data.foundationBioData.name.trim(),
-        foundationCategory: data.foundationBioData.foundationCategory.trim(),
-        website: data.foundationBioData.website?.trim(),
-        mission: data.foundationBioData.mission.trim(),
-      },
-      foundationLocationDto: {
-        address: data.foundationLocationDto.address?.trim(),
-        city: data.foundationLocationDto.city?.trim() || '',
-        zipcode: data.foundationLocationDto.zipcode?.trim() || '',
-        foundationCountry: data.foundationLocationDto.foundationCountry?.trim() || '',
-        foundationState: data.foundationLocationDto.foundationState?.trim() || '',
-        countryId: data.foundationLocationDto.countryId?.trim(),
-        stateId: data.foundationLocationDto.stateId?.trim(),
-        userId: data.foundationLocationDto.userId?.trim(),
-      },
-      causeDto: {
-        names: data.causeDto.names || [],
-      },
-      profileLogo: {
-        logo: data.profileLogo.logo,
-      },
-      disclaimer: {
-        hasAgreedToDisclaimer: data.disclaimer.hasAgreedToDisclaimer,
-      },
+      'MetaData.AccountType': data['MetaData.AccountType'],
+      'MetaData.CurrentPage': data['MetaData.CurrentPage'],
+      'foundationBioData.Name': data['foundationBioData.Name'].trim(),
+      'foundationBioData.FoundationCategory': data['foundationBioData.FoundationCategory'].trim(),
+      'foundationBioData.Website': data['foundationBioData.Website']?.trim() || undefined,
+      'foundationBioData.Mission': data['foundationBioData.Mission'].trim(),
+      'FoundationLocationDto.Address': data['FoundationLocationDto.Address']?.trim() || '',
+      'FoundationLocationDto.City': data['FoundationLocationDto.City']?.trim() || '',
+      'FoundationLocationDto.Zipcode': data['FoundationLocationDto.Zipcode']?.trim() || '',
+      'FoundationLocationDto.FoundationCountry': data['FoundationLocationDto.FoundationCountry']?.trim() || '',
+      'FoundationLocationDto.FoundationState': data['FoundationLocationDto.FoundationState']?.trim() || '',
+      'CauseDto.Names': data['CauseDto.Names'] || [],
+      'ProfileLogo.LogoUrl': data['ProfileLogo.LogoUrl'] || undefined,
+      'Disclaimer.HasAgreedToDisclaimer': data['Disclaimer.HasAgreedToDisclaimer'],
     };
 
     const response: ApiResponse<unknown> = await organizationOnboarding(sanitizedData);

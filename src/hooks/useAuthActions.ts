@@ -503,11 +503,11 @@ export function useAuthActions() {
               } as EnhancedLoginResult;
             } else if (normalizedAccountType === 'volunteer') {
               logger.log('[Login] Redirecting to volunteer dashboard');
-              return { 
-                success: true, 
-                data: result.data, 
+              return {
+                success: true,
+                data: result.data,
                 message: result.message,
-                redirect: '/volunteer',
+                redirect: '/home',
                 requiresOnboarding: false,
                 accountType: 'volunteer'
               } as EnhancedLoginResult;

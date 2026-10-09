@@ -8,7 +8,7 @@ import {
 } from "react-icons/fi";
 
 export const navLinks = [
-  { label: "Home", href: "/volunteer", icon: <FiHome /> },
+  { label: "Home", href: "/home", icon: <FiHome /> },
   { label: "Profile", href: "/volunteer/profile", icon: <FiUser /> },
   { label: "Activity", href: "/volunteer/activity", icon: <FiActivity /> },
   { label: "Favourites", href: "/volunteer/favourites", icon: <FiHeart /> },
