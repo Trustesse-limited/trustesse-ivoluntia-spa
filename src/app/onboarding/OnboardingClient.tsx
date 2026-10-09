@@ -194,7 +194,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
   const router = useRouter();
   const { formData: onboardingFormData, switchAccountType, setCurrentStep, setComplete, updateFormData, volunteerData, organizationData, currentStep: storeCurrentStep } = useOnboardingStore();
   const { user } = useAuthStore();
-  const { volunteerOnboarding, organizationOnboarding, isLoading: authLoading } = useAuthActions();
+  const { volunteerOnboarding, organizationOnboarding } = useAuthActions();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Determine account type from cookie (most accurate), then auth store, then store
@@ -356,7 +356,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
     // storeCurrentStep is now 0-based UI step, so sync directly
     setStep(storeCurrentStep);
     logger.log('[OnboardingClient] Synced step with store:', storeCurrentStep);
-  }, [storeCurrentStep]);
+  }, [storeCurrentStep, step]);
 
   // Check if current step is valid
   const isStepValid = () => {
@@ -494,7 +494,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'BioData.FirstName': volunteerData.firstName,
           'BioData.LastName': volunteerData.lastName,
           'BioData.OtherName': volunteerData.otherNames || undefined,
-          'BioData.Gender': volunteerData.sex === "male" ? 1 : volunteerData.sex === "female" ? 2 : 0,
+          'BioData.Gender': volunteerData.sex,
           'BioData.DateOfBirth': volunteerData.dob,
           'LocationDto.Address': volunteerData.address,
           'LocationDto.City': volunteerData.city,
@@ -504,7 +504,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'Interest.Names': volunteerData.interests || [],
           'Skill.Names': volunteerData.skills || [],
           'ProfileAndBioData.Bio': volunteerData.bio || "",
-          'ProfileAndBioData.ProfileImage': volunteerData.photo ? [volunteerData.photo] : undefined,
+          'ProfileAndBioData.ImageUrl': volunteerData.photo || undefined,
         };
         logger.log('[Onboarding Client] Volunteer photo URL:', volunteerData.photo);
         apiResult = await volunteerOnboarding(volunteerRequest);
@@ -512,34 +512,20 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
         const orgData = formData as OrganizationFormData;
         logger.log('[Onboarding Client] Organization logo file:', orgData.logo);
         const orgRequest: OrganizationOnboardingRequest = {
-          metaData: {
-            accountType: "organization",
-            currentPage: step + 1,
-          },
-          foundationBioData: {
-            name: orgData.name,
-            foundationCategory: orgData.category,
-            website: orgData.website,
-            mission: orgData.mission,
-          },
-          foundationLocationDto: {
-            address: orgData.address,
-            city: orgData.city,
-            zipcode: orgData.zip,
-            foundationCountry: orgData.countryName,
-            foundationState: orgData.state,
-            countryId: orgData.country,
-            stateId: orgData.state,
-          },
-          causeDto: {
-            names: orgData.causes || [],
-          },
-          profileLogo: {
-            logo: orgData.logo ? [orgData.logo] : undefined,
-          },
-          disclaimer: {
-            hasAgreedToDisclaimer: orgData.disclaimerAgreed,
-          },
+          'MetaData.AccountType': "organization",
+          'MetaData.CurrentPage': step + 1,
+          'foundationBioData.Name': orgData.name,
+          'foundationBioData.FoundationCategory': orgData.category,
+          'foundationBioData.Website': orgData.website || undefined,
+          'foundationBioData.Mission': orgData.mission,
+          'FoundationLocationDto.Address': orgData.address,
+          'FoundationLocationDto.City': orgData.city,
+          'FoundationLocationDto.Zipcode': orgData.zip,
+          'FoundationLocationDto.FoundationCountry': orgData.countryName,
+          'FoundationLocationDto.FoundationState': orgData.state,
+          'CauseDto.Names': orgData.causes || [],
+          'ProfileLogo.LogoUrl': orgData.logo || undefined,
+          'Disclaimer.HasAgreedToDisclaimer': orgData.disclaimerAgreed || false,
         };
         apiResult = await organizationOnboarding(orgRequest);
       }
@@ -563,7 +549,8 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
       setIsSubmitting(false);
     }
     
-    if (step < filteredSteps.length - 1) {
+    if (step < filteredSteps.length - 2) {
+      // Normal step progression
       const newStep = step + 1;
       logger.log('[Onboarding Client] Moving to next step:', newStep);
       setStep(newStep);
@@ -574,9 +561,15 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           currentPage: newStep + 1, // API page is 1-based
         },
       });
-    } else {
+    } else if (step === filteredSteps.length - 2) {
+      // Last form step - submit data then move to congratulations
       await handleSubmit();
+      // After successful submission, move to congratulations
+      const newStep = step + 1;
+      setStep(newStep);
+      setCurrentStep(newStep);
     }
+    // Congratulations step (step === filteredSteps.length - 1) - no action, button handled by component
   };
 
   const handleBack = () => {
@@ -648,7 +641,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
   const handleSubmit = async () => {
     try {
       setComplete();
-      
+
       if (accountType === "volunteer") {
         const volunteerData = formData as VolunteerFormData;
         const volunteerRequest: VolunteerOnboardingRequest = {
@@ -657,7 +650,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'BioData.FirstName': volunteerData.firstName,
           'BioData.LastName': volunteerData.lastName,
           'BioData.OtherName': volunteerData.otherNames || undefined,
-          'BioData.Gender': volunteerData.sex === "male" ? 1 : volunteerData.sex === "female" ? 2 : 0,
+          'BioData.Gender': volunteerData.sex,
           'BioData.DateOfBirth': volunteerData.dob,
           'LocationDto.Address': volunteerData.address,
           'LocationDto.City': volunteerData.city,
@@ -667,7 +660,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'Interest.Names': volunteerData.interests || [],
           'Skill.Names': volunteerData.skills || [],
           'ProfileAndBioData.Bio': volunteerData.bio || "",
-          'ProfileAndBioData.ProfileImage': volunteerData.photo ? [volunteerData.photo] : undefined,
+          'ProfileAndBioData.ImageUrl': volunteerData.photo || undefined,
         };
         logger.log('[Onboarding Client] Volunteer photo URL (submit):', volunteerData.photo);
         await volunteerOnboarding(volunteerRequest);
@@ -675,47 +668,34 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
         const orgData = formData as OrganizationFormData;
         logger.log('[Onboarding Client] Organization logo file:', orgData.logo);
         const orgRequest: OrganizationOnboardingRequest = {
-          metaData: {
-            accountType: "organization",
-            currentPage: step + 1,
-          },
-          foundationBioData: {
-            name: orgData.name,
-            foundationCategory: orgData.category,
-            website: orgData.website,
-            mission: orgData.mission,
-          },
-          foundationLocationDto: {
-            address: orgData.address,
-            city: orgData.city,
-            zipcode: orgData.zip,
-            foundationCountry: orgData.countryName,
-            foundationState: orgData.state,
-            countryId: orgData.country,
-            stateId: orgData.state,
-          },
-          causeDto: {
-            names: orgData.causes || [],
-          },
-          profileLogo: {
-            logo: orgData.logo ? [orgData.logo] : undefined,
-          },
-          disclaimer: {
-            hasAgreedToDisclaimer: orgData.disclaimerAgreed,
-          },
+          'MetaData.AccountType': "organization",
+          'MetaData.CurrentPage': step + 1,
+          'foundationBioData.Name': orgData.name,
+          'foundationBioData.FoundationCategory': orgData.category,
+          'foundationBioData.Website': orgData.website || undefined,
+          'foundationBioData.Mission': orgData.mission,
+          'FoundationLocationDto.Address': orgData.address,
+          'FoundationLocationDto.City': orgData.city,
+          'FoundationLocationDto.Zipcode': orgData.zip,
+          'FoundationLocationDto.FoundationCountry': orgData.countryName,
+          'FoundationLocationDto.FoundationState': orgData.state,
+          'CauseDto.Names': orgData.causes || [],
+          'ProfileLogo.LogoUrl': orgData.logo || undefined,
+          'Disclaimer.HasAgreedToDisclaimer': orgData.disclaimerAgreed || false,
         };
         await organizationOnboarding(orgRequest);
       }
-      
-      // Redirect based on account type
-      // The onboarding API response will set the has_completed_onboarding cookie
-      if (accountType === "volunteer") {
-        router.push('/home');
-      } else {
-        router.push('/org/dashboard');
-      }
     } catch (error) {
       console.error('Error completing onboarding:', error);
+    }
+  };
+
+  const handleLaunch = () => {
+    // Just redirect without calling API
+    if (accountType === "volunteer") {
+      router.push('/home');
+    } else {
+      router.push('/org/dashboard');
     }
   };
 
@@ -735,11 +715,11 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
       illustration={filteredSteps[step].illustration}
       isStepValid={isStepValid()}
       isLoading={isSubmitting}
+      isCongratulations={isCongratulations}
     >
       {isCongratulations ? (
-        <Congratulations 
-          onLaunch={handleSubmit}
-          isLoading={isSubmitting}
+        <Congratulations
+          onLaunch={handleLaunch}
         />
       ) : accountType === "volunteer" ? (
         <CurrentComponent 

@@ -12,9 +12,9 @@ import { useOnboardingStore } from "@/store";
 export default function OrgDashboardPage() {
   const { user } = useAuthStore();
   const { organizationData } = useOnboardingStore();
-  
-  // Get organization name from auth store (user.organizationName or user.firstName) or onboarding store (formData.orgData.name)
-  const organizationName = user?.organizationName || user?.firstName || organizationData?.formData?.orgData?.name || 'Organization';
+
+  // Get organization name from onboarding store first, then auth store
+  const organizationName = organizationData?.formData?.orgData?.name || user?.organizationName || user?.firstName || 'Organization';
 
    {/* Mock data for statistics and pie chart */}
   const orgStats = [

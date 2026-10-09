@@ -3,11 +3,10 @@ import { BRAND_NAME } from "@/constants";
 import { AppButton } from "@/components/AppButton";
 
 interface CongratulationsProps {
-  onLaunch?: () => void | Promise<void>;
-  isLoading?: boolean;
+  onLaunch?: () => void;
 }
 
-export default function Congratulations({ onLaunch, isLoading = false }: CongratulationsProps) {
+export default function Congratulations({ onLaunch }: CongratulationsProps) {
     return (
       <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-3 pb-20">
         <Image
@@ -23,13 +22,12 @@ export default function Congratulations({ onLaunch, isLoading = false }: Congrat
           and explore {BRAND_NAME}
         </p>
         {onLaunch && (
-          <AppButton 
-            variant="default" 
+          <AppButton
+            variant="default"
             className="font-bold text-white w-full h-12 text-lg"
             onClick={onLaunch}
-            isLoading={isLoading}
           >
-            {isLoading ? 'Preparing your Account...' : 'Launch'}
+            Launch
           </AppButton>
         )}
       </div>

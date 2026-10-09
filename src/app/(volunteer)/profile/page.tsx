@@ -125,15 +125,15 @@ export default function VolunteerProfilePage() {
                   fill
                   sizes="128px"
                   objectFit="cover"
-                  fallbackSrc="/images/Ellipse 1.png"
+                  fallbackSrc="/illustrations/profile-illustration.svg"
                 />
               ) : (
                 <Image
-                  src="/images/Ellipse 1.png"
+                  src="/illustrations/profile-illustration.svg"
                   alt="Profile"
                   width={128}
                   height={128}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               )}
             </div>
@@ -143,17 +143,6 @@ export default function VolunteerProfilePage() {
           <div className="flex-1 text-center lg:text-left">
             <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-black">{profile.name}</h1>
             <p className="text-black text-sm sm:text-base max-w-2xl">{profile.bio}</p>
-          </div>
-
-          {/* Illustration */}
-          <div className="relative">
-            <Image
-              src="/illustrations/profile-illustration.svg"
-              alt="Profile Illustration"
-              width={200}
-              height={150}
-              className="w-32 h-24 sm:w-48 sm:h-36 object-contain"
-            />
           </div>
         </div>
       </motion.div>

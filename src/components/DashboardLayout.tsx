@@ -7,6 +7,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useAuthActions } from "@/hooks/useAuthActions";
+import { useAuthStore } from "@/store";
 import { useRouter } from "next/navigation";
 import { BRAND_NAME } from "../../constants";
 import LogoutModal from "./LogoutModal";
@@ -35,9 +36,9 @@ type DashboardLayoutProps = {
 const getIsActiveLink = (pathname: string, linkHref: string, dashboardType: DashboardType): boolean => {
   switch (dashboardType) {
     case 'volunteer':
-      // Special case for volunteer: exact match for /volunteer, startsWith for others
-      return linkHref === "/volunteer" 
-        ? pathname === linkHref 
+      // Special case for volunteer: exact match for /home, startsWith for others
+      return linkHref === "/home"
+        ? pathname === linkHref
         : pathname.startsWith(linkHref);
     case 'organization':
       return pathname.startsWith(linkHref);
@@ -96,6 +97,7 @@ export default function DashboardLayout({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
   const { logout } = useAuthActions();
+  const { user } = useAuthStore();
   const router = useRouter();
 
   // Use provided nav links or default based on dashboard type
@@ -332,12 +334,22 @@ export default function DashboardLayout({
                 {/* Admin Profile */}
                 <div className="flex items-center px-2 py-1 rounded-[8px] bg-[#ECF6FE] space-x-2">
                   <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300">
-                    <Image
-                      src="/images/Ellipse 1.png"
-                      alt="Admin Avatar"
-                      width={32}
-                      height={32}
-                    />
+                    {user?.userImage ? (
+                      <Image
+                        src={user.userImage}
+                        alt="Admin Avatar"
+                        width={32}
+                        height={32}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src="/images/Ellipse 1.png"
+                        alt="Admin Avatar"
+                        width={32}
+                        height={32}
+                      />
+                    )}
                   </div>
                   <span className="hidden sm:inline text-sm font-semibold bg-gradient-to-r from-[#9161FD] to-[#06A3DA] bg-clip-text text-transparent">
                     {displayUserType}
@@ -368,12 +380,22 @@ export default function DashboardLayout({
               )}
               <div className="flex items-center px-2 py-1 rounded-[8px] bg-[#ECF6FE] space-x-2">
                 <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300">
-                  <Image
-                    src="/images/Ellipse 1.png"
-                    alt={`${displayUserType} Avatar`}
-                    width={32}
-                    height={32}
-                  />
+                  {user?.userImage ? (
+                    <Image
+                      src={user.userImage}
+                      alt={`${displayUserType} Avatar`}
+                      width={32}
+                      height={32}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src="/images/Ellipse 1.png"
+                      alt={`${displayUserType} Avatar`}
+                      width={32}
+                      height={32}
+                    />
+                  )}
                 </div>
                 <span className="hidden sm:inline text-sm font-semibold bg-gradient-to-r from-[#9161FD] to-[#06A3DA] bg-clip-text text-transparent">
                   {displayUserType}

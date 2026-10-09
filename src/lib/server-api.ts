@@ -433,59 +433,21 @@ export async function organizationOnboarding(
   try {
     logger.log('[API] POST', API_ENDPOINTS.onboarding.organization);
     logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
-    
+
     // Convert to FormData for multipart/form-data
     const formData = new FormData();
-    
-    // Handle nested objects
-    if (data.metaData) {
-      formData.append('MetaData.AccountType', data.metaData.accountType);
-      formData.append('MetaData.CurrentPage', String(data.metaData.currentPage));
-    }
-    
-    if (data.foundationBioData) {
-      formData.append('foundationBioData.Name', data.foundationBioData.name);
-      formData.append('foundationBioData.FoundationCategory', data.foundationBioData.foundationCategory);
-      if (data.foundationBioData.website) {
-        formData.append('foundationBioData.Website', data.foundationBioData.website);
+    Object.entries(data).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => {
+          if (item) {
+            formData.append(`${key}[${index}]`, item);
+          }
+        });
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
       }
-      formData.append('foundationBioData.Mission', data.foundationBioData.mission);
-    }
-    
-    if (data.foundationLocationDto) {
-      if (data.foundationLocationDto.address) {
-        formData.append('FoundationLocationDto.Address', data.foundationLocationDto.address);
-      }
-      formData.append('FoundationLocationDto.City', data.foundationLocationDto.city);
-      formData.append('FoundationLocationDto.Zipcode', data.foundationLocationDto.zipcode);
-      formData.append('FoundationLocationDto.FoundationCountry', data.foundationLocationDto.foundationCountry);
-      formData.append('FoundationLocationDto.FoundationState', data.foundationLocationDto.foundationState);
-      if (data.foundationLocationDto.countryId) {
-        formData.append('FoundationLocationDto.CountryId', data.foundationLocationDto.countryId);
-      }
-      if (data.foundationLocationDto.stateId) {
-        formData.append('FoundationLocationDto.StateId', data.foundationLocationDto.stateId);
-      }
-    }
-    
-    if (data.causeDto && data.causeDto.names) {
-      data.causeDto.names.forEach((name, index) => {
-        formData.append(`CauseDto.Names[${index}]`, name);
-      });
-    }
-    
-    if (data.profileLogo && data.profileLogo.logo) {
-      data.profileLogo.logo.forEach((url, index) => {
-        if (url) {
-          formData.append(`ProfileLogo.Logo[${index}]`, url);
-        }
-      });
-    }
-    
-    if (data.disclaimer) {
-      formData.append('Disclaimer.HasAgreedToDisclaimer', String(data.disclaimer.hasAgreedToDisclaimer));
-    }
-    
+    });
+
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.onboarding.organization,
       formData,
@@ -495,10 +457,10 @@ export async function organizationOnboarding(
         },
       }
     );
-    
+
     logger.log('[API] Response Status:', response.status);
     logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
-    
+
     return response.data;
   } catch (error) {
     throw handleServerError(error);
