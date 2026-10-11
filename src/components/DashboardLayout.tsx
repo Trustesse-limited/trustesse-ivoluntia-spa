@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FiBell, FiMenu, FiX, FiLogOut } from "react-icons/fi";
 import Image from "next/image";
 import { SmartImage } from "@/components/SmartImage";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useAuthActions } from "@/hooks/useAuthActions";
@@ -100,10 +100,16 @@ export default function DashboardLayout({
   const [isSessionExpiredModalOpen, setIsSessionExpiredModalOpen] = useState(false);
   const pathname = usePathname();
   const { validateToken } = useAuthActions();
+  const validationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check token expiration periodically
   useEffect(() => {
     const checkTokenExpiration = async () => {
+      // Skip validation if user is currently logging out
+      if (isLoggingOut) {
+        return;
+      }
+
       try {
         const result = await validateToken();
         if (!result.isValid) {
@@ -120,10 +126,22 @@ export default function DashboardLayout({
     checkTokenExpiration();
 
     // Check every 5 minutes
-    const interval = setInterval(checkTokenExpiration, 5 * 60 * 1000);
+    validationIntervalRef.current = setInterval(checkTokenExpiration, 5 * 60 * 1000);
 
-    return () => clearInterval(interval);
-  }, [validateToken]);
+    return () => {
+      if (validationIntervalRef.current) {
+        clearInterval(validationIntervalRef.current);
+      }
+    };
+  }, [validateToken, isLoggingOut]);
+
+  // Clear validation interval when logout starts to prevent race condition
+  useEffect(() => {
+    if (isLoggingOut && validationIntervalRef.current) {
+      clearInterval(validationIntervalRef.current);
+      validationIntervalRef.current = null;
+    }
+  }, [isLoggingOut]);
   const { logout } = useAuthActions();
   const { user } = useAuthStore();
   const router = useRouter();
@@ -141,12 +159,16 @@ export default function DashboardLayout({
 
   const handleLogoutConfirm = async () => {
     setIsLoggingOut(true);
+    // Close session expired modal if it's open to prevent confusion
+    setIsSessionExpiredModalOpen(false);
     const result = await logout();
     if (result.success) {
       setIsLogoutModalOpen(false);
       router.push('/login');
+    } else {
+      // Only reset if logout failed
+      setIsLoggingOut(false);
     }
-    setIsLoggingOut(false);
   };
 
   const handleLogoutCancel = () => {

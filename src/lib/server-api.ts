@@ -58,7 +58,7 @@ serverAxiosInstance.interceptors.request.use(
   async (config) => {
     // Skip auth headers for public endpoints
     if (config.url && isPublicEndpoint(config.url)) {
-      logger.log('[API] Public endpoint, skipping auth:', config.url);
+      // logger.log('[API] Public endpoint, skipping auth:', config.url);
       return config;
     }
 
@@ -67,9 +67,9 @@ serverAxiosInstance.interceptors.request.use(
       const token = await getServerAccessToken();
       
       if (token) {
-        logger.log('[API] Token retrieved for:', config.url);
-        logger.log('[API] Token length:', token.length);
-        logger.log('[API] Token prefix:', token.substring(0, 20) + '...');
+        // logger.log('[API] Token retrieved for:', config.url);
+        // logger.log('[API] Token length:', token.length);
+        // logger.log('[API] Token prefix:', token.substring(0, 20) + '...');
         
         // Check if token needs refresh
         if (shouldRefreshToken(token)) {
@@ -79,10 +79,10 @@ serverAxiosInstance.interceptors.request.use(
         // Add Authorization header
         if (config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
-          logger.log('[API] Authorization header added');
+          // logger.log('[API] Authorization header added');
         }
       } else {
-        logger.log('[API] No token found for authenticated endpoint:', config.url);
+        // logger.log('[API] No token found for authenticated endpoint:', config.url);
       }
     } catch (error) {
       logger.error('Error adding auth header:', error);
@@ -150,15 +150,15 @@ export async function volunteerSignUp(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.volunteerSignup);
-    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    // logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.volunteerSignup,
       data
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
@@ -175,15 +175,15 @@ export async function organizationSignUp(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.organizationSignup);
-    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    // logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.organizationSignup,
       data
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
@@ -200,7 +200,7 @@ export async function verifyOtp(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.otp.verifyEmail);
-    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    // logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
 
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.otp.verifyEmail,
@@ -212,8 +212,8 @@ export async function verifyOtp(
       }
     );
 
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
@@ -230,15 +230,15 @@ export async function verifyTwoFactor(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.twoFactorVerify);
-    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    // logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
 
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.twoFactorVerify,
       data
     );
 
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
@@ -255,15 +255,15 @@ export async function refreshToken(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.refreshToken);
-    logger.log('[API] Request Payload:', { ...data, accessToken: '[REDACTED]', refreshToken: '[REDACTED]' });
+    // logger.log('[API] Request Payload:', { ...data, accessToken: '[REDACTED]', refreshToken: '[REDACTED]' });
 
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.refreshToken,
       data
     );
 
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
@@ -280,7 +280,7 @@ export async function resendOtp(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.otp.resend);
-    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    // logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
     
     const params: Record<string, string | boolean> = {
       email: data.email,
@@ -297,8 +297,8 @@ export async function resendOtp(
       }
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
@@ -315,15 +315,15 @@ export async function login(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.login);
-    logger.log('[API] Request Payload:', { ...data, password: '[REDACTED]' });
+    // logger.log('[API] Request Payload:', { ...data, password: '[REDACTED]' });
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.login,
       data
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
@@ -344,8 +344,8 @@ export async function forgotPassword(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.forgotPassword);
-    logger.log('[API] Request Payload:', { email, newPassword: '[REDACTED]', confirmPassword: '[REDACTED]', token });
-    
+    logger.log('[API] Request Payload:', { email, newPassword: '[REDACTED]', confirmPassword: '[REDACTED]', token: token ? 'present' : 'missing', tokenLength: token.length });
+
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.forgotPassword,
       {
@@ -355,10 +355,10 @@ export async function forgotPassword(
         token,
       }
     );
-    
+
     logger.log('[API] Response Status:', response.status);
     logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
-    
+
     return response.data;
   } catch (error) {
     throw handleServerError(error);
@@ -378,7 +378,7 @@ export async function verifyResetPassword(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.otp.verifyResetPassword);
-    logger.log('[API] Request Payload:', { email, newPassword: '[REDACTED]', confirmPassword: '[REDACTED]', token });
+    // logger.log('[API] Request Payload:', { email, newPassword: '[REDACTED]', confirmPassword: '[REDACTED]', token });
     
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.otp.verifyResetPassword,
@@ -390,8 +390,8 @@ export async function verifyResetPassword(
       }
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
@@ -409,7 +409,7 @@ export async function resetForgotPassword(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.resetForgotPassword);
-    logger.log('[API] Request Payload:', { email });
+    // logger.log('[API] Request Payload:', { email });
 
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.resetForgotPassword,
@@ -421,8 +421,40 @@ export async function resetForgotPassword(
       }
     );
 
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Verify Forgot Password OTP
+ * POST /api/v1/Otp/verify-forgot-password-otp
+ * Takes otpCode as query parameter (public endpoint)
+ * Returns a token that must be used in the reset password API
+ */
+export async function verifyForgotPasswordOtp(
+  otpCode: string
+): Promise<ApiResponse<{ token: string }>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.otp.verifyForgotPassword);
+    // logger.log('[API] Request Payload:', { otpCode });
+
+    const response = await serverAxiosInstance.post<ApiResponse<{ token: string }>>(
+      API_ENDPOINTS.otp.verifyForgotPassword,
+      null,
+      {
+        params: {
+          otpCode: otpCode,
+        },
+      }
+    );
+
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
@@ -440,7 +472,7 @@ export async function resetPassword(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.resetPassword);
-    logger.log('[API] Request Payload:', { email });
+    // logger.log('[API] Request Payload:', { email });
 
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.resetPassword,
@@ -452,8 +484,8 @@ export async function resetPassword(
       }
     );
 
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
@@ -470,7 +502,7 @@ export async function volunteerOnboarding(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.onboarding.volunteer);
-    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    // logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
     
     // Convert to FormData for multipart/form-data
     const formData = new FormData();
@@ -497,8 +529,8 @@ export async function volunteerOnboarding(
       }
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data;
   } catch (error) {
@@ -515,7 +547,7 @@ export async function organizationOnboarding(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.onboarding.organization);
-    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+    // logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
 
     // Convert to FormData for multipart/form-data
     const formData = new FormData();
@@ -541,8 +573,8 @@ export async function organizationOnboarding(
       }
     );
 
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
@@ -584,8 +616,8 @@ export async function getCountries(): Promise<Country[]> {
       API_ENDPOINTS.countries.getAll
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     interface CountryApiResponse {
       id?: string;
@@ -614,7 +646,7 @@ export async function getCountries(): Promise<Country[]> {
 export async function getStates(countryId: string): Promise<State[]> {
   try {
     logger.log('[API] GET', API_ENDPOINTS.state.getByCountry);
-    logger.log('[API] Request Params:', { countryId });
+    // logger.log('[API] Request Params:', { countryId });
     
     const response = await serverAxiosInstance.get<ApiResponse<State[]>>(
       API_ENDPOINTS.state.getByCountry,
@@ -623,8 +655,8 @@ export async function getStates(countryId: string): Promise<State[]> {
       }
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     interface StateApiResponse {
       stateId?: string;
@@ -658,8 +690,8 @@ export async function getCauses(): Promise<Cause[]> {
       API_ENDPOINTS.cause.getAll
     );
 
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data.data || [];
   } catch (error) {
@@ -679,8 +711,8 @@ export async function getInterests(): Promise<Interest[]> {
       API_ENDPOINTS.interest.getAll
     );
 
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data.data || [];
   } catch (error) {
@@ -695,7 +727,7 @@ export async function getInterests(): Promise<Interest[]> {
 export async function uploadFile(file: File): Promise<string> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.fileUploads.upload);
-    logger.log('[API] Uploading file:', file.name, file.type, file.size);
+    // logger.log('[API] Uploading file:', file.name, file.type, file.size);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -710,8 +742,8 @@ export async function uploadFile(file: File): Promise<string> {
       }
     );
 
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     // The API returns an array of URLs, we take the first one
     const urls = response.data.data || [];
@@ -737,8 +769,8 @@ export async function getSkills(): Promise<Skill[]> {
       API_ENDPOINTS.skill.getAll
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data.data || [];
   } catch (error) {
@@ -758,8 +790,8 @@ export async function getCategories(): Promise<CategoryApiResponse[]> {
       API_ENDPOINTS.category.getAll
     );
     
-    logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
     
     return response.data.data || [];
   } catch (error) {

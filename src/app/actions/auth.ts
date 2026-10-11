@@ -1,5 +1,6 @@
 'use server';
 
+import logger from '@/lib/logger';
 import {
   volunteerSignUp,
   organizationSignUp,
@@ -9,6 +10,7 @@ import {
   login,
   forgotPassword,
   resetForgotPassword,
+  verifyForgotPasswordOtp,
   verifyResetPassword,
   volunteerOnboarding,
   organizationOnboarding,
@@ -47,7 +49,7 @@ import {
   sanitizeOtp,
   isValidEmail,
 } from '@/lib/sanitize';
-import logger from '@/lib/logger';
+// import logger from '@/lib/logger';
 
 /**
  * Server Action for Volunteer Sign Up (initial auth info)
@@ -62,7 +64,7 @@ export async function volunteerSignUpAction(data: VolunteerSignUpRequest): Promi
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    logger.log('[Server Action] volunteerSignUpAction called');
+    // logger.log('[Server Action] volunteerSignUpAction called');
     
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: VolunteerSignUpRequest = {
@@ -81,7 +83,7 @@ export async function volunteerSignUpAction(data: VolunteerSignUpRequest): Promi
 
     const response: ApiResponse<unknown> = await volunteerSignUp(sanitizedData);
     
-    logger.log('[Server Action] volunteerSignUpAction completed');
+    // logger.log('[Server Action] volunteerSignUpAction completed');
 
     // Set user role cookie for volunteer
     const cookieStore = await cookies();
@@ -99,7 +101,7 @@ export async function volunteerSignUpAction(data: VolunteerSignUpRequest): Promi
       message: response.message,
     };
   } catch (error) {
-    logger.log('[Server Action] volunteerSignUpAction error:', error);
+    // logger.log('[Server Action] volunteerSignUpAction error:', error);
     const apiError = error as ApiError;
 
     // Return the actual API error message
@@ -124,7 +126,7 @@ export async function organizationSignUpAction(data: OrganizationSignUpRequest):
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    logger.log('[Server Action] organizationSignUpAction called');
+    // logger.log('[Server Action] organizationSignUpAction called');
     
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: OrganizationSignUpRequest = {
@@ -143,7 +145,7 @@ export async function organizationSignUpAction(data: OrganizationSignUpRequest):
 
     const response: ApiResponse<unknown> = await organizationSignUp(sanitizedData);
     
-    logger.log('[Server Action] organizationSignUpAction completed');
+    // logger.log('[Server Action] organizationSignUpAction completed');
 
     // Set user role cookie for organization
     const cookieStore = await cookies();
@@ -161,7 +163,7 @@ export async function organizationSignUpAction(data: OrganizationSignUpRequest):
       message: response.message,
     };
   } catch (error) {
-    logger.log('[Server Action] organizationSignUpAction error:', error);
+    // logger.log('[Server Action] organizationSignUpAction error:', error);
     const apiError = error as ApiError;
 
     // Return the actual API error message
@@ -186,8 +188,8 @@ export async function verifyOtpAction(data: OtpVerificationRequest): Promise<{
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    logger.log('[Server Action] verifyOtpAction called');
-    
+    logger.log('[OTP VERIFY ACTION] Starting OTP verification');
+
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: OtpVerificationRequest = {
       otpCode: sanitizeOtp(data.otpCode),
@@ -201,8 +203,7 @@ export async function verifyOtpAction(data: OtpVerificationRequest): Promise<{
     }
 
     const response: ApiResponse<unknown> = await verifyOtp(sanitizedData);
-    
-    logger.log('[Server Action] verifyOtpAction completed');
+    logger.log('[OTP VERIFY ACTION] OTP API Response:', response);
 
     return {
       success: true,
@@ -210,8 +211,8 @@ export async function verifyOtpAction(data: OtpVerificationRequest): Promise<{
       message: response.message,
     };
   } catch (error) {
-    logger.log('[Server Action] verifyOtpAction error:', error);
     const apiError = error as ApiError;
+    logger.log('[OTP VERIFY ACTION] OTP Error:', apiError);
 
     // Return the actual API error message
     return {
@@ -236,7 +237,7 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
   redirect?: string;
 }> {
   try {
-    logger.log('[Server Action] verifyTwoFactorAction called');
+    logger.log('[2FA VERIFY ACTION] Starting 2FA verification');
 
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: TwoFactorVerificationRequest = {
@@ -259,16 +260,14 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
     }
 
     const response: ApiResponse<unknown> = await verifyTwoFactor(sanitizedData);
-
-    logger.log('[Server Action] verifyTwoFactorAction completed');
-    logger.log('[Server Action] 2FA Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[2FA VERIFY ACTION] 2FA API Response:', response);
 
     // SECURITY: Store tokens in HTTP-only cookies for security
     const loginData = response.data as Record<string, unknown> | undefined;
     const cookieStore = await cookies();
 
     if (loginData) {
-      logger.log('[Server Action] loginData keys:', Object.keys(loginData));
+      logger.log('[2FA VERIFY ACTION] loginData keys:', Object.keys(loginData));
 
       // Store access token as auth_token for consistency with normal login
       if ('accessToken' in loginData && typeof loginData.accessToken === 'string') {
@@ -278,7 +277,7 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 7, // 1 week
         });
-        logger.log('[Server Action] Access token stored in cookie as auth_token');
+        // logger.log('[Server Action] Access token stored in cookie as auth_token');
 
         // Store token expiration time from API response for client-side validation
         let tokenExpiration: number | null = null;
@@ -297,7 +296,7 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7, // 1 week
           });
-          logger.log('[Server Action] Token expiration stored in cookie:', new Date(tokenExpiration).toISOString());
+          // logger.log('[Server Action] Token expiration stored in cookie:', new Date(tokenExpiration).toISOString());
         }
       }
 
@@ -309,7 +308,7 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 30, // 30 days
         });
-        logger.log('[Server Action] Refresh token stored in cookie');
+        // logger.log('[Server Action] Refresh token stored in cookie');
       }
 
       // Store user role in cookie (user_role for consistency)
@@ -374,7 +373,7 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
         redirect = '/home';
       }
 
-      logger.log('[Server Action] Redirecting to:', redirect);
+      logger.log('[2FA VERIFY ACTION] Redirecting to:', redirect);
 
       return {
         success: true,
@@ -390,8 +389,8 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
       message: response.message,
     };
   } catch (error) {
-    logger.log('[Server Action] verifyTwoFactorAction error:', error);
     const apiError = error as ApiError;
+    logger.log('[2FA VERIFY ACTION] 2FA Error:', apiError);
 
     // Return the actual API error message
     return {
@@ -415,6 +414,9 @@ export async function resendOtpAction(data: ResendOtpRequest): Promise<{
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
+    logger.log('[RESEND OTP ACTION] Starting resend OTP');
+    logger.log('[RESEND OTP ACTION] Input data:', data);
+
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: ResendOtpRequest = {
       email: sanitizeEmail(data.email),
@@ -422,17 +424,19 @@ export async function resendOtpAction(data: ResendOtpRequest): Promise<{
       includeAlphabet: data.includeAlphabet,
       notificationType: data.notificationType,
     };
+    logger.log('[RESEND OTP ACTION] Sanitized data:', sanitizedData);
 
     if (!isValidEmail(sanitizedData.email)) {
+      logger.log('[RESEND OTP ACTION] Invalid email format');
       return {
         success: false,
         error: 'Please enter a valid email address',
       };
     }
 
-    logger.log('[Server Action] resendOtpAction called');
+    logger.log('[RESEND OTP ACTION] Calling API');
     const response: ApiResponse<unknown> = await resendOtp(sanitizedData);
-    logger.log('[Server Action] resendOtpAction completed');
+    logger.log('[RESEND OTP ACTION] API Response:', response);
 
     return {
       success: true,
@@ -440,8 +444,8 @@ export async function resendOtpAction(data: ResendOtpRequest): Promise<{
       message: response.message,
     };
   } catch (error) {
-    logger.log('[Server Action] resendOtpAction error:', error);
     const apiError = error as ApiError;
+    logger.log('[RESEND OTP ACTION] API Error:', apiError);
 
     // Return the actual API error message
     return {
@@ -465,7 +469,7 @@ export async function refreshTokenAction(): Promise<{
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    logger.log('[Server Action] refreshTokenAction called');
+    // logger.log('[Server Action] refreshTokenAction called');
 
     // Read tokens from cookies
     const cookieStore = await cookies();
@@ -495,8 +499,8 @@ export async function refreshTokenAction(): Promise<{
 
     const response: ApiResponse<unknown> = await refreshToken(sanitizedData);
 
-    logger.log('[Server Action] refreshTokenAction completed');
-    logger.log('[Server Action] Refresh Token Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[Server Action] refreshTokenAction completed');
+    // logger.log('[Server Action] Refresh Token Response Data:', JSON.stringify(response.data, null, 2));
 
     // SECURITY: Store new tokens in HTTP-only cookies
     const tokenData = response.data as Record<string, unknown> | undefined;
@@ -510,7 +514,7 @@ export async function refreshTokenAction(): Promise<{
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 7, // 1 week
         });
-        logger.log('[Server Action] New access token stored in cookie as auth_token');
+        // logger.log('[Server Action] New access token stored in cookie as auth_token');
 
         // Store new token expiration time from API response for client-side validation
         let tokenExpiration: number | null = null;
@@ -529,7 +533,7 @@ export async function refreshTokenAction(): Promise<{
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7, // 1 week
           });
-          logger.log('[Server Action] New token expiration stored in cookie:', new Date(tokenExpiration).toISOString());
+          // logger.log('[Server Action] New token expiration stored in cookie:', new Date(tokenExpiration).toISOString());
         }
       }
 
@@ -541,7 +545,7 @@ export async function refreshTokenAction(): Promise<{
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 30, // 30 days
         });
-        logger.log('[Server Action] New refresh token stored in cookie');
+        // logger.log('[Server Action] New refresh token stored in cookie');
       }
 
       // Clean up old cookie names for consistency
@@ -558,7 +562,7 @@ export async function refreshTokenAction(): Promise<{
       message: response.message,
     };
   } catch (error) {
-    logger.log('[Server Action] refreshTokenAction error:', error);
+    // logger.log('[Server Action] refreshTokenAction error:', error);
     const apiError = error as ApiError;
 
     // Return the actual API error message
@@ -583,8 +587,8 @@ export async function loginAction(data: LoginRequestModel): Promise<{
   email?: string;
 }> {
   try {
-    logger.log('[Server Action] loginAction called');
-    
+    logger.log('[LOGIN ACTION] Starting login');
+
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedData: LoginRequestModel = {
       email: sanitizeEmail(data.email),
@@ -602,13 +606,12 @@ export async function loginAction(data: LoginRequestModel): Promise<{
     }
 
     const response: ApiResponse<unknown> = await login(sanitizedData);
-    logger.log('[Server Action] loginAction completed');
-    logger.log('[Server Action] Full login response:', JSON.stringify(response.data, null, 2));
+    logger.log('[LOGIN ACTION] Login API Response:', response);
 
     // Check if the response indicates two-factor authentication is required
     // Only require 2FA if not provided (i.e., this is the initial login attempt)
     if (!sanitizedData.twoFactorCode && response.message && response.message.toLowerCase().includes('two factor code sent')) {
-      logger.log('[Server Action] Two-factor authentication required');
+      logger.log('[LOGIN ACTION] Two-factor authentication required');
       return {
         success: true,
         data: null,
@@ -622,10 +625,10 @@ export async function loginAction(data: LoginRequestModel): Promise<{
     const loginData = response.data as Record<string, unknown> | undefined;
     
     if (loginData) {
-      logger.log('[Server Action] loginData keys:', Object.keys(loginData));
-      logger.log('[Server Action] loginData.nameid:', loginData.nameid);
-      logger.log('[Server Action] loginData.email:', loginData.email);
-      logger.log('[Server Action] loginData.userProfile:', loginData.userProfile);
+      // logger.log('[Server Action] loginData keys:', Object.keys(loginData));
+      // logger.log('[Server Action] loginData.nameid:', loginData.nameid);
+      // logger.log('[Server Action] loginData.email:', loginData.email);
+      // logger.log('[Server Action] loginData.userProfile:', loginData.userProfile);
       
       // TEMPORARY WORKAROUND: Extract user data from JWT token since userProfile is null
       // This will be removed once backend fixes the userProfile field
@@ -635,7 +638,7 @@ export async function loginAction(data: LoginRequestModel): Promise<{
           const tokenParts = loginData.accessToken.split('.');
           if (tokenParts.length === 3) {
             const payload = JSON.parse(atob(tokenParts[1]));
-            logger.log('[Server Action] Decoded JWT payload:', payload);
+            // logger.log('[Server Action] Decoded JWT payload:', payload);
             userData = {
               id: payload.nameid || payload.sub || '',
               email: payload.email || payload.unique_name || '',
@@ -645,10 +648,10 @@ export async function loginAction(data: LoginRequestModel): Promise<{
               organizationName: payload.OrganizationName || '',
               foundationId: payload.FoundationId || '',
             };
-            logger.log('[Server Action] Extracted user data from JWT:', userData);
+            // logger.log('[Server Action] Extracted user data from JWT:', userData);
           }
-        } catch (error) {
-          logger.error('[Server Action] Failed to decode JWT:', error);
+        } catch {
+          // logger.error('[Server Action] Failed to decode JWT:', error);
         }
       }
       
@@ -686,7 +689,7 @@ export async function loginAction(data: LoginRequestModel): Promise<{
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7, // 1 week
           });
-          logger.log('[Server Action] Token expiration stored in cookie:', new Date(tokenExpiration).toISOString());
+          // logger.log('[Server Action] Token expiration stored in cookie:', new Date(tokenExpiration).toISOString());
         }
       }
       
@@ -747,7 +750,7 @@ export async function loginAction(data: LoginRequestModel): Promise<{
         });
       }
       
-      logger.log('[Server Action] Returning loginData with extractedUserData:', (loginData as Record<string, unknown>).extractedUserData);
+      // logger.log('[Server Action] Returning loginData with extractedUserData:', (loginData as Record<string, unknown>).extractedUserData);
       
       return {
         success: true,
@@ -763,6 +766,7 @@ export async function loginAction(data: LoginRequestModel): Promise<{
     };
   } catch (error) {
     const apiError = error as ApiError;
+    logger.log('[LOGIN ACTION] Login Error:', apiError);
 
     // Return the actual API error message
     return {
@@ -787,11 +791,27 @@ export async function forgotPasswordAction(
   error?: string;
 }> {
   try {
+    logger.log('[FORGOT PASSWORD ACTION] Starting password reset');
+    logger.log('[FORGOT PASSWORD ACTION] Email:', email);
+    logger.log('[FORGOT PASSWORD ACTION] Token present:', !!token);
+    logger.log('[FORGOT PASSWORD ACTION] Token length:', token.length);
+    logger.log('[FORGOT PASSWORD ACTION] New password length:', newPassword.length);
+    logger.log('[FORGOT PASSWORD ACTION] Confirm password length:', confirmPassword.length);
+
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedEmail = sanitizeEmail(email);
     const sanitizedPassword = sanitizePassword(newPassword);
     const sanitizedConfirmPassword = sanitizePassword(confirmPassword);
-    const sanitizedToken = sanitizeOtp(token);
+    // The forgot password token is a long encrypted string, not a 6-digit OTP
+    // We should NOT sanitize it with sanitizeOtp which limits to 6 characters
+    const sanitizedToken = token.trim();
+
+    logger.log('[FORGOT PASSWORD ACTION] Sanitized data:', {
+      email: sanitizedEmail,
+      passwordLength: sanitizedPassword.length,
+      confirmPasswordLength: sanitizedConfirmPassword.length,
+      tokenLength: sanitizedToken.length,
+    });
 
     if (!isValidEmail(sanitizedEmail)) {
       return {
@@ -824,23 +844,29 @@ export async function forgotPasswordAction(
     if (!sanitizedToken) {
       return {
         success: false,
-        error: 'Please enter a valid OTP code',
+        error: 'Invalid or missing token. Please request a new OTP.',
       };
     }
 
+    logger.log('[FORGOT PASSWORD ACTION] Calling API');
     const response: ApiResponse<unknown> = await forgotPassword(
       sanitizedEmail,
       sanitizedPassword,
       sanitizedConfirmPassword,
       sanitizedToken
     );
+    logger.log('[FORGOT PASSWORD ACTION] API Response:', response);
 
     return {
       success: true,
       message: (response.data as { message?: string })?.message || 'Password reset successfully',
     };
   } catch (error) {
-    logger.error('[ForgotPasswordAction] Error:', error);
+    const apiError = error as ApiError;
+    logger.log('[FORGOT PASSWORD ACTION] API Error:', apiError);
+    logger.log('[FORGOT PASSWORD ACTION] Error status:', apiError.status);
+    logger.log('[FORGOT PASSWORD ACTION] Error message:', apiError.message);
+    logger.log('[FORGOT PASSWORD ACTION] Error details:', JSON.stringify(apiError, null, 2));
     // Extract the actual error message from the API error
     const errorMessage = (error as { message?: string })?.message || 'Failed to reset password. Please try again.';
     return {
@@ -869,7 +895,9 @@ export async function verifyResetPasswordAction(
     const sanitizedEmail = sanitizeEmail(email);
     const sanitizedPassword = sanitizePassword(newPassword);
     const sanitizedConfirmPassword = sanitizePassword(confirmPassword);
-    const sanitizedToken = sanitizeOtp(token);
+    // The reset password token is a long encrypted string, not a 6-digit OTP
+    // We should NOT sanitize it with sanitizeOtp which limits to 6 characters
+    const sanitizedToken = token.trim();
 
     if (!isValidEmail(sanitizedEmail)) {
       return {
@@ -902,7 +930,7 @@ export async function verifyResetPasswordAction(
     if (!sanitizedToken) {
       return {
         success: false,
-        error: 'Please enter a valid OTP code',
+        error: 'Invalid or missing token. Please request a new OTP.',
       };
     }
 
@@ -918,7 +946,8 @@ export async function verifyResetPasswordAction(
       message: (response.data as { message?: string })?.message || 'Password reset successfully',
     };
   } catch (error) {
-    logger.error('[VerifyResetPasswordAction] Error:', error);
+    // logger.error('[VerifyResetPasswordAction] Error:', error);
+    console.error('Failed to reset password:', error);
     return {
       success: false,
       error: 'Failed to reset password. Please try again.',
@@ -936,6 +965,9 @@ export async function resetPasswordAction(email: string): Promise<{
   error?: string;
 }> {
   try {
+    logger.log('[RESET PASSWORD ACTION] Starting password reset request');
+    logger.log('[RESET PASSWORD ACTION] Email:', email);
+
     // SECURITY: Server-side sanitization (authoritative layer)
     const sanitizedEmail = sanitizeEmail(email);
 
@@ -947,6 +979,7 @@ export async function resetPasswordAction(email: string): Promise<{
     }
 
     const response: ApiResponse<unknown> = await resetForgotPassword(sanitizedEmail);
+    logger.log('[RESET PASSWORD ACTION] API Response:', response);
 
     return {
       success: true,
@@ -954,11 +987,72 @@ export async function resetPasswordAction(email: string): Promise<{
     };
   } catch (error) {
     const apiError = error as ApiError;
+    logger.log('[RESET PASSWORD ACTION] API Error:', apiError);
 
     // Return the actual API error message
     return {
       success: false,
       error: apiError.message || 'Failed to reset password',
+    };
+  }
+}
+
+/**
+ * Server Action for Verify Forgot Password OTP
+ * Verifies the OTP sent to the user's email and returns a token
+ * This token must be used in the reset password API
+ */
+export async function verifyForgotPasswordOtpAction(otpCode: string): Promise<{
+  success: boolean;
+  token?: string;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[OTP VERIFY ACTION] Starting OTP verification');
+    logger.log('[OTP VERIFY ACTION] Input OTP:', otpCode);
+
+    // SECURITY: Server-side sanitization (authoritative layer)
+    const sanitizedOtp = sanitizeOtp(otpCode);
+    logger.log('[OTP VERIFY ACTION] Sanitized OTP:', sanitizedOtp);
+
+    if (!sanitizedOtp || sanitizedOtp.length !== 6) {
+      logger.log('[OTP VERIFY ACTION] Invalid OTP format');
+      return {
+        success: false,
+        error: 'Please enter a valid 6-digit OTP',
+      };
+    }
+
+    logger.log('[OTP VERIFY ACTION] Calling API with sanitized OTP');
+    const response: ApiResponse<unknown> = await verifyForgotPasswordOtp(sanitizedOtp);
+    logger.log('[OTP VERIFY ACTION] API Response:', response);
+
+    // Extract token from the response data
+    // The API returns the token as a string with "token:" prefix or as an object
+    let token: string | undefined;
+    if (typeof response.data === 'string') {
+      // Token is returned as a string with "token:" prefix
+      token = response.data.startsWith('token:') ? response.data.substring(6) : response.data;
+    } else if (response.data && typeof response.data === 'object' && 'token' in response.data) {
+      // Token is returned as an object with a token property
+      token = (response.data as { token: string }).token;
+    }
+    logger.log('[OTP VERIFY ACTION] Extracted token:', token ? 'present' : 'missing');
+
+    return {
+      success: true,
+      token: token,
+      message: response.message || 'OTP verified successfully',
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[OTP VERIFY ACTION] API Error:', apiError);
+
+    // Return the actual API error message
+    return {
+      success: false,
+      error: apiError.message || 'Failed to verify OTP',
     };
   }
 }
@@ -1060,12 +1154,6 @@ export async function validateTokenAction(): Promise<{
       // Token is valid if current time < expiration time - buffer
       const isValid = currentTime < (expirationTime - bufferTime);
 
-      logger.log('[Server Action] Token validation:', {
-        expirationTime: new Date(expirationTime).toISOString(),
-        currentTime: new Date(currentTime).toISOString(),
-        isValid,
-      });
-
       return {
         success: true,
         isValid,
@@ -1079,7 +1167,8 @@ export async function validateTokenAction(): Promise<{
       isValid: true,
     };
   } catch (error) {
-    logger.log('[Server Action] validateTokenAction error:', error);
+    // logger.log('[Server Action] validateTokenAction error:', error);
+    console.error('Token validation error:', error);
     return {
       success: false,
       isValid: false,
@@ -1101,7 +1190,7 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    logger.log('[Server Action] volunteerOnboardingAction called');
+    // logger.log('[Server Action] volunteerOnboardingAction called');
 
     // SECURITY: Server-side sanitization
     // Convert nested structure to flat multipart/form-data format
@@ -1125,8 +1214,8 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
     };
 
     const response: ApiResponse<unknown> = await volunteerOnboarding(sanitizedData);
-    logger.log('[Server Action] volunteerOnboardingAction completed');
-    logger.log('[Server Action] Onboarding response data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[Server Action] volunteerOnboardingAction completed');
+    // logger.log('[Server Action] Onboarding response data:', JSON.stringify(response.data, null, 2));
 
     // Set user role cookie for volunteer
     const cookieStore = await cookies();
@@ -1149,7 +1238,7 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
         maxAge: 60 * 60 * 24 * 7, // 1 week
         path: '/',
       });
-      logger.log('[Server Action] Set has_completed_onboarding cookie:', hasCompletedOnboarding);
+      // logger.log('[Server Action] Set has_completed_onboarding cookie:', hasCompletedOnboarding);
     }
 
     return {
@@ -1158,7 +1247,7 @@ export async function volunteerOnboardingAction(data: VolunteerOnboardingRequest
       message: response.message,
     };
   } catch (error) {
-    logger.log('[Server Action] volunteerOnboardingAction error:', error);
+    // logger.log('[Server Action] volunteerOnboardingAction error:', error);
     const apiError = error as ApiError;
 
     return {
@@ -1182,7 +1271,7 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    logger.log('[Server Action] organizationOnboardingAction called');
+    // logger.log('[Server Action] organizationOnboardingAction called');
 
     // SECURITY: Server-side sanitization
     const sanitizedData: OrganizationOnboardingRequest = {
@@ -1203,8 +1292,8 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
     };
 
     const response: ApiResponse<unknown> = await organizationOnboarding(sanitizedData);
-    logger.log('[Server Action] organizationOnboardingAction completed');
-    logger.log('[Server Action] Onboarding response data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[Server Action] organizationOnboardingAction completed');
+    // logger.log('[Server Action] Onboarding response data:', JSON.stringify(response.data, null, 2));
 
     // Set user role cookie for organization
     const cookieStore = await cookies();
@@ -1227,7 +1316,7 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
         maxAge: 60 * 60 * 24 * 7, // 1 week
         path: '/',
       });
-      logger.log('[Server Action] Set has_completed_onboarding cookie:', hasCompletedOnboarding);
+      // logger.log('[Server Action] Set has_completed_onboarding cookie:', hasCompletedOnboarding);
     }
 
     return {
@@ -1236,7 +1325,7 @@ export async function organizationOnboardingAction(data: OrganizationOnboardingR
       message: response.message,
     };
   } catch (error) {
-    logger.log('[Server Action] organizationOnboardingAction error:', error);
+    // logger.log('[Server Action] organizationOnboardingAction error:', error);
     const apiError = error as ApiError;
 
     return {
@@ -1258,16 +1347,16 @@ export async function getCountriesAction(): Promise<{
   error?: string;
 }> {
   try {
-    logger.log('[Server Action] getCountriesAction called');
+    // logger.log('[Server Action] getCountriesAction called');
     const countries = await getCountries();
-    logger.log('[Server Action] getCountriesAction completed');
+    // logger.log('[Server Action] getCountriesAction completed');
 
     return {
       success: true,
       data: countries,
     };
   } catch (error) {
-    logger.log('[Server Action] getCountriesAction error:', error);
+    // logger.log('[Server Action] getCountriesAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,
@@ -1287,16 +1376,16 @@ export async function getStatesAction(countryId: string): Promise<{
   error?: string;
 }> {
   try {
-    logger.log('[Server Action] getStatesAction called with countryId:', countryId);
+    // logger.log('[Server Action] getStatesAction called with countryId:', countryId);
     const states = await getStates(countryId);
-    logger.log('[Server Action] getStatesAction completed');
+    // logger.log('[Server Action] getStatesAction completed');
 
     return {
       success: true,
       data: states,
     };
   } catch (error) {
-    logger.log('[Server Action] getStatesAction error:', error);
+    // logger.log('[Server Action] getStatesAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,
@@ -1316,16 +1405,16 @@ export async function getCausesAction(): Promise<{
   error?: string;
 }> {
   try {
-    logger.log('[Server Action] getCausesAction called');
+    // logger.log('[Server Action] getCausesAction called');
     const causes = await getCauses();
-    logger.log('[Server Action] getCausesAction completed');
+    // logger.log('[Server Action] getCausesAction completed');
 
     return {
       success: true,
       data: causes,
     };
   } catch (error) {
-    logger.log('[Server Action] getCausesAction error:', error);
+    // logger.log('[Server Action] getCausesAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,
@@ -1345,16 +1434,16 @@ export async function getInterestsAction(): Promise<{
   error?: string;
 }> {
   try {
-    logger.log('[Server Action] getInterestsAction called');
+    // logger.log('[Server Action] getInterestsAction called');
     const interests = await getInterests();
-    logger.log('[Server Action] getInterestsAction completed');
+    // logger.log('[Server Action] getInterestsAction completed');
 
     return {
       success: true,
       data: interests,
     };
   } catch (error) {
-    logger.log('[Server Action] getInterestsAction error:', error);
+    // logger.log('[Server Action] getInterestsAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,
@@ -1374,16 +1463,16 @@ export async function uploadFileAction(file: File): Promise<{
   error?: string;
 }> {
   try {
-    logger.log('[Server Action] uploadFileAction called');
+    // logger.log('[Server Action] uploadFileAction called');
     const url = await uploadFileServer(file);
-    logger.log('[Server Action] uploadFileAction completed, URL:', url);
+    // logger.log('[Server Action] uploadFileAction completed, URL:', url);
 
     return {
       success: true,
       data: url,
     };
   } catch (error) {
-    logger.log('[Server Action] uploadFileAction error:', error);
+    // logger.log('[Server Action] uploadFileAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,
@@ -1403,16 +1492,16 @@ export async function getSkillsAction(): Promise<{
   error?: string;
 }> {
   try {
-    logger.log('[Server Action] getSkillsAction called');
+    // logger.log('[Server Action] getSkillsAction called');
     const skills = await getSkills();
-    logger.log('[Server Action] getSkillsAction completed');
+    // logger.log('[Server Action] getSkillsAction completed');
 
     return {
       success: true,
       data: skills,
     };
   } catch (error) {
-    logger.log('[Server Action] getSkillsAction error:', error);
+    // logger.log('[Server Action] getSkillsAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,
@@ -1432,16 +1521,16 @@ export async function getCategoriesAction(): Promise<{
   error?: string;
 }> {
   try {
-    logger.log('[Server Action] getCategoriesAction called');
+    // logger.log('[Server Action] getCategoriesAction called');
     const categories = await getCategories();
-    logger.log('[Server Action] getCategoriesAction completed');
+    // logger.log('[Server Action] getCategoriesAction completed');
 
     return {
       success: true,
       data: categories,
     };
   } catch (error) {
-    logger.log('[Server Action] getCategoriesAction error:', error);
+    // logger.log('[Server Action] getCategoriesAction error:', error);
     const apiError = error as ApiError;
     return {
       success: false,

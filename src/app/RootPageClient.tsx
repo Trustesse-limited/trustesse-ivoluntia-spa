@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useOnboardingStore } from '@/store';
-import logger from '@/lib/logger';
 
 // usertypecard details
 const userType = [
@@ -28,12 +28,10 @@ const RootPageClient = () => {
   const { switchAccountType } = useOnboardingStore();
 
   const handleVolunteerClick = () => {
-    logger.log('Volunteer card clicked');
     switchAccountType('volunteer');
   };
 
   const handleOrganizationClick = () => {
-    logger.log('Organization card clicked');
     switchAccountType('organization');
   };
 
@@ -41,7 +39,7 @@ const RootPageClient = () => {
     <div className="flex flex-col items-center justify-center min-h-screen w-full relative p-4 mx-auto">
       {/* Main Content - centered */}
       <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-4xl mx-auto">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-[700] text-center mb-2">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-2">
           Welcome
         </h1>
         <p className="text-sm sm:text-base text-[#000000] text-center mb-8">
@@ -59,7 +57,7 @@ const RootPageClient = () => {
             >
               <div className="bg-white border border-[#C0C0C0] rounded-xl p-4 flex flex-col items-center justify-center gap-3 cursor-pointer flex-1 aspect-[5/4] min-w-[160px] max-w-[192px] sm:min-w-[240px] sm:max-w-[288px]">
                 <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 xl:w-[90px] xl:h-[90px] mb-2 pointer-events-none">
-                  <img src={user.img} alt={user.alt} className="w-full h-full object-contain" />
+                  <Image src={user.img} alt={user.alt} width={90} height={90} className="w-full h-full object-contain" />
                 </div>
                 <h2 className={styleItem}>{user.text}</h2>
               </div>
@@ -69,15 +67,15 @@ const RootPageClient = () => {
 
         <p className="mt-10 text-sm sm:text-[16px] text-center">
           Already have an account?{' '}
-          <span className="text-primary font-[700]">
+          <span className="text-primary font-bold">
             <Link href="/login">Sign In</Link>
           </span>
         </p>
       </div>
 
       {/* Illustration - positioned at bottom center, scrolls with page */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-0 w-full max-w-[446px] flex justify-center">
-        <img
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-0 w-full max-w-md flex justify-center">
+        <Image
           src="/user.svg"
           alt="illustration-svg"
           width={446}

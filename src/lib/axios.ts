@@ -43,12 +43,12 @@ axiosInstance.interceptors.request.use(
     config.withCredentials = authConfig.withCredentials;
     
     // Log request for debugging
-    logger.log('[Client API] Request:', config.method?.toUpperCase(), config.url);
+    // logger.log('[Client API] Request:', config.method?.toUpperCase(), config.url);
     if (config.data) {
-      logger.log('[Client API] Request Payload:', JSON.stringify(config.data, null, 2));
+      // logger.log('[Client API] Request Payload:', JSON.stringify(config.data, null, 2));
     }
     if (config.params) {
-      logger.log('[Client API] Request Params:', JSON.stringify(config.params, null, 2));
+      // logger.log('[Client API] Request Params:', JSON.stringify(config.params, null, 2));
     }
     
     // NOTE: Authorization headers are automatically handled by HTTP-only cookies
@@ -65,15 +65,15 @@ axiosInstance.interceptors.request.use(
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
-    logger.log('[Client API] Response Status:', response.status);
-    logger.log('[Client API] Response Data:', JSON.stringify(response.data, null, 2));
+    // logger.log('[Client API] Response Status:', response.status);
+    // logger.log('[Client API] Response Data:', JSON.stringify(response.data, null, 2));
     return response;
   },
   (error: AxiosError) => {
-    logger.log('[Client API] Error:', error.message);
+    // logger.log('[Client API] Error:', error.message);
     if (error.response) {
-      logger.log('[Client API] Error Status:', error.response.status);
-      logger.log('[Client API] Error Data:', JSON.stringify(error.response.data, null, 2));
+      // logger.log('[Client API] Error Status:', error.response.status);
+      // logger.log('[Client API] Error Data:', JSON.stringify(error.response.data, null, 2));
       
       const status = error.response.status;
       

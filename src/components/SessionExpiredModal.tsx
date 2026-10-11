@@ -42,7 +42,6 @@ export default function SessionExpiredModal({ isOpen, onClose }: SessionExpiredM
       router.push("/login");
     } catch (error) {
       console.error("Failed to logout:", error);
-    } finally {
       setIsLoggingOut(false);
       onClose();
     }

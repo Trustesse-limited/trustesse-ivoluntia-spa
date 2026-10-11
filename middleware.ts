@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import logger from '@/lib/logger';
+// import logger from '@/lib/logger';
 
 type Role = 'volunteer' | 'organization' | 'admin';
 
@@ -89,19 +89,19 @@ export function middleware(request: NextRequest) {
   const rawRole = request.cookies.get('user_role')?.value;
   const accountType = normalizeRole(rawRole);
 
-  logger.log('=== MIDDLEWARE ===');
-  logger.log('Pathname:', pathname);
-  logger.log('Raw Role:', rawRole);
-  logger.log('Auth Token exists:', !!token);
-  logger.log('Normalized Role:', accountType || 'NONE');
-  logger.log('Has Completed Onboarding:', hasCompletedOnboarding);
-  logger.log('Public Routes:', publicRoutes);
-  logger.log('Is Public Route:', matchesRoute(pathname, publicRoutes));
+  // logger.log('=== MIDDLEWARE ===');
+  // logger.log('Pathname:', pathname);
+  // logger.log('Raw Role:', rawRole);
+  // logger.log('Auth Token exists:', !!token);
+  // logger.log('Normalized Role:', accountType || 'NONE');
+  // logger.log('Has Completed Onboarding:', hasCompletedOnboarding);
+  // logger.log('Public Routes:', publicRoutes);
+  // logger.log('Is Public Route:', matchesRoute(pathname, publicRoutes));
 
   // 1. If user is authenticated and tries to access public auth pages, redirect to dashboard
   if (token && matchesRoute(pathname, publicRoutes)) {
-    logger.log('REDIRECTING: authenticated user trying to access public auth page');
-    logger.log('Redirecting to:', accountType ? roleHome[accountType] : '/');
+    // logger.log('REDIRECTING: authenticated user trying to access public auth page');
+    // logger.log('Redirecting to:', accountType ? roleHome[accountType] : '/');
     if (accountType) {
       return NextResponse.redirect(new URL(roleHome[accountType], request.url));
     }
@@ -113,7 +113,7 @@ export function middleware(request: NextRequest) {
 
   // 2. Protected route without a session → send to login with a callback
   if (isProtected && !token) {
-    logger.log('BLOCKING: no token for protected route, redirecting to login');
+    // logger.log('BLOCKING: no token for protected route, redirecting to login');
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
@@ -122,7 +122,7 @@ export function middleware(request: NextRequest) {
   // 3. Unauthenticated request to a non-protected route: let Next.js resolve it.
   //    If no page exists for this path, the not-found (404) page is rendered.
   if (!token) {
-    logger.log('ALLOWING: unauthenticated request to non-protected route');
+    // logger.log('ALLOWING: unauthenticated request to non-protected route');
     return NextResponse.next();
   }
 
@@ -131,10 +131,10 @@ export function middleware(request: NextRequest) {
   // 4. Onboarding is role-neutral: every role can reach it
   if (matchesRoute(pathname, ['/onboarding'])) {
     if (hasCompletedOnboarding) {
-      logger.log('Onboarding already completed, redirecting to dashboard');
+      // logger.log('Onboarding already completed, redirecting to dashboard');
       return NextResponse.redirect(new URL(accountType ? roleHome[accountType] : '/', request.url));
     }
-    logger.log('ALLOWING: onboarding in progress');
+    // logger.log('ALLOWING: onboarding in progress');
     return NextResponse.next();
   }
 
@@ -147,24 +147,24 @@ export function middleware(request: NextRequest) {
     // CROSS-ROLE GUARD: a volunteer must never see /org or /admin routes,
     // an organization must never see volunteer or admin routes, etc.
     if (accountType && owningRole !== accountType) {
-      logger.log(`BLOCKING: ${accountType} tried to access ${owningRole} route, redirecting to own dashboard`);
+      // logger.log(`BLOCKING: ${accountType} tried to access ${owningRole} route, redirecting to own dashboard`);
       return NextResponse.redirect(new URL(roleHome[accountType], request.url));
     }
 
     // Token exists but no recognizable role → back to the landing page
     if (!accountType) {
-      logger.log('BLOCKING: token exists but role is unknown, redirecting to landing page');
+      // logger.log('BLOCKING: token exists but role is unknown, redirecting to landing page');
       return NextResponse.redirect(new URL('/', request.url));
     }
 
     // Section index route without its own page (e.g. /org, /admin)
     const indexRedirect = sectionIndexRedirects[pathname];
     if (indexRedirect) {
-      logger.log(`Redirecting section index ${pathname} to ${indexRedirect}`);
+      // logger.log(`Redirecting section index ${pathname} to ${indexRedirect}`);
       return NextResponse.redirect(new URL(indexRedirect, request.url));
     }
 
-    logger.log('ALLOWING: route belongs to user role');
+    // logger.log('ALLOWING: route belongs to user role');
     return NextResponse.next();
   }
 
@@ -173,15 +173,15 @@ export function middleware(request: NextRequest) {
   // stream starts before its server code finishes)
   if (pathname === '/') {
     if (token && !hasCompletedOnboarding) {
-      logger.log('Root: onboarding not completed, redirecting to onboarding');
+      // logger.log('Root: onboarding not completed, redirecting to onboarding');
       return NextResponse.redirect(new URL('/onboarding', request.url));
     }
     if (token && accountType) {
-      logger.log(`Root: redirecting ${accountType} to dashboard`);
+      // logger.log(`Root: redirecting ${accountType} to dashboard`);
       return NextResponse.redirect(new URL(roleHome[accountType], request.url));
     }
     // Not authenticated (or token without a known role) → landing page
-    logger.log('ALLOWING: root route');
+    // logger.log('ALLOWING: root route');
     return NextResponse.next();
   }
 
@@ -189,8 +189,8 @@ export function middleware(request: NextRequest) {
   //    Non-existent paths render the not-found (404) page for every visitor,
   //    authenticated or not. This keeps the 404 page exclusively for
   //    genuinely missing routes while the role guards above handle real routes.
-  logger.log('ALLOWING: unknown path, Next.js will render 404 if it does not exist');
-  logger.log('=================\n');
+  // logger.log('ALLOWING: unknown path, Next.js will render 404 if it does not exist');
+  // logger.log('=================\n');
   return NextResponse.next();
 }
 

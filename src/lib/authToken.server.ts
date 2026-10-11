@@ -37,6 +37,8 @@ const PUBLIC_ENDPOINTS = [
   API_ENDPOINTS.auth.resetPassword,
   API_ENDPOINTS.auth.resetForgotPassword,
   API_ENDPOINTS.auth.forgotPassword,
+  API_ENDPOINTS.otp.verifyForgotPassword,
+  API_ENDPOINTS.otp.verifyResetPassword,
   '/api/v1/countries/countries',
   '/api/v1/countries/states',
 ];
@@ -56,7 +58,7 @@ export async function getServerAccessToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
     return cookieStore.get(AUTH_TOKEN_COOKIE)?.value || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -68,7 +70,7 @@ export async function getServerRefreshToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
     return cookieStore.get(REFRESH_TOKEN_COOKIE)?.value || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -111,7 +113,7 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
     const payload = parts[1];
     const decoded = atob(payload);
     return JSON.parse(decoded);
-  } catch (error) {
+  } catch {
     // Fails for encrypted tokens (ASP.NET Core Data Protection)
     return null;
   }
@@ -133,10 +135,10 @@ export function isTokenExpired(token: string): boolean {
     // Convert exp to milliseconds and compare with current time
     const expirationTime = exp * 1000;
     const currentTime = Date.now();
-    
+
     // Add 30 second buffer to account for clock skew
     return currentTime >= (expirationTime - 30000);
-  } catch (error) {
+  } catch {
     return false; // Assume valid on error for encrypted tokens
   }
 }
@@ -152,12 +154,12 @@ export function getTokenTimeToExpiry(token: string): number {
     
     const exp = payload.exp as number | undefined;
     if (!exp) return -1;
-    
+
     const expirationTime = exp * 1000;
     const currentTime = Date.now();
-    
+
     return Math.floor((expirationTime - currentTime) / 1000);
-  } catch (error) {
+  } catch {
     return -1;
   }
 }
@@ -181,7 +183,7 @@ export async function clearServerTokens(): Promise<void> {
     const cookieStore = await cookies();
     cookieStore.delete(AUTH_TOKEN_COOKIE);
     cookieStore.delete(REFRESH_TOKEN_COOKIE);
-  } catch (error) {
+  } catch {
     // Silently handle errors
   }
 }
@@ -277,7 +279,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     }
     
     return data.accessToken;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

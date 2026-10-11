@@ -198,11 +198,11 @@ export const useOnboardingStore = create<OnboardingState>()(
         const state = get();
         // Only clear if the email is different from the stored email
         if (email && state.currentUserEmail === email) {
-          logger.log('[Onboarding] Same user logged in, preserving onboarding data');
+          // logger.log('[Onboarding] Same user logged in, preserving onboarding data');
           return;
         }
         
-        logger.log('[Onboarding] Different user or no email, clearing onboarding data');
+        // logger.log('[Onboarding] Different user or no email, clearing onboarding data');
         set({
           currentStep: 0,
           isComplete: false,
@@ -230,7 +230,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       },
 
       clearAllOnboarding: () => {
-        logger.log('[Onboarding] Force clearing all onboarding data');
+        // logger.log('[Onboarding] Force clearing all onboarding data');
         set({
           currentStep: 0,
           isComplete: false,
@@ -309,13 +309,13 @@ export const useOnboardingStore = create<OnboardingState>()(
         const hasCompletedOnboarding = loginResponse.hasCompletedOnboarding || false;
         const userProfile = loginResponse.userProfile || {};
 
-        logger.log('[Onboarding] INITIALIZE FROM LOGIN RESPONSE:', {
-          accountType,
-          lastCompletedPage,
-          hasCompletedOnboarding,
-          userProfile: !!userProfile,
-          userProfileData: userProfile,
-        });
+        // logger.log('[Onboarding] INITIALIZE FROM LOGIN RESPONSE:', {
+        //   accountType,
+        //   lastCompletedPage,
+        //   hasCompletedOnboarding,
+        //   userProfile: !!userProfile,
+        //   userProfileData: userProfile,
+        // });
 
         // Set currentStep for redirection
         // lastCompletedPage is 1-based API page, currentStep is 0-based UI step
@@ -329,7 +329,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           const genderValue = userProfile.gender;
           const genderNum = genderValue ? (typeof genderValue === 'string' ? parseInt(genderValue, 10) : genderValue) : 0;
 
-          logger.log('[Onboarding] Gender conversion - genderValue:', genderValue, 'genderNum:', genderNum);
+          // logger.log('[Onboarding] Gender conversion - genderValue:', genderValue, 'genderNum:', genderNum);
 
           // Format date of birth to YYYY-MM-DD for date input
           let formattedDob = userProfile.dateOfBirth || '';
@@ -463,7 +463,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           route,
         };
       },
-      
+
       canProceedToStep: (step) => {
         const state = get();
         const accountData = state.accountType === 'volunteer' ? state.volunteerData : state.organizationData;

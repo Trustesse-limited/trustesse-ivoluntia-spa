@@ -145,6 +145,7 @@ export const API_ENDPOINTS = {
     confirm: buildApiEndpoint('Otp/confirm-otp'),
     resend: buildApiEndpoint('Otp/resendotp'),
     verifyEmail: buildApiEndpoint('Otp/verify-email-confirm-otp'),
+    verifyForgotPassword: buildApiEndpoint('Otp/verify-forgot-password-otp'),
     verifyResetPassword: buildApiEndpoint('Otp/verify-reset-password-otp'),
   },
 
