@@ -4,10 +4,11 @@ import {
   volunteerSignUp,
   organizationSignUp,
   verifyOtp,
+  verifyTwoFactor,
   resendOtp,
   login,
   forgotPassword,
-  resetPassword,
+  resetForgotPassword,
   verifyResetPassword,
   volunteerOnboarding,
   organizationOnboarding,
@@ -19,6 +20,7 @@ import {
   getCategories,
   uploadFile as uploadFileServer,
 } from '@/lib/server-api';
+import { refreshToken } from '@/lib/server-api';
 import {
   VolunteerSignUpRequest,
   OrganizationSignUpRequest,
@@ -33,6 +35,8 @@ import {
   State,
   Cause,
   Interest,
+  TwoFactorVerificationRequest,
+  TokenRefreshRequest,
   Skill,
   CategoryApiResponse,
 } from '@/types/api';
@@ -219,6 +223,186 @@ export async function verifyOtpAction(data: OtpVerificationRequest): Promise<{
 }
 
 /**
+ * Server Action for 2FA Verification
+ * This can be called from client components but executes on the server
+ * POST /api/v1/Auth/2fa-verify
+ */
+export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest): Promise<{
+  success: boolean;
+  data?: unknown;
+  message?: string;
+  error?: string;
+  errors?: Record<string, string[]> | unknown[];
+  redirect?: string;
+}> {
+  try {
+    logger.log('[Server Action] verifyTwoFactorAction called');
+
+    // SECURITY: Server-side sanitization (authoritative layer)
+    const sanitizedData: TwoFactorVerificationRequest = {
+      twoFactorAuthCode: sanitizeOtp(data.twoFactorAuthCode),
+      email: sanitizeEmail(data.email),
+    };
+
+    if (!sanitizedData.twoFactorAuthCode || sanitizedData.twoFactorAuthCode.length !== 6) {
+      return {
+        success: false,
+        error: 'Please enter a valid 6-digit 2FA code',
+      };
+    }
+
+    if (!sanitizedData.email) {
+      return {
+        success: false,
+        error: 'Email is required',
+      };
+    }
+
+    const response: ApiResponse<unknown> = await verifyTwoFactor(sanitizedData);
+
+    logger.log('[Server Action] verifyTwoFactorAction completed');
+    logger.log('[Server Action] 2FA Response Data:', JSON.stringify(response.data, null, 2));
+
+    // SECURITY: Store tokens in HTTP-only cookies for security
+    const loginData = response.data as Record<string, unknown> | undefined;
+    const cookieStore = await cookies();
+
+    if (loginData) {
+      logger.log('[Server Action] loginData keys:', Object.keys(loginData));
+
+      // Store access token as auth_token for consistency with normal login
+      if ('accessToken' in loginData && typeof loginData.accessToken === 'string') {
+        cookieStore.set('auth_token', loginData.accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+        });
+        logger.log('[Server Action] Access token stored in cookie as auth_token');
+
+        // Store token expiration time from API response for client-side validation
+        let tokenExpiration: number | null = null;
+        if ('accessTokenExpiresAt' in loginData && typeof loginData.accessTokenExpiresAt === 'string') {
+          tokenExpiration = new Date(loginData.accessTokenExpiresAt).getTime();
+        } else if ('accessTokenExpireMinutes' in loginData && typeof loginData.accessTokenExpireMinutes === 'string') {
+          tokenExpiration = Date.now() + (parseInt(loginData.accessTokenExpireMinutes) * 60 * 1000);
+        } else if ('accessTokenExpireSeconds' in loginData && typeof loginData.accessTokenExpireSeconds === 'string') {
+          tokenExpiration = Date.now() + (parseInt(loginData.accessTokenExpireSeconds) * 1000);
+        }
+
+        if (tokenExpiration) {
+          cookieStore.set('token_expiration', String(tokenExpiration), {
+            httpOnly: false, // Client needs to read this
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+          });
+          logger.log('[Server Action] Token expiration stored in cookie:', new Date(tokenExpiration).toISOString());
+        }
+      }
+
+      // Store refresh token in HTTP-only cookie
+      if ('refreshToken' in loginData && typeof loginData.refreshToken === 'string') {
+        cookieStore.set('refresh_token', loginData.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+        });
+        logger.log('[Server Action] Refresh token stored in cookie');
+      }
+
+      // Store user role in cookie (user_role for consistency)
+      if ('accountType' in loginData) {
+        cookieStore.set('user_role', String(loginData.accountType), {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+        });
+      }
+
+      // Store onboarding status (has_completed_onboarding for consistency)
+      if ('hasCompletedOnboarding' in loginData) {
+        cookieStore.set('has_completed_onboarding', String(loginData.hasCompletedOnboarding), {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+        });
+      }
+
+      // Store last completed page if available
+      if ('lastCompletedPage' in loginData) {
+        cookieStore.set('last_completed_page', String(loginData.lastCompletedPage), {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+        });
+      }
+
+      // Store email for token refresh
+      if (sanitizedData.email) {
+        cookieStore.set('userEmail', sanitizedData.email, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+          path: '/',
+        });
+      }
+
+      // Clean up old cookie names for consistency
+      cookieStore.delete('accessToken');
+      cookieStore.delete('refreshToken');
+      cookieStore.delete('accountType');
+      cookieStore.delete('hasCompletedOnboarding');
+      cookieStore.delete('lastCompletedPage');
+
+      // Determine redirect based on account type
+      const accountType = loginData.accountType as string | undefined;
+      let redirect = '/login';
+
+      if (accountType?.toLowerCase() === 'superadmin') {
+        redirect = '/admin/dashboard';
+      } else if (accountType?.toLowerCase() === 'admin') {
+        redirect = '/admin/dashboard';
+      } else if (accountType?.toLowerCase() === 'organization') {
+        redirect = '/org/dashboard';
+      } else if (accountType?.toLowerCase() === 'volunteer') {
+        redirect = '/home';
+      }
+
+      logger.log('[Server Action] Redirecting to:', redirect);
+
+      return {
+        success: true,
+        data: response.data,
+        message: response.message,
+        redirect,
+      };
+    }
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    logger.log('[Server Action] verifyTwoFactorAction error:', error);
+    const apiError = error as ApiError;
+
+    // Return the actual API error message
+    return {
+      success: false,
+      error: apiError.message || 'Failed to verify 2FA code',
+      errors: apiError.errors,
+    };
+  }
+}
+
+/**
  * Server Action for Resending OTP
  * This can be called from client components but executes on the server
  * POST /api/v1/Otp/resendotp
@@ -263,6 +447,124 @@ export async function resendOtpAction(data: ResendOtpRequest): Promise<{
     return {
       success: false,
       error: apiError.message || 'Failed to resend OTP',
+      errors: apiError.errors,
+    };
+  }
+}
+
+/**
+ * Server Action for Refresh Token
+ * This can be called from client components but executes on the server
+ * POST /api/v1/Auth/refresh-token
+ */
+export async function refreshTokenAction(): Promise<{
+  success: boolean;
+  data?: unknown;
+  message?: string;
+  error?: string;
+  errors?: Record<string, string[]> | unknown[];
+}> {
+  try {
+    logger.log('[Server Action] refreshTokenAction called');
+
+    // Read tokens from cookies
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('auth_token')?.value || cookieStore.get('accessToken')?.value;
+    const currentRefreshToken = cookieStore.get('refresh_token')?.value || cookieStore.get('refreshToken')?.value;
+    const userEmail = cookieStore.get('userEmail')?.value;
+
+    if (!accessToken || !currentRefreshToken) {
+      return {
+        success: false,
+        error: 'No active session found. Please log in again.',
+      };
+    }
+
+    if (!userEmail) {
+      return {
+        success: false,
+        error: 'User email not found. Please log in again.',
+      };
+    }
+
+    const sanitizedData: TokenRefreshRequest = {
+      email: userEmail,
+      accessToken: accessToken,
+      refreshToken: currentRefreshToken,
+    };
+
+    const response: ApiResponse<unknown> = await refreshToken(sanitizedData);
+
+    logger.log('[Server Action] refreshTokenAction completed');
+    logger.log('[Server Action] Refresh Token Response Data:', JSON.stringify(response.data, null, 2));
+
+    // SECURITY: Store new tokens in HTTP-only cookies
+    const tokenData = response.data as Record<string, unknown> | undefined;
+
+    if (tokenData) {
+      // Store new access token as auth_token for consistency
+      if ('accessToken' in tokenData && typeof tokenData.accessToken === 'string') {
+        cookieStore.set('auth_token', tokenData.accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+        });
+        logger.log('[Server Action] New access token stored in cookie as auth_token');
+
+        // Store new token expiration time from API response for client-side validation
+        let tokenExpiration: number | null = null;
+        if ('accessTokenExpiresAt' in tokenData && typeof tokenData.accessTokenExpiresAt === 'string') {
+          tokenExpiration = new Date(tokenData.accessTokenExpiresAt).getTime();
+        } else if ('accessTokenExpireMinutes' in tokenData && typeof tokenData.accessTokenExpireMinutes === 'string') {
+          tokenExpiration = Date.now() + (parseInt(tokenData.accessTokenExpireMinutes) * 60 * 1000);
+        } else if ('accessTokenExpireSeconds' in tokenData && typeof tokenData.accessTokenExpireSeconds === 'string') {
+          tokenExpiration = Date.now() + (parseInt(tokenData.accessTokenExpireSeconds) * 1000);
+        }
+
+        if (tokenExpiration) {
+          cookieStore.set('token_expiration', String(tokenExpiration), {
+            httpOnly: false, // Client needs to read this
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+          });
+          logger.log('[Server Action] New token expiration stored in cookie:', new Date(tokenExpiration).toISOString());
+        }
+      }
+
+      // Store new refresh token
+      if ('refreshToken' in tokenData && typeof tokenData.refreshToken === 'string') {
+        cookieStore.set('refresh_token', tokenData.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+        });
+        logger.log('[Server Action] New refresh token stored in cookie');
+      }
+
+      // Clean up old cookie names for consistency
+      cookieStore.delete('accessToken');
+      cookieStore.delete('refreshToken');
+      cookieStore.delete('accountType');
+      cookieStore.delete('hasCompletedOnboarding');
+      cookieStore.delete('lastCompletedPage');
+    }
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    logger.log('[Server Action] refreshTokenAction error:', error);
+    const apiError = error as ApiError;
+
+    // Return the actual API error message
+    return {
+      success: false,
+      error: apiError.message || 'Failed to refresh token',
       errors: apiError.errors,
     };
   }
@@ -365,6 +667,27 @@ export async function loginAction(data: LoginRequestModel): Promise<{
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 7, // 1 week
         });
+
+        // Store token expiration time from API response for client-side validation
+        // Backend provides: accessTokenExpiresAt, accessTokenExpireMinutes, or accessTokenExpireSeconds
+        let tokenExpiration: number | null = null;
+        if ('accessTokenExpiresAt' in loginData && typeof loginData.accessTokenExpiresAt === 'string') {
+          tokenExpiration = new Date(loginData.accessTokenExpiresAt).getTime();
+        } else if ('accessTokenExpireMinutes' in loginData && typeof loginData.accessTokenExpireMinutes === 'string') {
+          tokenExpiration = Date.now() + (parseInt(loginData.accessTokenExpireMinutes) * 60 * 1000);
+        } else if ('accessTokenExpireSeconds' in loginData && typeof loginData.accessTokenExpireSeconds === 'string') {
+          tokenExpiration = Date.now() + (parseInt(loginData.accessTokenExpireSeconds) * 1000);
+        }
+
+        if (tokenExpiration) {
+          cookieStore.set('token_expiration', String(tokenExpiration), {
+            httpOnly: false, // Client needs to read this
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+          });
+          logger.log('[Server Action] Token expiration stored in cookie:', new Date(tokenExpiration).toISOString());
+        }
       }
       
       // Store refresh token
@@ -390,7 +713,18 @@ export async function loginAction(data: LoginRequestModel): Promise<{
           path: '/',
         });
       }
-      
+
+      // Store user email for token refresh
+      if (sanitizedData.email) {
+        cookieStore.set('userEmail', sanitizedData.email, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 1 week
+          path: '/',
+        });
+      }
+
       // Store onboarding status in cookie for redirect logic
       if ('hasCompletedOnboarding' in loginData) {
         cookieStore.set('has_completed_onboarding', String(loginData.hasCompletedOnboarding), {
@@ -593,7 +927,7 @@ export async function verifyResetPasswordAction(
 }
 
 /**
- * Server Action for Reset Password
+ * Server Action for Reset Password (forgot password - send OTP)
  * This can be called from client components but executes on the server
  */
 export async function resetPasswordAction(email: string): Promise<{
@@ -612,7 +946,7 @@ export async function resetPasswordAction(email: string): Promise<{
       };
     }
 
-    const response: ApiResponse<unknown> = await resetPassword(sanitizedEmail);
+    const response: ApiResponse<unknown> = await resetForgotPassword(sanitizedEmail);
 
     return {
       success: true,
@@ -646,12 +980,19 @@ export async function logoutAction(): Promise<{
     const cookiesToDelete = [
       'auth_token',
       'access_token',
+      'accessToken',
       'user_role',
+      'accountType',
       'refresh_token',
+      'refreshToken',
       'has_completed_onboarding',
+      'hasCompletedOnboarding',
       'last_completed_page',
+      'lastCompletedPage',
+      'userEmail',
+      'token_expiration',
     ];
-    
+
     cookiesToDelete.forEach(cookieName => {
       // Try multiple methods to ensure cookie deletion
       cookieStore.delete(cookieName);
@@ -696,19 +1037,12 @@ export async function logoutAction(): Promise<{
 export async function validateTokenAction(): Promise<{
   success: boolean;
   isValid: boolean;
-  user?: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
-    accountType?: string;
-  };
   error?: string;
 }> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('auth_token')?.value;
+    const tokenExpiration = cookieStore.get('token_expiration')?.value;
 
     if (!token) {
       return {
@@ -717,67 +1051,39 @@ export async function validateTokenAction(): Promise<{
       };
     }
 
-    // Try to call a lightweight endpoint to validate the token
-    // Using a GET request to get current user info (this validates the token)
-    const apiBaseUrl = process.env.API_BASE_URL;
-    if (!apiBaseUrl) {
-      // Fallback: if no API base URL, assume token is invalid
-      return {
-        success: true,
-        isValid: false,
-        error: 'API base URL not configured',
-      };
-    }
+    // Check token expiration using stored expiration time from API response
+    if (tokenExpiration) {
+      const expirationTime = parseInt(tokenExpiration, 10);
+      const currentTime = Date.now();
+      const bufferTime = 60 * 1000; // 1 minute buffer
 
-    try {
-      // Try to get current user info - this validates the token
-      const response = await fetch(`${apiBaseUrl}/api/v1/Auth/current-user`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        cache: 'no-store',
+      // Token is valid if current time < expiration time - buffer
+      const isValid = currentTime < (expirationTime - bufferTime);
+
+      logger.log('[Server Action] Token validation:', {
+        expirationTime: new Date(expirationTime).toISOString(),
+        currentTime: new Date(currentTime).toISOString(),
+        isValid,
       });
 
-      if (response.status === 401) {
-        // Token is invalid or expired
-        return {
-          success: true,
-          isValid: false,
-        };
-      }
-
-      if (!response.ok) {
-        // If endpoint doesn't exist, try another approach
-        // For now, assume token is valid if it exists (temporary)
-        return {
-          success: true,
-          isValid: !!token,
-        };
-      }
-
-      const data = await response.json();
-
       return {
         success: true,
-        isValid: true,
-        user: data,
-      };
-    } catch {
-      // If fetch fails, assume token is invalid
-      logger.error('Token validation failed, assuming token is invalid');
-      return {
-        success: true,
-        isValid: false,
+        isValid,
       };
     }
+
+    // If no expiration stored, assume token is valid if it exists
+    // This shouldn't happen with the new implementation, but it's a safe fallback
+    return {
+      success: true,
+      isValid: true,
+    };
   } catch (error) {
-    logger.error('Token validation error:', error);
+    logger.log('[Server Action] validateTokenAction error:', error);
     return {
       success: false,
       isValid: false,
-      error: 'Token validation failed',
+      error: 'Failed to validate token',
     };
   }
 }

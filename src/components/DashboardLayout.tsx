@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { FiBell, FiMenu, FiX, FiLogOut } from "react-icons/fi";
 import Image from "next/image";
-import { useState } from "react";
+import { SmartImage } from "@/components/SmartImage";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useAuthActions } from "@/hooks/useAuthActions";
@@ -11,6 +12,7 @@ import { useAuthStore } from "@/store";
 import { useRouter } from "next/navigation";
 import { BRAND_NAME } from "../../constants";
 import LogoutModal from "./LogoutModal";
+import SessionExpiredModal from "./SessionExpiredModal";
 
 type NavLink = {
   label: string;
@@ -95,7 +97,33 @@ export default function DashboardLayout({
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSessionExpiredModalOpen, setIsSessionExpiredModalOpen] = useState(false);
   const pathname = usePathname();
+  const { validateToken } = useAuthActions();
+
+  // Check token expiration periodically
+  useEffect(() => {
+    const checkTokenExpiration = async () => {
+      try {
+        const result = await validateToken();
+        if (!result.isValid) {
+          setIsSessionExpiredModalOpen(true);
+        }
+      } catch (error) {
+        console.error("Failed to validate token:", error);
+        // If validation fails, show session expired modal
+        setIsSessionExpiredModalOpen(true);
+      }
+    };
+
+    // Check immediately on mount
+    checkTokenExpiration();
+
+    // Check every 5 minutes
+    const interval = setInterval(checkTokenExpiration, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [validateToken]);
   const { logout } = useAuthActions();
   const { user } = useAuthStore();
   const router = useRouter();
@@ -107,6 +135,7 @@ export default function DashboardLayout({
   const displayUserType = userType || getDefaultUserType(dashboardType);
 
   const handleLogoutClick = () => {
+    setIsMobileNavOpen(false);
     setIsLogoutModalOpen(true);
   };
 
@@ -141,7 +170,7 @@ export default function DashboardLayout({
                 <li key={link.href} className="mb-2">
                   <Link
                     href={link.href}
-                    className={`rounded-[8px] w-full flex items-center justify-start py-2 px-4 text-sm font-semibold ${
+                    className={`rounded-xl w-full flex items-center justify-start py-2 px-4 text-sm font-semibold ${
                       isActive
                         ? "bg-[#0E68DC] text-[#FFFFFF]"
                         : "text-black bg-transparent hover:bg-[#0e67dc46]"
@@ -166,7 +195,7 @@ export default function DashboardLayout({
                   <li key={link.href} className="mb-2">
                     <Link
                       href={link.href}
-                      className={`rounded-[8px] w-full flex items-center justify-start py-2 px-4 text-sm font-semibold ${
+                      className={`rounded-xl w-full flex items-center justify-start py-2 px-4 text-sm font-semibold ${
                         isActive
                           ? "bg-[#0E68DC] text-[#FFFFFF]"
                           : "text-black bg-transparent hover:bg-[#0e67dc46]"
@@ -187,7 +216,7 @@ export default function DashboardLayout({
           <button
             onClick={handleLogoutClick}
             disabled={isLoggingOut}
-            className="rounded-[8px] w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold text-black hover:text-red-600 hover:bg-[#0000011c] transition-class cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-xl w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold text-black hover:text-red-600 hover:bg-[#0000011c] transition-class disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FiLogOut className="mr-2 text-lg" />
             {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
@@ -207,13 +236,13 @@ export default function DashboardLayout({
               onClick={() => setIsMobileNavOpen(false)}
             />
             <motion.div
-              className="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-50 p-4 flex flex-col justify-between md:hidden"
+              className="fixed top-0 left-0 w-[70%] min-w-72 h-full bg-white shadow-lg z-50 p-4 flex flex-col md:hidden rounded-r-lg"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "tween" }}
             >
-              <div>
+              <div className="flex-1 overflow-y-auto scrollbar-hide">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-base sm:text-lg font-bold truncate">
                     {BRAND_NAME}
@@ -233,7 +262,7 @@ export default function DashboardLayout({
                         <li key={link.href} className="mb-2">
                           <Link
                             href={link.href}
-                            className={`rounded-[8px] w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold ${
+                            className={`rounded-xl w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold ${
                               isActive
                                 ? "bg-[var(--buttonPrimary)] text-[#FFFFFF]"
                                 : "text-black bg-transparent"
@@ -262,7 +291,7 @@ export default function DashboardLayout({
                             <li key={link.href} className="mb-2">
                               <Link
                                 href={link.href}
-                                className={`rounded-[8px] w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold ${
+                                className={`rounded-xl w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold ${
                                   isActive
                                     ? "bg-[var(--buttonPrimary)] text-[#FFFFFF]"
                                     : "text-black bg-transparent"
@@ -284,11 +313,11 @@ export default function DashboardLayout({
               </div>
 
               {/* Logout Link */}
-              <div className="my-6">
+              <div className="mt-4">
                 <button
                   onClick={handleLogoutClick}
                   disabled={isLoggingOut}
-                  className="rounded-[8px] w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold text-black hover:text-red-600 hover:bg-[#0000011c] transition-class cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-xl w-full flex items-center justify-start transition-class py-2 px-4 text-sm font-semibold text-black hover:text-red-600 hover:bg-[#0000011c] transition-class disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FiLogOut className="mr-2 text-lg" />
                   {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
@@ -332,15 +361,17 @@ export default function DashboardLayout({
                 )}
                 
                 {/* Admin Profile */}
-                <div className="flex items-center px-2 py-1 rounded-[8px] bg-[#ECF6FE] space-x-2">
+                <div className="flex items-center px-2 py-1 rounded-xl bg-[#ECF6FE] gap-2">
                   <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300">
                     {user?.userImage ? (
-                      <Image
+                      <SmartImage
                         src={user.userImage}
                         alt="Admin Avatar"
                         width={32}
                         height={32}
                         className="object-cover"
+                        objectFit="cover"
+                        fallbackSrc="/images/Ellipse 1.png"
                       />
                     ) : (
                       <Image
@@ -369,24 +400,26 @@ export default function DashboardLayout({
             </h2>
             <div className="flex items-center space-x-4">
               {showDonateButton && (
-                <button className="hidden md:block bg-[var(--buttonPrimary)] text-white text-sm font-semibold px-6 py-2 rounded-[8px] transition-class cursor-pointer hover:opacity-90">
+                <button className="hidden md:block bg-[var(--buttonPrimary)] text-white text-sm font-semibold px-6 py-2 rounded-xl transition-class cursor-pointer hover:opacity-90">
                   Donate
                 </button>
               )}
               {showNotification && (
-                <div className="w-10 h-10 flex items-center justify-center rounded-[8px] bg-[#ECF6FE]">
+                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#ECF6FE]">
                   <FiBell className="text-gray-600 text-xl cursor-pointer" />
                 </div>
               )}
-              <div className="flex items-center px-2 py-1 rounded-[8px] bg-[#ECF6FE] space-x-2">
+              <div className="flex items-center px-2 py-1 rounded-xl gap-2 bg-[#ECF6FE] ">
                 <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300">
                   {user?.userImage ? (
-                    <Image
+                    <SmartImage
                       src={user.userImage}
                       alt={`${displayUserType} Avatar`}
                       width={32}
                       height={32}
                       className="object-cover"
+                      objectFit="cover"
+                      fallbackSrc="/images/Ellipse 1.png"
                     />
                   ) : (
                     <Image
@@ -397,7 +430,7 @@ export default function DashboardLayout({
                     />
                   )}
                 </div>
-                <span className="hidden sm:inline text-sm font-semibold bg-gradient-to-r from-[#9161FD] to-[#06A3DA] bg-clip-text text-transparent">
+                <span className="hidden md:inline text-sm font-semibold bg-gradient-to-r from-[#9161FD] to-[#06A3DA] bg-clip-text text-transparent">
                   {displayUserType}
                 </span>
               </div>
@@ -423,6 +456,12 @@ export default function DashboardLayout({
         onClose={handleLogoutCancel}
         onConfirm={handleLogoutConfirm}
         isLoading={isLoggingOut}
+      />
+
+      {/* Session Expired Modal */}
+      <SessionExpiredModal
+        isOpen={isSessionExpiredModalOpen}
+        onClose={() => setIsSessionExpiredModalOpen(false)}
       />
     </div>
   );

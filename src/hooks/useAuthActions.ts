@@ -6,6 +6,7 @@ import {
   volunteerSignUpAction,
   organizationSignUpAction,
   verifyOtpAction,
+  verifyTwoFactorAction,
   resendOtpAction,
   loginAction,
   logoutAction as authLogoutAction,
@@ -14,6 +15,8 @@ import {
   verifyResetPasswordAction,
   volunteerOnboardingAction,
   organizationOnboardingAction,
+  refreshTokenAction,
+  validateTokenAction,
 } from '@/app/actions/auth';
 import {
   VolunteerSignUpRequest,
@@ -23,6 +26,7 @@ import {
   LoginRequestModel,
   VolunteerOnboardingRequest,
   OrganizationOnboardingRequest,
+  TwoFactorVerificationRequest,
 } from '@/types/api';
 import { useAuthStore, useOnboardingStore } from '@/store';
 import type { User, UserRole } from '@/store/authStore';
@@ -58,6 +62,18 @@ export interface EnhancedLoginResult {
   hasCompletedOnboarding?: boolean;
   requiresVerification?: boolean;
   emailForVerification?: string;
+  requiresTwoFactor?: boolean;
+  email?: string;
+  errors?: Record<string, string[]> | unknown[];
+}
+
+export interface TwoFactorVerifyResult {
+  success: boolean;
+  data?: unknown;
+  message?: string;
+  error?: string;
+  errors?: Record<string, string[]> | unknown[];
+  redirect?: string;
 }
 
 export function useAuthActions() {
@@ -262,6 +278,128 @@ export function useAuthActions() {
     }
   };
 
+  const verifyTwoFactor = async (data: TwoFactorVerificationRequest): Promise<TwoFactorVerifyResult> => {
+    setIsLoading(true);
+    try {
+      const result = await verifyTwoFactorAction(data);
+
+      if (result.success) {
+        // Display the backend success message if available, otherwise fallback
+        toast.success(result.message || '2FA verified successfully!', {
+          duration: 3000,
+        });
+        return { success: true, data: result.data, message: result.message, redirect: result.redirect };
+      } else {
+        // Handle validation errors - only when there are actual error entries
+        const hasValidationErrors = result.errors && (
+          (Array.isArray(result.errors) && result.errors.length > 0) ||
+          (!Array.isArray(result.errors) && Object.keys(result.errors).length > 0)
+        );
+        if (hasValidationErrors) {
+          const errors = result.errors!;
+          const errorMessages = Array.isArray(errors)
+            ? errors.filter((e): e is string => typeof e === 'string')
+            : Object.values(errors).flat();
+          errorMessages.forEach((message) => {
+            toast.error(message, {
+              duration: 4000,
+            });
+          });
+        } else {
+          // Show the actual API error message
+          toast.error(result.error || '2FA verification failed. Please try again.', {
+            duration: 4000,
+          });
+        }
+        return { success: false, error: result.error, errors: result.errors };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in verifyTwoFactor:', error);
+      // Check if this is a network/system error vs API error
+      if (error instanceof Error) {
+        if (error.message.includes('ENOENT') || error.message.includes('.next')) {
+          toast.error('Application error: Please refresh the page and try again.', {
+            duration: 5000,
+          });
+        } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
+          toast.error('Request timed out. Please check your connection and try again.', {
+            duration: 5000,
+          });
+        } else {
+          toast.error('An unexpected error occurred during 2FA verification. Please try again.', {
+            duration: 5000,
+          });
+        }
+      } else {
+        toast.error('An unexpected error occurred during 2FA verification. Please try again.', {
+          duration: 5000,
+        });
+      }
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshAccessToken = async () => {
+    setIsLoading(true);
+    try {
+      const result = await refreshTokenAction();
+
+      if (result.success) {
+        // Display the backend success message if available, otherwise fallback
+        toast.success(result.message || 'Token refreshed successfully!', {
+          duration: 3000,
+        });
+        return { success: true, data: result.data, message: result.message };
+      } else {
+        // Show the actual API error message
+        toast.error(result.error || 'Token refresh failed. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: result.error, errors: result.errors };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in refreshAccessToken:', error);
+      // Check if this is a network/system error vs API error
+      if (error instanceof Error) {
+        if (error.message.includes('ENOENT') || error.message.includes('.next')) {
+          toast.error('Application error: Please refresh the page and try again.', {
+            duration: 5000,
+          });
+        } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
+          toast.error('Request timed out. Please check your connection and try again.', {
+            duration: 5000,
+          });
+        } else {
+          toast.error('An unexpected error occurred during token refresh. Please try again.', {
+            duration: 5000,
+          });
+        }
+      } else {
+        toast.error('An unexpected error occurred during token refresh. Please try again.', {
+          duration: 5000,
+        });
+      }
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const validateToken = async () => {
+    try {
+      const result = await validateTokenAction();
+      return result;
+    } catch (error) {
+      console.error('useAuthActions: Error caught in validateToken:', error);
+      return {
+        success: true,
+        isValid: false,
+      };
+    }
+  };
+
   const resendOtp = async (data: ResendOtpRequest) => {
     setIsLoading(true);
     try {
@@ -339,8 +477,9 @@ export function useAuthActions() {
           });
           return {
             success: true,
-            redirect: `/verify?email=${encodeURIComponent(result.email)}&purpose=Login&resend=true`,
+            redirect: `/verify?email=${encodeURIComponent(result.email)}&purpose=TwoFactorAuthenticationLogin`,
             requiresTwoFactor: true,
+            email: result.email,
           } as EnhancedLoginResult;
         }
 
@@ -950,9 +1089,12 @@ export function useAuthActions() {
     volunteerSignUp,
     organizationSignUp,
     verifyOtp,
+    verifyTwoFactor,
     resendOtp,
     login,
     logout,
+    refreshAccessToken,
+    validateToken,
     forgotPassword,
     resetPassword,
     verifyResetPassword,

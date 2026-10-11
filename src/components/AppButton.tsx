@@ -57,7 +57,7 @@ export function AppButton({
     }
   };
 
-  const baseClasses = getVariantClasses() === 'custom' ? '' : `${getVariantClasses()} rounded-2xl py-2 sm:py-3 font-[600] text-sm sm:text-base md:text-xl px-3 sm:px-6 text-center inline-flex items-center justify-center gap-1 sm:gap-2 transition-class`;
+  const baseClasses = getVariantClasses() === 'custom' ? '' : `${getVariantClasses()} rounded-2xl py-3 font-[600] text-sm sm:text-base md:text-xl px-3 sm:px-6 text-center inline-flex items-center justify-center gap-1 sm:gap-2 transition-class`;
   const disabledClasses = "opacity-50 cursor-not-allowed";
   const enabledClasses = "cursor-pointer";
 

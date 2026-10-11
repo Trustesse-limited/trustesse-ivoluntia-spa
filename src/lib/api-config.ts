@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
     volunteerSignup: buildApiEndpoint('Auth/volunteer-signup'),
     organizationSignup: buildApiEndpoint('Auth/organization-signup'),
     resetPassword: buildApiEndpoint('Auth/resetpassword'),
+    resetForgotPassword: buildApiEndpoint('Auth/resetforgotpassword'),
     changePassword: buildApiEndpoint('Auth/changepassword'),
     forgotPassword: buildApiEndpoint('Auth/forgotpassword'),
     twoFactorSetup: buildApiEndpoint('Auth/2fa-setup'),

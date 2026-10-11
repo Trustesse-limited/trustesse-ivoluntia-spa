@@ -143,7 +143,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ type }) => {
         confirmPassword: "",
       }));
 
-      router.push(`/verify?email=${encodeURIComponent(sanitizedEmail)}&type=${type}`);
+      router.push(`/verify?email=${encodeURIComponent(sanitizedEmail)}&purpose=Signup`);
     }
   };
 

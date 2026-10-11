@@ -31,6 +31,8 @@ import {
   Interest,
   Skill,
   CategoryApiResponse,
+  TwoFactorVerificationRequest,
+  TokenRefreshRequest,
 } from '@/types/api';
 import {
   getServerAccessToken,
@@ -43,7 +45,7 @@ import logger from '@/lib/logger';
 // Server-side only axios instance (cannot be used in client components)
 const serverAxiosInstance = axios.create({
   baseURL: process.env.API_BASE_URL,
-  timeout: 30000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -199,7 +201,7 @@ export async function verifyOtp(
   try {
     logger.log('[API] POST', API_ENDPOINTS.otp.verifyEmail);
     logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
-    
+
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.otp.verifyEmail,
       null,
@@ -209,10 +211,60 @@ export async function verifyOtp(
         },
       }
     );
-    
+
     logger.log('[API] Response Status:', response.status);
     logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
-    
+
+    return response.data;
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Verify 2FA Code (for super-admin and 2FA-enabled accounts)
+ * POST /api/v1/Auth/2fa-verify
+ */
+export async function verifyTwoFactor(
+  data: TwoFactorVerificationRequest
+): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.auth.twoFactorVerify);
+    logger.log('[API] Request Payload:', JSON.stringify(data, null, 2));
+
+    const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
+      API_ENDPOINTS.auth.twoFactorVerify,
+      data
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Refresh Token
+ * POST /api/v1/Auth/refresh-token
+ */
+export async function refreshToken(
+  data: TokenRefreshRequest
+): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.auth.refreshToken);
+    logger.log('[API] Request Payload:', { ...data, accessToken: '[REDACTED]', refreshToken: '[REDACTED]' });
+
+    const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
+      API_ENDPOINTS.auth.refreshToken,
+      data
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
     return response.data;
   } catch (error) {
     throw handleServerError(error);
@@ -348,6 +400,37 @@ export async function verifyResetPassword(
 }
 
 /**
+ * Reset Forgot Password
+ * POST /api/v1/Auth/resetforgotpassword
+ * Takes email as query parameter (public endpoint)
+ */
+export async function resetForgotPassword(
+  email: string
+): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.auth.resetForgotPassword);
+    logger.log('[API] Request Payload:', { email });
+
+    const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
+      API_ENDPOINTS.auth.resetForgotPassword,
+      null,
+      {
+        params: {
+          email: email,
+        },
+      }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
  * Reset Password
  * POST /api/v1/Auth/resetpassword
  * Takes email as query parameter
@@ -358,7 +441,7 @@ export async function resetPassword(
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.resetPassword);
     logger.log('[API] Request Payload:', { email });
-    
+
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.resetPassword,
       null,
@@ -368,10 +451,10 @@ export async function resetPassword(
         },
       }
     );
-    
+
     logger.log('[API] Response Status:', response.status);
     logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
-    
+
     return response.data;
   } catch (error) {
     throw handleServerError(error);

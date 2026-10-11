@@ -15,6 +15,8 @@ export interface AuthTokens {
 }
 
 export interface TokenRefreshRequest {
+  email: string;
+  accessToken: string;
   refreshToken: string;
 }
 
@@ -267,6 +269,20 @@ export interface OtpVerificationResponse {
   success: boolean;
   message?: string;
   isEmailVerified?: boolean;
+}
+
+// 2FA Verification Request
+// POST /api/v1/Auth/2fa-verify
+export interface TwoFactorVerificationRequest {
+  twoFactorAuthCode: string;
+  email: string;
+}
+
+// 2FA Verification Response
+export interface TwoFactorVerificationResponse {
+  success: boolean;
+  message?: string;
+  data?: unknown;
 }
 
 // Resend OTP Request

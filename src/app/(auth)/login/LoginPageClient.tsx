@@ -63,17 +63,16 @@ const LoginPageClient = () => {
     });
     
     if (result.success) {
-      const resultData = result as { redirect?: string; requiresOnboarding?: boolean; accountType?: string; lastCompletedPage?: number; hasCompletedOnboarding?: boolean; requiresTwoFactor?: boolean };
-      
-      if (resultData.requiresTwoFactor) {
-        if (resultData.redirect) {
-          router.push(resultData.redirect);
+      if (result.requiresTwoFactor) {
+        // Redirect to verify page with purpose=TwoFactorAuthenticationLogin for 2FA
+        if (result.email) {
+          router.push(`/verify?email=${encodeURIComponent(result.email)}&purpose=TwoFactorAuthenticationLogin`);
         }
         return;
       }
-      
-      if (resultData.redirect) {
-        router.push(resultData.redirect);
+
+      if (result.redirect) {
+        router.push(result.redirect);
         return;
       } else {
         const loginData = result.data as Record<string, unknown> | undefined;
@@ -113,24 +112,12 @@ const LoginPageClient = () => {
     const restoreRememberMe = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const emailFromUrl = urlParams.get('email');
-      const otpFromUrl = urlParams.get('otp');
-      const completeLogin = urlParams.get('completeLogin');
-      
+
       if (emailFromUrl) {
         setForm((prev) => ({ ...prev, email: emailFromUrl }));
-        
-        if (otpFromUrl && completeLogin === 'true') {
-          setForm((prev) => ({ ...prev, twoFactorCode: otpFromUrl }));
-          setTimeout(() => {
-            const formElement = document.querySelector('form') as HTMLFormElement;
-            if (formElement) {
-              formElement.requestSubmit();
-            }
-          }, 100);
-        }
         return;
       }
-      
+
       if (hasRememberMe()) {
         const { email, password } = await getRememberMe();
         if (email) {
