@@ -11,14 +11,20 @@ async function LoginPageServer() {
   const cookieStore = await cookies();
   const token = cookieStore.get('auth_token')?.value || cookieStore.get('access_token')?.value;
   const hasCompletedOnboarding = cookieStore.get('has_completed_onboarding')?.value === 'true';
-  const accountType = cookieStore.get('user_role')?.value;
-  
+  const rawAccountType = cookieStore.get('user_role')?.value;
+  // Normalize: "foundation" → "organization", super admin variants → "admin"
+  const accountType = rawAccountType === 'foundation'
+    ? 'organization'
+    : rawAccountType === 'super_admin' || rawAccountType === 'superadmin' || rawAccountType === 'Super Admin' || rawAccountType === 'SuperAdmin'
+      ? 'admin'
+      : rawAccountType;
+
   logger.log('=== LOGIN PAGE SERVER-SIDE AUTH CHECK ===');
   logger.log('Token exists:', !!token);
   logger.log('User Role:', accountType);
   logger.log('Has Completed Onboarding:', hasCompletedOnboarding);
   logger.log('========================================');
-  
+
   // If user is authenticated, redirect based on onboarding status
   if (token) {
     if (!hasCompletedOnboarding) {
@@ -35,7 +41,7 @@ async function LoginPageServer() {
       }
     }
   }
-  
+
   return <LoginPageClient />;
 }
 

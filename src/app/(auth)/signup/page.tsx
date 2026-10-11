@@ -1,39 +1,48 @@
-'use client';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import logger from '@/lib/logger';
+import SignupPageClient from './SignupPageClient';
 
-import { Suspense, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
-import SignupForm from '@/components/SignupForm';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+// Disable static generation to ensure fresh cookie reads
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-function SignupPageContent() {
-  const searchParams = useSearchParams();
-  const accountTypeRef = useRef<'volunteer' | 'organization' | null>(null);
-  
-  const accountType = searchParams.get('account') as 'volunteer' | 'organization' | null;
+async function SignupPageServer() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth_token')?.value || cookieStore.get('access_token')?.value;
+  const hasCompletedOnboarding = cookieStore.get('has_completed_onboarding')?.value === 'true';
+  const rawAccountType = cookieStore.get('user_role')?.value;
+  // Normalize: "foundation" → "organization", super admin variants → "admin"
+  const accountType = rawAccountType === 'foundation'
+    ? 'organization'
+    : rawAccountType === 'super_admin' || rawAccountType === 'superadmin' || rawAccountType === 'Super Admin' || rawAccountType === 'SuperAdmin'
+      ? 'admin'
+      : rawAccountType;
 
-  // Store account type in ref on first render
-  if (accountType && !accountTypeRef.current) {
-    accountTypeRef.current = accountType;
+  logger.log('=== SIGNUP PAGE SERVER-SIDE AUTH CHECK ===');
+  logger.log('Token exists:', !!token);
+  logger.log('User Role:', accountType);
+  logger.log('Has Completed Onboarding:', hasCompletedOnboarding);
+  logger.log('========================================');
+
+  // If user is authenticated, redirect based on onboarding status
+  if (token) {
+    if (!hasCompletedOnboarding) {
+      logger.log('Redirecting to onboarding (not completed)');
+      redirect('/onboarding');
+    } else {
+      logger.log('Redirecting to dashboard based on account type:', accountType);
+      if (accountType === 'volunteer') {
+        redirect('/home');
+      } else if (accountType === 'organization') {
+        redirect('/org/dashboard');
+      } else if (accountType === 'admin') {
+        redirect('/admin/dashboard');
+      }
+    }
   }
 
-  // Default to volunteer if no account type parameter
-  useEffect(() => {
-    if (!accountTypeRef.current) {
-      accountTypeRef.current = 'volunteer';
-    }
-  }, []);
-
-  const type = accountTypeRef.current === 'volunteer' || accountTypeRef.current === 'organization' 
-    ? accountTypeRef.current 
-    : 'volunteer'; // default to volunteer if invalid type
-
-  return <SignupForm type={type} />;
+  return <SignupPageClient />;
 }
 
-export default function SignupPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><LoadingSpinner size="xl" opacity={0.8} /></div>}>
-      <SignupPageContent />
-    </Suspense>
-  );
-}
+export default SignupPageServer;

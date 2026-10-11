@@ -73,21 +73,40 @@ function matchesRoute(pathname: string, routes: string[]): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Skip middleware for static files, API routes, and Next.js internals
+  if (
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon.ico') ||
+    pathname.includes('.')
+  ) {
+    return NextResponse.next();
+  }
+
   // Get token from cookies (check both auth_token and access_token)
   const token = request.cookies.get('auth_token')?.value || request.cookies.get('access_token')?.value;
   const hasCompletedOnboarding = request.cookies.get('has_completed_onboarding')?.value === 'true';
-  const accountType = normalizeRole(request.cookies.get('user_role')?.value);
+  const rawRole = request.cookies.get('user_role')?.value;
+  const accountType = normalizeRole(rawRole);
 
   logger.log('=== MIDDLEWARE ===');
   logger.log('Pathname:', pathname);
+  logger.log('Raw Role:', rawRole);
   logger.log('Auth Token exists:', !!token);
   logger.log('Normalized Role:', accountType || 'NONE');
   logger.log('Has Completed Onboarding:', hasCompletedOnboarding);
+  logger.log('Public Routes:', publicRoutes);
+  logger.log('Is Public Route:', matchesRoute(pathname, publicRoutes));
 
-  // 1. Public auth pages (login, signup, ...) are always reachable
-  if (matchesRoute(pathname, publicRoutes)) {
-    logger.log('ALLOWING: public route');
-    return NextResponse.next();
+  // 1. If user is authenticated and tries to access public auth pages, redirect to dashboard
+  if (token && matchesRoute(pathname, publicRoutes)) {
+    logger.log('REDIRECTING: authenticated user trying to access public auth page');
+    logger.log('Redirecting to:', accountType ? roleHome[accountType] : '/');
+    if (accountType) {
+      return NextResponse.redirect(new URL(roleHome[accountType], request.url));
+    }
+    // If authenticated but no recognizable role, redirect to landing page
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   const isProtected = matchesRoute(pathname, protectedRoutes);
@@ -177,14 +196,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - api routes
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Match all paths including auth pages
+    '/:path*',
   ],
 };
