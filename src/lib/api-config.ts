@@ -213,6 +213,12 @@ export const API_ENDPOINTS = {
   volunteers: {
     getByFoundation: buildApiEndpointNoVersion('Volunteers/get-volunteer-by-foundation-id'),
   },
+
+  // UserProfile endpoints (non-versioned)
+  userProfile: {
+    volunteerProfile: buildApiEndpointNoVersion('UserProfile/volunteer-profile'),
+    foundationProfile: buildApiEndpointNoVersion('UserProfile/foundation-profile'),
+  },
 } as const;
 
 /**

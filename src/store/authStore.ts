@@ -34,6 +34,7 @@ export interface User {
   updatedAt?: string;
   // Additional fields from userProfile
   userImage?: string | null;
+  logo?: string | null; // For organizations
   location?: string | null;
   bio?: string | null;
   skills?: string[];

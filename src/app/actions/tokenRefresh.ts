@@ -24,25 +24,25 @@ export async function refreshTokenAction(): Promise<{
   error?: string;
 }> {
   try {
-    // logger.log('[Server Action] refreshTokenAction called');
-    
+    logger.log('[TOKEN REFRESH ACTION] Starting token refresh');
+
     const newAccessToken = await refreshAccessToken();
-    
+
     if (!newAccessToken) {
-      // logger.log('[Server Action] refreshTokenAction failed - no token returned');
+      logger.log('[TOKEN REFRESH ACTION] Failed - no token returned');
       return {
         success: false,
         error: 'Failed to refresh access token',
       };
     }
-    
-    // logger.log('[Server Action] refreshTokenAction completed');
-    
+
+    logger.log('[TOKEN REFRESH ACTION] Completed successfully');
+
     return {
       success: true,
     };
   } catch (error) {
-    // logger.log('[Server Action] refreshTokenAction error:', error);
+    logger.log('[TOKEN REFRESH ACTION] Error:', error);
     return {
       success: false,
       error: 'Failed to refresh access token',

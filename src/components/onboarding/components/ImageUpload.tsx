@@ -45,11 +45,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     const isAllowedType =
       file.type === 'image/png' ||
       file.type === 'image/jpeg' ||
+      file.type === 'image/webp' ||
       file.type === 'image/heic' ||
       file.type === 'image/heif';
-    const hasAllowedExtension = /\.(png|jpe?g|heic|heif)$/i.test(file.name);
+    const hasAllowedExtension = /\.(png|jpe?g|webp|heic|heif)$/i.test(file.name);
     if (!isAllowedType && !(file.type === '' && hasAllowedExtension)) {
-      setError('Only PNG, JPEG, and HEIC files are allowed');
+      setError('Only PNG, JPEG, WebP, and HEIC files are allowed');
       return;
     }
 
@@ -222,7 +223,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
         {/* Max file size note - always at the bottom */}
         <p className="text-sm font-medium text-[#AEA9B1] text-center">
-          Max 10MB file size. PNG, JPEG, and HEIC files.
+          Max 10MB file size. PNG, JPEG, WebP, and HEIC files.
         </p>
         </div>
       </div>
@@ -230,7 +231,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       <Input
         id="photo"
         type="file"
-        accept="image/png, image/jpeg, image/heic, image/heif"
+        accept="image/png, image/jpeg, image/webp, image/heic, image/heif"
         onChange={handleFileChange}
         ref={fileInputRef}
         className="hidden"

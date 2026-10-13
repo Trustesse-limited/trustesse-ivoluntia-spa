@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { FiBell, FiMenu, FiX, FiLogOut } from "react-icons/fi";
-import Image from "next/image";
 import { SmartImage } from "@/components/SmartImage";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -98,6 +97,7 @@ export default function DashboardLayout({
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSessionExpiredModalOpen, setIsSessionExpiredModalOpen] = useState(false);
+  const [canRefreshSession, setCanRefreshSession] = useState(true);
   const pathname = usePathname();
   const { validateToken } = useAuthActions();
   const validationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -113,11 +113,28 @@ export default function DashboardLayout({
       try {
         const result = await validateToken();
         if (!result.isValid) {
+          // Check if refresh token is still valid
+          const refreshExpiration = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('refresh_token_expiration='))
+            ?.split('=')[1];
+
+          if (refreshExpiration) {
+            const expirationTime = parseInt(refreshExpiration);
+            const currentTime = Date.now();
+            const isRefreshTokenValid = currentTime < expirationTime;
+            setCanRefreshSession(isRefreshTokenValid);
+          } else {
+            // No refresh token expiry stored, assume it's valid
+            setCanRefreshSession(true);
+          }
+
           setIsSessionExpiredModalOpen(true);
         }
       } catch (error) {
         console.error("Failed to validate token:", error);
-        // If validation fails, show session expired modal
+        // If validation fails, show session expired modal but allow refresh
+        setCanRefreshSession(true);
         setIsSessionExpiredModalOpen(true);
       }
     };
@@ -145,6 +162,67 @@ export default function DashboardLayout({
   const { logout } = useAuthActions();
   const { user } = useAuthStore();
   const router = useRouter();
+
+  // Get organization logo with priority:
+  // 1. Auth store logo (from login response)
+  // 2. Auth store userImage
+  // 3. Onboarding local storage (for first-time users after completing onboarding)
+  const getOrganizationLogo = () => {
+    // First check auth store
+    if (user?.logo) return user.logo;
+    if (user?.userImage) return user.userImage;
+
+    // Then check onboarding local storage for organizations
+    if (user?.accountType === 'Organization' && typeof window !== 'undefined') {
+      const onboardingData = localStorage.getItem('onboarding-storage');
+      if (onboardingData) {
+        try {
+          const parsed = JSON.parse(onboardingData);
+          if (parsed.state?.formData?.orgData?.logo) {
+            return parsed.state.formData.orgData.logo;
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const organizationLogo = getOrganizationLogo();
+
+  // Get initials for avatar fallback
+  const getInitials = () => {
+    // For organizations, use organization name
+    if (user?.accountType === 'Organization') {
+      const name = user?.organizationName || user?.firstName;
+      if (name) {
+        const words = name.split(' ').filter(w => w.length > 0);
+        if (words.length >= 2) {
+          return (words[0][0] + words[1][0]).toUpperCase();
+        }
+        return name.slice(0, 2).toUpperCase();
+      }
+    }
+
+    // For volunteers, use first and last name
+    if (user?.firstName) {
+      if (user?.lastName) {
+        return (user.firstName[0] + user.lastName[0]).toUpperCase();
+      }
+      return user.firstName.slice(0, 2).toUpperCase();
+    }
+
+    // Fallback to email
+    if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase();
+    }
+
+    return 'UN';
+  };
+
+  const avatarInitials = getInitials();
 
   // Use provided nav links or default based on dashboard type
   const links = navLinks || getDefaultNavLinks(dashboardType);
@@ -384,10 +462,10 @@ export default function DashboardLayout({
                 
                 {/* Admin Profile */}
                 <div className="flex items-center px-2 py-1 rounded-xl bg-[#ECF6FE] gap-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300">
-                    {user?.userImage ? (
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600">
+                    {organizationLogo ? (
                       <SmartImage
-                        src={user.userImage}
+                        src={organizationLogo}
                         alt="Admin Avatar"
                         width={32}
                         height={32}
@@ -396,12 +474,7 @@ export default function DashboardLayout({
                         fallbackSrc="/images/Ellipse 1.png"
                       />
                     ) : (
-                      <Image
-                        src="/images/Ellipse 1.png"
-                        alt="Admin Avatar"
-                        width={32}
-                        height={32}
-                      />
+                      <span className="text-white text-xs font-semibold">{avatarInitials}</span>
                     )}
                   </div>
                   <span className="hidden sm:inline text-sm font-semibold bg-gradient-to-r from-[#9161FD] to-[#06A3DA] bg-clip-text text-transparent">
@@ -432,10 +505,10 @@ export default function DashboardLayout({
                 </div>
               )}
               <div className="flex items-center px-2 py-1 rounded-xl gap-2 bg-[#ECF6FE] ">
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300">
-                  {user?.userImage ? (
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600">
+                  {organizationLogo ? (
                     <SmartImage
-                      src={user.userImage}
+                      src={organizationLogo}
                       alt={`${displayUserType} Avatar`}
                       width={32}
                       height={32}
@@ -444,12 +517,7 @@ export default function DashboardLayout({
                       fallbackSrc="/images/Ellipse 1.png"
                     />
                   ) : (
-                    <Image
-                      src="/images/Ellipse 1.png"
-                      alt={`${displayUserType} Avatar`}
-                      width={32}
-                      height={32}
-                    />
+                    <span className="text-white text-xs font-semibold">{avatarInitials}</span>
                   )}
                 </div>
                 <span className="hidden md:inline text-sm font-semibold bg-gradient-to-r from-[#9161FD] to-[#06A3DA] bg-clip-text text-transparent">
@@ -484,6 +552,7 @@ export default function DashboardLayout({
       <SessionExpiredModal
         isOpen={isSessionExpiredModalOpen}
         onClose={() => setIsSessionExpiredModalOpen(false)}
+        canRefresh={canRefreshSession}
       />
     </div>
   );

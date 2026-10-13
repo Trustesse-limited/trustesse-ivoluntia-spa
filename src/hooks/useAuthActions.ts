@@ -34,6 +34,8 @@ import {
   organizationOnboardingAction,
   refreshTokenAction,
   validateTokenAction,
+  getVolunteerProfileAction,
+  getFoundationProfileAction,
 } from '@/app/actions/auth';
 import {
   VolunteerSignUpRequest,
@@ -416,6 +418,52 @@ export function useAuthActions() {
     }
   };
 
+  const getVolunteerProfile = async () => {
+    setIsLoading(true);
+    try {
+      const result = await getVolunteerProfileAction();
+      if (result.success) {
+        return { success: true, data: result.data, message: result.message };
+      } else {
+        showToast.error(result.error || 'Failed to fetch volunteer profile', {
+          duration: 4000,
+        });
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in getVolunteerProfile:', error);
+      showToast.error('Failed to fetch volunteer profile. Please try again.', {
+        duration: 4000,
+      });
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getFoundationProfile = async () => {
+    setIsLoading(true);
+    try {
+      const result = await getFoundationProfileAction();
+      if (result.success) {
+        return { success: true, data: result.data, message: result.message };
+      } else {
+        showToast.error(result.error || 'Failed to fetch foundation profile', {
+          duration: 4000,
+        });
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in getFoundationProfile:', error);
+      showToast.error('Failed to fetch foundation profile. Please try again.', {
+        duration: 4000,
+      });
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resendOtp = async (data: ResendOtpRequest) => {
     setIsLoading(true);
     try {
@@ -562,15 +610,14 @@ export function useAuthActions() {
             const userWithAccountType: User = {
               id: userProfile.email as string || '', // Use email as ID if not provided
               email: userProfile.email as string || '',
-              // For organizations, use firstName as org name (backend sends it there)
+              // For organizations, use foundationName from userProfile
               firstName: userProfile.firstName as string || '',
               lastName: userProfile.lastName as string || '',
               otherName: userProfile.otherName as string || '',
-              organizationName: normalizedAccountTypeForUser === 'Organization' 
-                ? (userProfile.firstName as string || undefined)
-                : undefined,
+              organizationName: loginData.organizationName as string || userProfile.foundationName as string || undefined,
               accountType: normalizedAccountTypeForUser,
               userImage: userProfile.userImage as string | null || null,
+              logo: loginData.organizationLogo as string || userProfile.logo as string | null || undefined,
               location: userProfile.city && userProfile.stateName ? `${userProfile.city}, ${userProfile.stateName}` : null,
               bio: userProfile.bio as string | null || null,
               skills: userProfile.skillNames as string[] || [],
@@ -1150,6 +1197,8 @@ export function useAuthActions() {
     verifyResetPassword,
     volunteerOnboarding,
     organizationOnboarding,
+    getVolunteerProfile,
+    getFoundationProfile,
     isLoading,
   };
 }

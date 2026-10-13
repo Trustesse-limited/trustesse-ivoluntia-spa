@@ -437,3 +437,61 @@ export interface Skill {
   name: string;
   description: string | null;
 }
+
+// UserProfile types
+export interface VolunteerProfile {
+  firstName: string | null;
+  lastName: string | null;
+  otherName: string | null;
+  email: string;
+  userImage: string | null;
+  role: string;
+  userType: string;
+  isActive: boolean;
+  hasTwoFactorEnabled: boolean;
+  lastLogin: string;
+  dateOfBirth: string | null;
+  gender: string | null;
+  address: string | null;
+  city: string | null;
+  zipCode: string | null;
+  countryName: string | null;
+  stateName: string | null;
+  interestNames: string[] | null;
+  skillNames: string[] | null;
+  bio: string | null;
+}
+
+export interface FoundationProfile {
+  firstName: string | null;
+  name: string;
+  lastName: string | null;
+  otherName: string | null;
+  email: string;
+  userImage: string | null;
+  role: string;
+  foundationName: string;
+  userType: string;
+  isActive: boolean;
+  hasTwoFactorEnabled: boolean;
+  lastLogin: string;
+  dateOfBirth: string | null;
+  gender: string | null;
+  address: string;
+  city: string;
+  foundationCity: string | null;
+  zipCode: string;
+  countryName: string;
+  stateName: string;
+  foundationCountry: string;
+  foundationState: string;
+  interestNames: string[] | null;
+  skillNames: string[] | null;
+  bio: string | null;
+  category: string;
+  website: string;
+  mission: string;
+  causeNames: string[] | null;
+  logo: string;
+  foundationAddress: string;
+}

@@ -18,6 +18,8 @@ import axios, { AxiosError } from 'axios';
 import {
   VolunteerSignUpRequest,
   OrganizationSignUpRequest,
+  VolunteerProfile,
+  FoundationProfile,
   OtpVerificationRequest,
   ResendOtpRequest,
   LoginRequestModel,
@@ -255,15 +257,15 @@ export async function refreshToken(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.refreshToken);
-    // logger.log('[API] Request Payload:', { ...data, accessToken: '[REDACTED]', refreshToken: '[REDACTED]' });
+    logger.log('[API] Request Payload:', { accessToken: data.accessToken ? 'present' : 'missing', accessTokenLength: data.accessToken?.length, refreshToken: data.refreshToken ? 'present' : 'missing', refreshTokenLength: data.refreshToken?.length });
 
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.refreshToken,
       data
     );
 
-    // logger.log('[API] Response Status:', response.status);
-    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
@@ -578,6 +580,60 @@ export async function organizationOnboarding(
 
     return response.data;
   } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get Volunteer Profile
+ * GET /api/UserProfile/volunteer-profile
+ */
+export async function getVolunteerProfile(): Promise<ApiResponse<VolunteerProfile>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.userProfile.volunteerProfile);
+    logger.log('[API] Checking auth token availability');
+
+    const token = await getServerAccessToken();
+    logger.log('[API] Token present:', !!token);
+    logger.log('[API] Token length:', token?.length);
+
+    const response = await serverAxiosInstance.get<ApiResponse<VolunteerProfile>>(
+      API_ENDPOINTS.userProfile.volunteerProfile
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    logger.error('[API] Error in getVolunteerProfile:', error);
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get Foundation Profile
+ * GET /api/UserProfile/foundation-profile
+ */
+export async function getFoundationProfile(): Promise<ApiResponse<FoundationProfile>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.userProfile.foundationProfile);
+    logger.log('[API] Checking auth token availability');
+
+    const token = await getServerAccessToken();
+    logger.log('[API] Token present:', !!token);
+    logger.log('[API] Token length:', token?.length);
+
+    const response = await serverAxiosInstance.get<ApiResponse<FoundationProfile>>(
+      API_ENDPOINTS.userProfile.foundationProfile
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    logger.error('[API] Error in getFoundationProfile:', error);
     throw handleServerError(error);
   }
 }

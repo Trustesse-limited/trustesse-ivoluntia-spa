@@ -21,6 +21,8 @@ import {
   getSkills,
   getCategories,
   uploadFile as uploadFileServer,
+  getVolunteerProfile,
+  getFoundationProfile,
 } from '@/lib/server-api';
 import { refreshToken } from '@/lib/server-api';
 import {
@@ -28,6 +30,8 @@ import {
   OrganizationSignUpRequest,
   OtpVerificationRequest,
   ResendOtpRequest,
+  VolunteerProfile,
+  FoundationProfile,
   LoginRequestModel,
   ApiResponse,
   ApiError,
@@ -308,7 +312,39 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 30, // 30 days
         });
-        // logger.log('[Server Action] Refresh token stored in cookie');
+
+        // Store refresh token expiration time
+        let refreshTokenExpiration: number | null = null;
+        if ('refreshTokenExpiresAt' in loginData && typeof loginData.refreshTokenExpiresAt === 'string') {
+          refreshTokenExpiration = new Date(loginData.refreshTokenExpiresAt).getTime();
+        } else if ('refreshTokenExpireMinutes' in loginData && typeof loginData.refreshTokenExpireMinutes === 'string') {
+          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireMinutes) * 60 * 1000);
+        } else if ('refreshTokenExpireSeconds' in loginData && typeof loginData.refreshTokenExpireSeconds === 'string') {
+          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireSeconds) * 1000);
+        }
+
+        if (refreshTokenExpiration) {
+          cookieStore.set('refresh_token_expiration', String(refreshTokenExpiration), {
+            httpOnly: false, // Client needs to read this
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+          });
+          logger.log('[2FA VERIFY ACTION] Refresh token expiration stored:', new Date(refreshTokenExpiration).toISOString());
+        }
+      }
+
+      // Store organization name and logo in login data for Zustand store
+      if ('userProfile' in loginData && loginData.userProfile) {
+        const userProfile = loginData.userProfile as Record<string, unknown>;
+        const organizationName = userProfile.foundationName as string | undefined;
+        const organizationLogo = userProfile.logo as string | undefined;
+
+        if (organizationName || organizationLogo) {
+          (loginData as Record<string, unknown>).organizationName = organizationName;
+          (loginData as Record<string, unknown>).organizationLogo = organizationLogo;
+          logger.log('[2FA VERIFY ACTION] Organization data extracted:', { organizationName, organizationLogo });
+        }
       }
 
       // Store user role in cookie (user_role for consistency)
@@ -319,6 +355,19 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 7, // 1 week
         });
+      }
+
+      // Store organization name and logo in login data for Zustand store
+      if ('userProfile' in loginData && loginData.userProfile) {
+        const userProfile = loginData.userProfile as Record<string, unknown>;
+        const organizationName = userProfile.foundationName as string | undefined;
+        const organizationLogo = userProfile.logo as string | undefined;
+
+        if (organizationName || organizationLogo) {
+          (loginData as Record<string, unknown>).organizationName = organizationName;
+          (loginData as Record<string, unknown>).organizationLogo = organizationLogo;
+          logger.log('[2FA VERIFY ACTION] Organization data extracted:', { organizationName, organizationLogo });
+        }
       }
 
       // Store onboarding status (has_completed_onboarding for consistency)
@@ -350,6 +399,49 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
           maxAge: 60 * 60 * 24 * 7, // 1 week
           path: '/',
         });
+      }
+
+      // Store refresh token
+      if ('refreshToken' in loginData && typeof loginData.refreshToken === 'string') {
+        cookieStore.set('refresh_token', loginData.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+        });
+
+        // Store refresh token expiration time
+        let refreshTokenExpiration: number | null = null;
+        if ('refreshTokenExpiresAt' in loginData && typeof loginData.refreshTokenExpiresAt === 'string') {
+          refreshTokenExpiration = new Date(loginData.refreshTokenExpiresAt).getTime();
+        } else if ('refreshTokenExpireMinutes' in loginData && typeof loginData.refreshTokenExpireMinutes === 'string') {
+          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireMinutes) * 60 * 1000);
+        } else if ('refreshTokenExpireSeconds' in loginData && typeof loginData.refreshTokenExpireSeconds === 'string') {
+          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireSeconds) * 1000);
+        }
+
+        if (refreshTokenExpiration) {
+          cookieStore.set('refresh_token_expiration', String(refreshTokenExpiration), {
+            httpOnly: false, // Client needs to read this
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+          });
+          logger.log('[2FA VERIFY ACTION] Refresh token expiration stored:', new Date(refreshTokenExpiration).toISOString());
+        }
+      }
+
+      // Store organization name and logo in login data for Zustand store
+      if ('userProfile' in loginData && loginData.userProfile) {
+        const userProfile = loginData.userProfile as Record<string, unknown>;
+        const organizationName = userProfile.foundationName as string | undefined;
+        const organizationLogo = userProfile.logo as string | undefined;
+
+        if (organizationName || organizationLogo) {
+          (loginData as Record<string, unknown>).organizationName = organizationName;
+          (loginData as Record<string, unknown>).organizationLogo = organizationLogo;
+          logger.log('[2FA VERIFY ACTION] Organization data extracted:', { organizationName, organizationLogo });
+        }
       }
 
       // Clean up old cookie names for consistency
@@ -469,7 +561,7 @@ export async function refreshTokenAction(): Promise<{
   errors?: Record<string, string[]> | unknown[];
 }> {
   try {
-    // logger.log('[Server Action] refreshTokenAction called');
+    logger.log('[REFRESH TOKEN ACTION] Starting token refresh');
 
     // Read tokens from cookies
     const cookieStore = await cookies();
@@ -477,7 +569,14 @@ export async function refreshTokenAction(): Promise<{
     const currentRefreshToken = cookieStore.get('refresh_token')?.value || cookieStore.get('refreshToken')?.value;
     const userEmail = cookieStore.get('userEmail')?.value;
 
+    logger.log('[REFRESH TOKEN ACTION] Access token present:', !!accessToken);
+    logger.log('[REFRESH TOKEN ACTION] Access token length:', accessToken?.length);
+    logger.log('[REFRESH TOKEN ACTION] Refresh token present:', !!currentRefreshToken);
+    logger.log('[REFRESH TOKEN ACTION] Refresh token length:', currentRefreshToken?.length);
+    logger.log('[REFRESH TOKEN ACTION] User email:', userEmail);
+
     if (!accessToken || !currentRefreshToken) {
+      logger.log('[REFRESH TOKEN ACTION] No active session found');
       return {
         success: false,
         error: 'No active session found. Please log in again.',
@@ -485,6 +584,7 @@ export async function refreshTokenAction(): Promise<{
     }
 
     if (!userEmail) {
+      logger.log('[REFRESH TOKEN ACTION] User email not found');
       return {
         success: false,
         error: 'User email not found. Please log in again.',
@@ -497,10 +597,9 @@ export async function refreshTokenAction(): Promise<{
       refreshToken: currentRefreshToken,
     };
 
+    logger.log('[REFRESH TOKEN ACTION] Calling API');
     const response: ApiResponse<unknown> = await refreshToken(sanitizedData);
-
-    // logger.log('[Server Action] refreshTokenAction completed');
-    // logger.log('[Server Action] Refresh Token Response Data:', JSON.stringify(response.data, null, 2));
+    logger.log('[REFRESH TOKEN ACTION] API Response:', response);
 
     // SECURITY: Store new tokens in HTTP-only cookies
     const tokenData = response.data as Record<string, unknown> | undefined;
@@ -545,7 +644,26 @@ export async function refreshTokenAction(): Promise<{
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 30, // 30 days
         });
-        // logger.log('[Server Action] New refresh token stored in cookie');
+
+        // Store refresh token expiration time
+        let refreshTokenExpiration: number | null = null;
+        if ('refreshTokenExpiresAt' in tokenData && typeof tokenData.refreshTokenExpiresAt === 'string') {
+          refreshTokenExpiration = new Date(tokenData.refreshTokenExpiresAt).getTime();
+        } else if ('refreshTokenExpireMinutes' in tokenData && typeof tokenData.refreshTokenExpireMinutes === 'string') {
+          refreshTokenExpiration = Date.now() + (parseInt(tokenData.refreshTokenExpireMinutes) * 60 * 1000);
+        } else if ('refreshTokenExpireSeconds' in tokenData && typeof tokenData.refreshTokenExpireSeconds === 'string') {
+          refreshTokenExpiration = Date.now() + (parseInt(tokenData.refreshTokenExpireSeconds) * 1000);
+        }
+
+        if (refreshTokenExpiration) {
+          cookieStore.set('refresh_token_expiration', String(refreshTokenExpiration), {
+            httpOnly: false, // Client needs to read this
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+          });
+          logger.log('[REFRESH TOKEN ACTION] Refresh token expiration stored:', new Date(refreshTokenExpiration).toISOString());
+        }
       }
 
       // Clean up old cookie names for consistency
@@ -562,14 +680,81 @@ export async function refreshTokenAction(): Promise<{
       message: response.message,
     };
   } catch (error) {
-    // logger.log('[Server Action] refreshTokenAction error:', error);
     const apiError = error as ApiError;
+    logger.log('[REFRESH TOKEN ACTION] API Error:', apiError);
+    logger.log('[REFRESH TOKEN ACTION] Error status:', apiError.status);
+    logger.log('[REFRESH TOKEN ACTION] Error message:', apiError.message);
+    logger.log('[REFRESH TOKEN ACTION] Error details:', JSON.stringify(apiError, null, 2));
 
     // Return the actual API error message
     return {
       success: false,
       error: apiError.message || 'Failed to refresh token',
       errors: apiError.errors,
+    };
+  }
+}
+
+/**
+ * Server Action for Get Volunteer Profile
+ * GET /api/UserProfile/volunteer-profile
+ */
+export async function getVolunteerProfileAction(): Promise<{
+  success: boolean;
+  data?: VolunteerProfile;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[VOLUNTEER PROFILE ACTION] Starting profile fetch');
+
+    const response = await getVolunteerProfile();
+    logger.log('[VOLUNTEER PROFILE ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[VOLUNTEER PROFILE ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch volunteer profile',
+    };
+  }
+}
+
+/**
+ * Server Action for Get Foundation Profile
+ * GET /api/UserProfile/foundation-profile
+ */
+export async function getFoundationProfileAction(): Promise<{
+  success: boolean;
+  data?: FoundationProfile;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[FOUNDATION PROFILE ACTION] Starting profile fetch');
+
+    const response = await getFoundationProfile();
+    logger.log('[FOUNDATION PROFILE ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[FOUNDATION PROFILE ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch foundation profile',
     };
   }
 }
@@ -701,7 +886,31 @@ export async function loginAction(data: LoginRequestModel): Promise<{
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 30, // 30 days
         });
+
+        // Store refresh token expiration time
+        let refreshTokenExpiration: number | null = null;
+        if ('refreshTokenExpiresAt' in loginData && typeof loginData.refreshTokenExpiresAt === 'string') {
+          refreshTokenExpiration = new Date(loginData.refreshTokenExpiresAt).getTime();
+        } else if ('refreshTokenExpireMinutes' in loginData && typeof loginData.refreshTokenExpireMinutes === 'string') {
+          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireMinutes) * 60 * 1000);
+        } else if ('refreshTokenExpireSeconds' in loginData && typeof loginData.refreshTokenExpireSeconds === 'string') {
+          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireSeconds) * 1000);
+        }
+
+        if (refreshTokenExpiration) {
+          cookieStore.set('refresh_token_expiration', String(refreshTokenExpiration), {
+            httpOnly: false, // Client needs to read this
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+          });
+          logger.log('[LOGIN ACTION] Refresh token expiration stored:', new Date(refreshTokenExpiration).toISOString());
+        }
       }
+
+
+
+
       
       // Store user role in cookie if available
       // Handle both "organization" and "foundation" as organization accounts
@@ -716,6 +925,8 @@ export async function loginAction(data: LoginRequestModel): Promise<{
           path: '/',
         });
       }
+
+
 
       // Store user email for token refresh
       if (sanitizedData.email) {
@@ -748,6 +959,19 @@ export async function loginAction(data: LoginRequestModel): Promise<{
           maxAge: 60 * 60 * 24 * 7, // 1 week
           path: '/',
         });
+      }
+
+      // Store organization name and logo in login data for Zustand store
+      if ('userProfile' in loginData && loginData.userProfile) {
+        const userProfile = loginData.userProfile as Record<string, unknown>;
+        const organizationName = userProfile.foundationName as string | undefined;
+        const organizationLogo = userProfile.logo as string | undefined;
+
+        if (organizationName || organizationLogo) {
+          (loginData as Record<string, unknown>).organizationName = organizationName;
+          (loginData as Record<string, unknown>).organizationLogo = organizationLogo;
+          logger.log('[LOGIN ACTION] Organization data extracted:', { organizationName, organizationLogo });
+        }
       }
       
       // logger.log('[Server Action] Returning loginData with extractedUserData:', (loginData as Record<string, unknown>).extractedUserData);

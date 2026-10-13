@@ -6,15 +6,37 @@ import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { organizationProjects } from "@/lib/mockData";
 import { useAuthStore } from "@/store";
-import { useOnboardingStore } from "@/store";
 
 
 export default function OrgDashboardPage() {
   const { user } = useAuthStore();
-  const { organizationData } = useOnboardingStore();
 
-  // Get organization name from onboarding store first, then auth store
-  const organizationName = organizationData?.formData?.orgData?.name || user?.organizationName || user?.firstName || 'Organization';
+  // Get organization name from multiple sources with priority:
+  // 1. Onboarding local storage (for first-time users after completing onboarding)
+  // 2. Auth store organizationName (from login response userProfile.foundationName)
+  // 3. Auth store firstName
+  // 4. Fallback to "Organization"
+  const getOrganizationName = () => {
+    // Check onboarding local storage first
+    if (typeof window !== 'undefined') {
+      const onboardingData = localStorage.getItem('onboarding-storage');
+      if (onboardingData) {
+        try {
+          const parsed = JSON.parse(onboardingData);
+          if (parsed.state?.formData?.orgData?.name) {
+            return parsed.state.formData.orgData.name;
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
+    // Fall back to auth store (industry standard - Zustand)
+    return user?.organizationName || user?.firstName || 'Organization';
+  };
+
+  const organizationName = getOrganizationName();
 
    {/* Mock data for statistics and pie chart */}
   const orgStats = [

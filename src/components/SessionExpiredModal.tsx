@@ -4,14 +4,30 @@ import { FiRefreshCw, FiLogOut } from "react-icons/fi";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from "react-hot-toast";
+
+// Helper function to prevent duplicate toasts
+const showToast: {
+  success: (message: string, options?: Parameters<typeof toast.success>[1]) => void;
+  error: (message: string, options?: Parameters<typeof toast.error>[1]) => void;
+} = {
+  success: (message: string, options?: Parameters<typeof toast.success>[1]) => {
+    toast.dismiss();
+    toast.success(message, options);
+  },
+  error: (message: string, options?: Parameters<typeof toast.error>[1]) => {
+    toast.dismiss();
+    toast.error(message, options);
+  },
+} as const;
 
 type SessionExpiredModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  canRefresh?: boolean; // Whether refresh token is still valid
 };
 
-export default function SessionExpiredModal({ isOpen, onClose }: SessionExpiredModalProps) {
+export default function SessionExpiredModal({ isOpen, onClose, canRefresh = true }: SessionExpiredModalProps) {
   const { refreshAccessToken, logout } = useAuthActions();
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -22,14 +38,14 @@ export default function SessionExpiredModal({ isOpen, onClose }: SessionExpiredM
     try {
       const result = await refreshAccessToken();
       if (result.success) {
-        toast.success("Session refreshed successfully!");
+        showToast.success("Session refreshed successfully!");
         onClose();
       } else {
-        toast.error(result.error || "Failed to refresh session");
+        showToast.error(result.error || "Failed to refresh session");
       }
     } catch (error) {
       console.error("Failed to refresh token:", error);
-      toast.error("Failed to refresh session");
+      showToast.error("Failed to refresh session");
     } finally {
       setIsRefreshing(false);
     }
@@ -56,21 +72,26 @@ export default function SessionExpiredModal({ isOpen, onClose }: SessionExpiredM
           Session Expired
         </h2>
         <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
-          Your session has expired. You can refresh your session to continue or log out.
+          {canRefresh 
+            ? "Your session has expired. You can refresh your session to continue or log out."
+            : "Your session has expired and your refresh token is also expired. Please log in again."
+          }
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex-1 flex items-center justify-center gap-2 py-2 sm:py-3 px-4 sm:px-6 bg-(--buttonPrimary) text-white text-sm sm:text-base font-semibold rounded-xl hover:opacity-90 transition-class disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FiRefreshCw className={isRefreshing ? "animate-spin" : ""} />
-            {isRefreshing ? "Refreshing..." : "Refresh Session"}
-          </button>
+        <div className="flex flex-col gap-3 sm:gap-4">
+          {canRefresh && (
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex-1 hover:cursor-pointer flex items-center justify-center gap-2 py-2 sm:py-3 px-4 sm:px-6 bg-(--buttonPrimary) text-white text-sm sm:text-base font-semibold rounded-xl hover:opacity-90 transition-class disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FiRefreshCw className={isRefreshing ? "animate-spin" : ""} />
+              {isRefreshing ? "Refreshing..." : "Refresh Session"}
+            </button>
+          )}
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="flex-1 flex items-center justify-center gap-2 py-2 sm:py-3 px-4 sm:px-6 bg-gray-200 text-gray-900 text-sm sm:text-base font-semibold rounded-xl hover:bg-gray-300 transition-class disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 hover:cursor-pointer flex items-center justify-center gap-2 py-2 sm:py-3 px-4 sm:px-6 bg-gray-200 text-gray-900 text-sm sm:text-base font-semibold rounded-xl hover:bg-gray-300 transition-class disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FiLogOut />
             {isLoggingOut ? "Signing Out..." : "Log Out"}
