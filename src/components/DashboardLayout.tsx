@@ -187,6 +187,21 @@ export default function DashboardLayout({
       }
     }
 
+    // Check onboarding local storage for volunteers
+    if (user?.accountType === 'Volunteer' && typeof window !== 'undefined') {
+      const onboardingData = localStorage.getItem('onboarding-storage');
+      if (onboardingData) {
+        try {
+          const parsed = JSON.parse(onboardingData);
+          if (parsed.state?.formData?.profileAndBioData?.profileImageurl) {
+            return parsed.state.formData.profileAndBioData.profileImageurl;
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
     return null;
   };
 
@@ -194,11 +209,48 @@ export default function DashboardLayout({
 
   // Get initials for avatar fallback
   const getInitials = () => {
+    // Check onboarding local storage first for name data
+    if (typeof window !== 'undefined') {
+      const onboardingData = localStorage.getItem('onboarding-storage');
+      if (onboardingData) {
+        try {
+          const parsed = JSON.parse(onboardingData);
+
+          // For organizations, use organization name from onboarding
+          if (user?.accountType === 'Organization' && parsed.state?.formData?.orgData?.name) {
+            const name = parsed.state.formData.orgData.name;
+            const words = name.split(' ').filter((w: string) => w.length > 0);
+            if (words.length >= 2) {
+              return (words[0][0] + words[1][0]).toUpperCase();
+            }
+            return name.slice(0, 2).toUpperCase();
+          }
+
+          // For volunteers, use name from onboarding
+          if (user?.accountType === 'Volunteer' && parsed.state?.formData?.bioData) {
+            const bioData = parsed.state.formData.bioData;
+            const firstName = bioData.firstName;
+            const lastName = bioData.lastName;
+
+            if (firstName && lastName) {
+              return (firstName[0] + lastName[0]).toUpperCase();
+            }
+            if (firstName) {
+              return firstName.slice(0, 2).toUpperCase();
+            }
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
+    // Fall back to auth store data
     // For organizations, use organization name
     if (user?.accountType === 'Organization') {
       const name = user?.organizationName || user?.firstName;
       if (name) {
-        const words = name.split(' ').filter(w => w.length > 0);
+        const words = name.split(' ').filter((w: string) => w.length > 0);
         if (words.length >= 2) {
           return (words[0][0] + words[1][0]).toUpperCase();
         }
@@ -206,7 +258,7 @@ export default function DashboardLayout({
       }
     }
 
-    // For volunteers, use first and last name
+    // For volunteers, use first and last name from auth store
     if (user?.firstName) {
       if (user?.lastName) {
         return (user.firstName[0] + user.lastName[0]).toUpperCase();
@@ -214,7 +266,7 @@ export default function DashboardLayout({
       return user.firstName.slice(0, 2).toUpperCase();
     }
 
-    // Fallback to email
+    // Final fallback to email
     if (user?.email) {
       return user.email.slice(0, 2).toUpperCase();
     }

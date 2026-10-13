@@ -92,7 +92,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
               <Button
                 onClick={onBack}
                 variant="outline"
-                className="lg:w-40 flex items-center justify-center w-1/2 text-sm sm:text-base relative font-semibold h-10 sm:h-12 text-[#0E68DC] z-10 border border-[#0E68DC] px-2 sm:px-4"
+                className="lg:w-40 flex items-center justify-center w-1/2 text-sm sm:text-base relative font-semibold h-10 sm:h-12 text-[#0E68DC] z-10 border border-[#0E68DC] px-2 sm:px-4 bg-white/25 backdrop-blur-md shadow-lg"
               >
                 <Image
                   src="/icons/arrow-left.svg"
