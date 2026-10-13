@@ -27,6 +27,7 @@ const Page = () => {
     const { forgotPassword, isLoading } = useAuthActions();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const hasExtractedParams = React.useRef(false);
 
     const [form, setForm] = useState({
         newPassword: "",
@@ -70,6 +71,8 @@ const Page = () => {
 
     // Get email and token from URL parameters on mount
     useEffect(() => {
+        if (hasExtractedParams.current) return;
+
         const emailParam = searchParams.get('email');
         const tokenParam = searchParams.get('token');
 
@@ -81,6 +84,10 @@ const Page = () => {
 
         setEmail(emailParam);
         setToken(tokenParam);
+        hasExtractedParams.current = true;
+
+        // Clear the URL parameters to prevent sharing/reuse
+        router.replace('/resetpassword', { scroll: false });
     }, [searchParams, router]);
 
     const isFormValid = form.newPassword.trim() !== "" && 
