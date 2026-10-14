@@ -16,7 +16,7 @@ export default function LogoutModal({ isOpen, onClose, onConfirm, isLoading }: L
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} closeable={!isLoading}>
       <div className="text-center py-4 px-2 sm:px-4">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">Sign out of your account?</h2>
         <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">This will end your current session.</p>

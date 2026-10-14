@@ -302,7 +302,9 @@ export default function DashboardLayout({
   };
 
   const handleLogoutCancel = () => {
-    setIsLogoutModalOpen(false);
+    if (!isLoggingOut) {
+      setIsLogoutModalOpen(false);
+    }
   };
 
   const isAdmin = dashboardType === 'admin';
