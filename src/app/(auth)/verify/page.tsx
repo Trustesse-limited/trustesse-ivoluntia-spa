@@ -37,14 +37,15 @@ function VerifyContent() {
   const [canResend, setCanResend] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [paramsProcessed, setParamsProcessed] = useState(false);
   const emailRef = React.useRef<string | null>(null);
   const purposeRef = React.useRef<string | null>(null);
   const hasAutoResendedRef = React.useRef(false);
   const isAutoResendRef = React.useRef(false);
 
   const handleResendOtp = useCallback(async () => {
-    const emailToUse = email || emailRef.current;
-    const purposeToUse = purpose || purposeRef.current || 'Signup';
+    const emailToUse = emailRef.current;
+    const purposeToUse = purposeRef.current || 'Signup';
     if (!emailToUse) {
       showToast.error('Email is missing. Please go back to signup.');
       return;
@@ -102,43 +103,55 @@ function VerifyContent() {
       setCountdown(30);
       setCanResend(false);
     }
-  }, [email, purpose, resendOtp]);
+  }, [resendOtp]);
 
   useEffect(() => {
+    // Only process params once
+    if (paramsProcessed) {
+      console.log('[VERIFY PAGE] Params already processed, skipping');
+      return;
+    }
+
     const emailParam = searchParams.get('email');
     const purposeParam = searchParams.get('purpose');
     const resendParam = searchParams.get('resend');
 
-    // Redirect to login if email parameter is missing AND not already stored in ref
-    if (!emailParam && !emailRef.current) {
+    console.log('[VERIFY PAGE] Processing params:', { emailParam, purposeParam, resendParam });
+
+    // Redirect to login if email parameter is missing
+    if (!emailParam) {
+      console.log('[VERIFY PAGE] No email param, redirecting to login');
       router.push('/login');
       return;
     }
 
-    // Store params in ref on first render only
-    if (emailParam && !emailRef.current) {
-      emailRef.current = sanitizeEmail(emailParam);
-      setEmail(emailRef.current);
-    }
-    if (purposeParam && !purposeRef.current) {
-      purposeRef.current = purposeParam;
-      setPurpose(purposeRef.current);
-    }
+    // Store params in state and refs
+    const sanitizedEmail = sanitizeEmail(emailParam);
+    emailRef.current = sanitizedEmail;
+    setEmail(sanitizedEmail);
+
+    const purposeValue = purposeParam || 'Signup';
+    purposeRef.current = purposeValue;
+    setPurpose(purposeValue);
+
+    console.log('[VERIFY PAGE] Stored params:', { email: sanitizedEmail, purpose: purposeValue });
+
+    // Mark params as processed
+    setParamsProcessed(true);
 
     // Auto-resend OTP if resend param is present and hasn't been done yet
     // Only auto-resend for Signup purpose, not for TwoFactorAuthenticationLogin (2FA code is already sent by login API)
-    if (resendParam === 'true' && emailRef.current && !hasAutoResendedRef.current && purposeRef.current !== 'TwoFactorAuthenticationLogin') {
+    if (resendParam === 'true' && !hasAutoResendedRef.current && purposeValue !== 'TwoFactorAuthenticationLogin') {
+      console.log('[VERIFY PAGE] Auto-resending OTP');
       hasAutoResendedRef.current = true;
       isAutoResendRef.current = true;
       handleResendOtp();
     }
 
     // Clean URL by removing query parameters after reading them
-    // Only do this once after params are stored
-    if ((emailParam || purposeParam || resendParam) && emailRef.current && purposeRef.current) {
-      router.replace('/verify');
-    }
-  }, [searchParams, router, handleResendOtp]);
+    console.log('[VERIFY PAGE] Cleaning URL');
+    router.replace('/verify');
+  }, [searchParams, router, handleResendOtp, paramsProcessed]);
 
   // Countdown timer for resend button
   useEffect(() => {
@@ -163,18 +176,20 @@ function VerifyContent() {
     }
 
     const otpToVerify = otpValue || otp;
+    const emailToUse = emailRef.current || email;
+    const purposeToUse = purposeRef.current || purpose;
 
     console.log('[VERIFY PAGE] handleVerify called');
     console.log('[VERIFY PAGE] OTP:', otpToVerify);
-    console.log('[VERIFY PAGE] Purpose:', purpose);
-    console.log('[VERIFY PAGE] Email:', email);
+    console.log('[VERIFY PAGE] Purpose:', purposeToUse);
+    console.log('[VERIFY PAGE] Email:', emailToUse);
 
     if (!otpToVerify || otpToVerify.length !== 6) {
       showToast.error('Please enter a valid 6-digit OTP');
       return;
     }
 
-    if (!email) {
+    if (!emailToUse) {
       showToast.error('Email is missing. Please go back to signup.');
       return;
     }
@@ -182,13 +197,13 @@ function VerifyContent() {
     setIsVerifying(true);
 
     let result;
-    if (purpose === 'TwoFactorAuthenticationLogin') {
+    if (purposeToUse === 'TwoFactorAuthenticationLogin') {
       // Use 2FA verify endpoint for super-admin and 2FA-enabled accounts
       result = await verifyTwoFactor({
         twoFactorAuthCode: otpToVerify,
-        email: email,
+        email: emailToUse,
       });
-    } else if (purpose === 'ForgotPassword') {
+    } else if (purposeToUse === 'ForgotPassword') {
       // Use forgot password OTP verify endpoint
       console.log('[VERIFY PAGE] Calling verifyForgotPasswordOtp');
       result = await verifyForgotPasswordOtp(otpToVerify);
@@ -197,7 +212,7 @@ function VerifyContent() {
         // Pass token as URL parameter to reset password page
         toast.dismiss();
         showToast.success('OTP verified successfully!');
-        router.push(`/resetpassword?email=${encodeURIComponent(email)}&token=${encodeURIComponent(result.token)}`);
+        router.push(`/resetpassword?email=${encodeURIComponent(emailToUse)}&token=${encodeURIComponent(result.token)}`);
         setIsVerifying(false);
         return;
       } else {
@@ -207,7 +222,7 @@ function VerifyContent() {
         setIsVerifying(false);
         return;
       }
-    } else if (purpose === 'PasswordReset') {
+    } else if (purposeToUse === 'PasswordReset') {
       // Use reset password OTP verify endpoint
       console.log('[VERIFY PAGE] Calling verifyResetPasswordOtp');
       result = await verifyResetPasswordOtp(otpToVerify);
@@ -216,7 +231,7 @@ function VerifyContent() {
         // Pass token as URL parameter to reset password page
         toast.dismiss();
         showToast.success('OTP verified successfully!');
-        router.push(`/resetpassword?email=${encodeURIComponent(email)}&token=${encodeURIComponent(result.token)}`);
+        router.push(`/resetpassword?email=${encodeURIComponent(emailToUse)}&token=${encodeURIComponent(result.token)}`);
         setIsVerifying(false);
         return;
       } else {
@@ -236,7 +251,7 @@ function VerifyContent() {
     if (result.success) {
       showToast.success('OTP verified successfully!');
       // Redirect based on purpose
-      if (purpose === 'TwoFactorAuthenticationLogin') {
+      if (purposeToUse === 'TwoFactorAuthenticationLogin') {
         // For login 2FA, the server action returns a redirect URL
         if ('redirect' in result && result.redirect) {
           router.push(result.redirect);
