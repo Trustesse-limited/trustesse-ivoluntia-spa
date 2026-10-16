@@ -35,7 +35,10 @@ const PUBLIC_ENDPOINTS = [
   API_ENDPOINTS.otp.resend,
   API_ENDPOINTS.auth.login,
   API_ENDPOINTS.auth.resetPassword,
+  API_ENDPOINTS.auth.resetForgotPassword,
   API_ENDPOINTS.auth.forgotPassword,
+  API_ENDPOINTS.otp.verifyForgotPassword,
+  API_ENDPOINTS.otp.verifyResetPassword,
   '/api/v1/countries/countries',
   '/api/v1/countries/states',
 ];
@@ -55,7 +58,7 @@ export async function getServerAccessToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
     return cookieStore.get(AUTH_TOKEN_COOKIE)?.value || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -67,7 +70,7 @@ export async function getServerRefreshToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
     return cookieStore.get(REFRESH_TOKEN_COOKIE)?.value || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -87,26 +90,31 @@ export function getAuthHeader(token: string | null): Record<string, string> {
 
 /**
  * Validate if a token looks like a JWT (basic format check)
+ * Note: ASP.NET Core Data Protection tokens are encrypted and don't follow JWT format
+ * For encrypted tokens, we assume they're valid if they exist
  */
 export function isValidJwtFormat(token: string): boolean {
   // JWT should have 3 parts separated by dots
-  const parts = token.split('.');
-  return parts.length === 3;
+  // However, ASP.NET Core Data Protection tokens are encrypted and don't follow this format
+  // We'll accept any non-empty token as valid format
+  return Boolean(token && token.length > 0);
 }
 
 /**
  * Decode JWT payload (without verification - for inspection only)
  * Never use this for security decisions
+ * Note: This will fail for ASP.NET Core Data Protection tokens (encrypted)
  */
 export function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split('.');
-    if (parts.length !== 3) return null;
+    if (parts.length !== 3) return null; // Not a JWT format
     
     const payload = parts[1];
     const decoded = atob(payload);
     return JSON.parse(decoded);
-  } catch (error) {
+  } catch {
+    // Fails for encrypted tokens (ASP.NET Core Data Protection)
     return null;
   }
 }
@@ -114,11 +122,12 @@ export function decodeJwtPayload(token: string): Record<string, unknown> | null 
 /**
  * Check if token is expired (based on exp claim)
  * Returns true if expired or invalid, false if valid
+ * Note: For encrypted tokens that can't be decoded, this returns false (assumes valid)
  */
 export function isTokenExpired(token: string): boolean {
   try {
     const payload = decodeJwtPayload(token);
-    if (!payload) return true;
+    if (!payload) return false; // Can't decode (encrypted token), assume valid
     
     const exp = payload.exp as number | undefined;
     if (!exp) return false; // No exp claim, assume valid
@@ -126,11 +135,11 @@ export function isTokenExpired(token: string): boolean {
     // Convert exp to milliseconds and compare with current time
     const expirationTime = exp * 1000;
     const currentTime = Date.now();
-    
+
     // Add 30 second buffer to account for clock skew
     return currentTime >= (expirationTime - 30000);
-  } catch (error) {
-    return true; // Assume expired on error
+  } catch {
+    return false; // Assume valid on error for encrypted tokens
   }
 }
 
@@ -145,12 +154,12 @@ export function getTokenTimeToExpiry(token: string): number {
     
     const exp = payload.exp as number | undefined;
     if (!exp) return -1;
-    
+
     const expirationTime = exp * 1000;
     const currentTime = Date.now();
-    
+
     return Math.floor((expirationTime - currentTime) / 1000);
-  } catch (error) {
+  } catch {
     return -1;
   }
 }
@@ -174,7 +183,7 @@ export async function clearServerTokens(): Promise<void> {
     const cookieStore = await cookies();
     cookieStore.delete(AUTH_TOKEN_COOKIE);
     cookieStore.delete(REFRESH_TOKEN_COOKIE);
-  } catch (error) {
+  } catch {
     // Silently handle errors
   }
 }
@@ -270,7 +279,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     }
     
     return data.accessToken;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

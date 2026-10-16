@@ -6,9 +6,10 @@ type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
+  closeable?: boolean;
 };
 
-export default function Modal({ isOpen, onClose, children }: ModalProps) {
+export default function Modal({ isOpen, onClose, children, closeable = true }: ModalProps) {
   return (
     <>
       {/* Backdrop */}
@@ -20,7 +21,7 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={onClose}
+            onClick={closeable ? onClose : undefined}
           />
         )}
       </AnimatePresence>
@@ -34,10 +35,10 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            onClick={onClose}
+            onClick={closeable ? onClose : undefined}
           >
             <div
-              className="bg-white rounded-[8px] shadow-xl max-w-sm w-full p-4 relative z-50"
+              className="bg-white rounded-xl shadow-xl max-w-sm w-full p-4 relative z-50"
               onClick={(e) => e.stopPropagation()}
             >
               {children}

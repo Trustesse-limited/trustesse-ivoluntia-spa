@@ -2,18 +2,41 @@
 
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+
+// Helper function to prevent duplicate toasts
+const showToast: {
+  success: (message: string, options?: Parameters<typeof toast.success>[1]) => void;
+  error: (message: string, options?: Parameters<typeof toast.error>[1]) => void;
+} = {
+  success: (message: string, options?: Parameters<typeof toast.success>[1]) => {
+    toast.dismiss();
+    toast.success(message, options);
+  },
+  error: (message: string, options?: Parameters<typeof toast.error>[1]) => {
+    toast.dismiss();
+    toast.error(message, options);
+  },
+};
+
 import {
   volunteerSignUpAction,
   organizationSignUpAction,
   verifyOtpAction,
+  verifyTwoFactorAction,
   resendOtpAction,
   loginAction,
   logoutAction as authLogoutAction,
   forgotPasswordAction,
   resetPasswordAction,
+  verifyForgotPasswordOtpAction,
+  verifyResetPasswordOtpAction,
   verifyResetPasswordAction,
   volunteerOnboardingAction,
   organizationOnboardingAction,
+  refreshTokenAction,
+  validateTokenAction,
+  getVolunteerProfileAction,
+  getFoundationProfileAction,
 } from '@/app/actions/auth';
 import {
   VolunteerSignUpRequest,
@@ -23,10 +46,10 @@ import {
   LoginRequestModel,
   VolunteerOnboardingRequest,
   OrganizationOnboardingRequest,
+  TwoFactorVerificationRequest,
 } from '@/types/api';
 import { useAuthStore, useOnboardingStore } from '@/store';
 import type { User, UserRole } from '@/store/authStore';
-import logger from '@/lib/logger';
 
 interface LoginDataWithExtractedUser {
   userProfile?: User;
@@ -58,6 +81,18 @@ export interface EnhancedLoginResult {
   hasCompletedOnboarding?: boolean;
   requiresVerification?: boolean;
   emailForVerification?: string;
+  requiresTwoFactor?: boolean;
+  email?: string;
+  errors?: Record<string, string[]> | unknown[];
+}
+
+export interface TwoFactorVerifyResult {
+  success: boolean;
+  data?: unknown;
+  message?: string;
+  error?: string;
+  errors?: Record<string, string[]> | unknown[];
+  redirect?: string;
 }
 
 export function useAuthActions() {
@@ -76,7 +111,7 @@ export function useAuthActions() {
         clearOnboarding(data.email);
         
         // Display the backend success message if available, otherwise fallback
-        toast.success(result.message || 'Volunteer registration successful!', {
+        showToast.success(result.message || 'Volunteer registration successful!', {
           duration: 3000,
         });
         return { success: true, data: result.data, message: result.message };
@@ -92,13 +127,13 @@ export function useAuthActions() {
             ? errors.filter((e): e is string => typeof e === 'string')
             : Object.values(errors).flat();
           errorMessages.forEach((message) => {
-            toast.error(message, {
+            showToast.error(message, {
               duration: 4000,
             });
           });
         } else {
           // Show the actual API error message
-          toast.error(result.error || 'Registration failed. Please try again.', {
+          showToast.error(result.error || 'Registration failed. Please try again.', {
             duration: 4000,
           });
         }
@@ -109,20 +144,20 @@ export function useAuthActions() {
       // Check if this is a network/system error vs API error
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('.next')) {
-          toast.error('Application error: Please refresh the page and try again.', {
+          showToast.error('Application error: Please refresh the page and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
-          toast.error('Request timed out. Please check your connection and try again.', {
+          showToast.error('Request timed out. Please check your connection and try again.', {
             duration: 5000,
           });
         } else {
-          toast.error('An unexpected error occurred during registration. Please try again.', {
+          showToast.error('An unexpected error occurred during registration. Please try again.', {
             duration: 5000,
           });
         }
       } else {
-        toast.error('An unexpected error occurred during registration. Please try again.', {
+        showToast.error('An unexpected error occurred during registration. Please try again.', {
           duration: 5000,
         });
       }
@@ -143,7 +178,7 @@ export function useAuthActions() {
         clearOnboarding(data.email);
         
         // Display the backend success message if available, otherwise fallback
-        toast.success(result.message || 'Organization registration successful!', {
+        showToast.success(result.message || 'Organization registration successful!', {
           duration: 3000,
         });
         return { success: true, data: result.data, message: result.message };
@@ -159,13 +194,13 @@ export function useAuthActions() {
             ? errors.filter((e): e is string => typeof e === 'string')
             : Object.values(errors).flat();
           errorMessages.forEach((message) => {
-            toast.error(message, {
+            showToast.error(message, {
               duration: 4000,
             });
           });
         } else {
           // Show the actual API error message
-          toast.error(result.error || 'Registration failed. Please try again.', {
+          showToast.error(result.error || 'Registration failed. Please try again.', {
             duration: 4000,
           });
         }
@@ -176,20 +211,20 @@ export function useAuthActions() {
       // Check if this is a network/system error vs API error
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('.next')) {
-          toast.error('Application error: Please refresh the page and try again.', {
+          showToast.error('Application error: Please refresh the page and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
-          toast.error('Request timed out. Please check your connection and try again.', {
+          showToast.error('Request timed out. Please check your connection and try again.', {
             duration: 5000,
           });
         } else {
-          toast.error('An unexpected error occurred during registration. Please try again.', {
+          showToast.error('An unexpected error occurred during registration. Please try again.', {
             duration: 5000,
           });
         }
       } else {
-        toast.error('An unexpected error occurred during registration. Please try again.', {
+        showToast.error('An unexpected error occurred during registration. Please try again.', {
           duration: 5000,
         });
       }
@@ -205,10 +240,7 @@ export function useAuthActions() {
       const result = await verifyOtpAction(data);
 
       if (result.success) {
-        // Display the backend success message if available, otherwise fallback
-        toast.success(result.message || 'OTP verified successfully!', {
-          duration: 3000,
-        });
+        // Don't show toast here - let the calling component handle it
         return { success: true, data: result.data, message: result.message };
       } else {
         // Handle validation errors - only when there are actual error entries
@@ -222,13 +254,13 @@ export function useAuthActions() {
             ? errors.filter((e): e is string => typeof e === 'string')
             : Object.values(errors).flat();
           errorMessages.forEach((message) => {
-            toast.error(message, {
+            showToast.error(message, {
               duration: 4000,
             });
           });
         } else {
           // Show the actual API error message
-          toast.error(result.error || 'OTP verification failed. Please try again.', {
+          showToast.error(result.error || 'OTP verification failed. Please try again.', {
             duration: 4000,
           });
         }
@@ -239,20 +271,20 @@ export function useAuthActions() {
       // Check if this is a network/system error vs API error
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('.next')) {
-          toast.error('Application error: Please refresh the page and try again.', {
+          showToast.error('Application error: Please refresh the page and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
-          toast.error('Request timed out. Please check your connection and try again.', {
+          showToast.error('Request timed out. Please check your connection and try again.', {
             duration: 5000,
           });
         } else {
-          toast.error('An unexpected error occurred during OTP verification. Please try again.', {
+          showToast.error('An unexpected error occurred during OTP verification. Please try again.', {
             duration: 5000,
           });
         }
       } else {
-        toast.error('An unexpected error occurred during OTP verification. Please try again.', {
+        showToast.error('An unexpected error occurred during OTP verification. Please try again.', {
           duration: 5000,
         });
       }
@@ -262,16 +294,182 @@ export function useAuthActions() {
     }
   };
 
-  const resendOtp = async (data: ResendOtpRequest) => {
+  const verifyTwoFactor = async (data: TwoFactorVerificationRequest): Promise<TwoFactorVerifyResult> => {
     setIsLoading(true);
     try {
-      const result = await resendOtpAction(data);
+      const result = await verifyTwoFactorAction(data);
 
       if (result.success) {
         // Display the backend success message if available, otherwise fallback
-        toast.success(result.message || 'OTP resent successfully!', {
+        showToast.success(result.message || '2FA verified successfully!', {
           duration: 3000,
         });
+        return { success: true, data: result.data, message: result.message, redirect: result.redirect };
+      } else {
+        // Handle validation errors - only when there are actual error entries
+        const hasValidationErrors = result.errors && (
+          (Array.isArray(result.errors) && result.errors.length > 0) ||
+          (!Array.isArray(result.errors) && Object.keys(result.errors).length > 0)
+        );
+        if (hasValidationErrors) {
+          const errors = result.errors!;
+          const errorMessages = Array.isArray(errors)
+            ? errors.filter((e): e is string => typeof e === 'string')
+            : Object.values(errors).flat();
+          errorMessages.forEach((message) => {
+            showToast.error(message, {
+              duration: 4000,
+            });
+          });
+        } else {
+          // Show the actual API error message
+          showToast.error(result.error || '2FA verification failed. Please try again.', {
+            duration: 4000,
+          });
+        }
+        return { success: false, error: result.error, errors: result.errors };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in verifyTwoFactor:', error);
+      // Check if this is a network/system error vs API error
+      if (error instanceof Error) {
+        if (error.message.includes('ENOENT') || error.message.includes('.next')) {
+          showToast.error('Application error: Please refresh the page and try again.', {
+            duration: 5000,
+          });
+        } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
+          showToast.error('Request timed out. Please check your connection and try again.', {
+            duration: 5000,
+          });
+        } else {
+          showToast.error('An unexpected error occurred during 2FA verification. Please try again.', {
+            duration: 5000,
+          });
+        }
+      } else {
+        showToast.error('An unexpected error occurred during 2FA verification. Please try again.', {
+          duration: 5000,
+        });
+      }
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshAccessToken = async () => {
+    setIsLoading(true);
+    try {
+      const result = await refreshTokenAction();
+
+      if (result.success) {
+        // Display the backend success message if available, otherwise fallback
+        showToast.success(result.message || 'Token refreshed successfully!', {
+          duration: 3000,
+        });
+        return { success: true, data: result.data, message: result.message };
+      } else {
+        // Show the actual API error message
+        showToast.error(result.error || 'Token refresh failed. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: result.error, errors: result.errors };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in refreshAccessToken:', error);
+      // Check if this is a network/system error vs API error
+      if (error instanceof Error) {
+        if (error.message.includes('ENOENT') || error.message.includes('.next')) {
+          showToast.error('Application error: Please refresh the page and try again.', {
+            duration: 5000,
+          });
+        } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
+          showToast.error('Request timed out. Please check your connection and try again.', {
+            duration: 5000,
+          });
+        } else {
+          showToast.error('An unexpected error occurred during token refresh. Please try again.', {
+            duration: 5000,
+          });
+        }
+      } else {
+        showToast.error('An unexpected error occurred during token refresh. Please try again.', {
+          duration: 5000,
+        });
+      }
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const validateToken = async () => {
+    try {
+      const result = await validateTokenAction();
+      return result;
+    } catch (error) {
+      console.error('useAuthActions: Error caught in validateToken:', error);
+      return {
+        success: true,
+        isValid: false,
+      };
+    }
+  };
+
+  const getVolunteerProfile = async () => {
+    setIsLoading(true);
+    try {
+      const result = await getVolunteerProfileAction();
+      if (result.success) {
+        return { success: true, data: result.data, message: result.message };
+      } else {
+        showToast.error(result.error || 'Failed to fetch volunteer profile', {
+          duration: 4000,
+        });
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in getVolunteerProfile:', error);
+      showToast.error('Failed to fetch volunteer profile. Please try again.', {
+        duration: 4000,
+      });
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getFoundationProfile = async () => {
+    setIsLoading(true);
+    try {
+      const result = await getFoundationProfileAction();
+      if (result.success) {
+        return { success: true, data: result.data, message: result.message };
+      } else {
+        showToast.error(result.error || 'Failed to fetch foundation profile', {
+          duration: 4000,
+        });
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('useAuthActions: Error caught in getFoundationProfile:', error);
+      showToast.error('Failed to fetch foundation profile. Please try again.', {
+        duration: 4000,
+      });
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendOtp = async (data: ResendOtpRequest) => {
+    setIsLoading(true);
+    try {
+      console.log('[useAuthActions] resendOtp called with:', data);
+      const result = await resendOtpAction(data);
+      console.log('[useAuthActions] resendOtp result:', result);
+
+      if (result.success) {
         return { success: true, data: result.data, message: result.message };
       } else {
         // Handle validation errors - only when there are actual error entries
@@ -285,37 +483,38 @@ export function useAuthActions() {
             ? errors.filter((e): e is string => typeof e === 'string')
             : Object.values(errors).flat();
           errorMessages.forEach((message) => {
-            toast.error(message, {
+            showToast.error(message, {
               duration: 4000,
             });
           });
         } else {
           // Show the actual API error message
-          toast.error(result.error || 'Failed to resend OTP. Please try again.', {
+          showToast.error(result.error || 'Failed to resend OTP. Please try again.', {
             duration: 4000,
           });
         }
         return { success: false, error: result.error, errors: result.errors };
       }
     } catch (error) {
-      console.error('useAuthActions: Error caught in resendOtp:', error);
+      console.error('[useAuthActions] Error caught in resendOtp:', error);
       // Check if this is a network/system error vs API error
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('.next')) {
-          toast.error('Application error: Please refresh the page and try again.', {
+          showToast.error('Application error: Please refresh the page and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
-          toast.error('Request timed out. Please check your connection and try again.', {
+          showToast.error('Request timed out. Please check your connection and try again.', {
             duration: 5000,
           });
         } else {
-          toast.error('An unexpected error occurred. Please try again.', {
+          showToast.error('An unexpected error occurred. Please try again.', {
             duration: 5000,
           });
         }
       } else {
-        toast.error('An unexpected error occurred. Please try again.', {
+        toast.dismiss();
+        showToast.error('An unexpected error occurred. Please try again.', {
           duration: 5000,
         });
       }
@@ -333,20 +532,21 @@ export function useAuthActions() {
       if (result.success) {
         // Check if two-factor authentication is required
         if (result.requiresTwoFactor && result.email) {
-          logger.log('[Login] Two-factor authentication required, redirecting to verify page');
-          toast.success('Two-factor code sent to your email', {
+          // logger.log('[Login] Two-factor authentication required, redirecting to verify page');
+          showToast.success('Two-factor code sent to your email', {
             duration: 3000,
           });
           return {
             success: true,
-            redirect: `/verify?email=${encodeURIComponent(result.email)}&purpose=Login&resend=true`,
+            redirect: `/verify?email=${encodeURIComponent(result.email)}&purpose=TwoFactorAuthenticationLogin`,
             requiresTwoFactor: true,
+            email: result.email,
           } as EnhancedLoginResult;
         }
 
         // Display the backend success message if available, otherwise fallback
         const successMessage = typeof result.message === 'string' ? result.message : 'Login successful!';
-        toast.success(successMessage, {
+        showToast.success(successMessage, {
           duration: 3000,
         });
 
@@ -359,9 +559,9 @@ export function useAuthActions() {
           const hasCompletedOnboarding = loginData.hasCompletedOnboarding as boolean | undefined;
           const lastCompletedPage = loginData.lastCompletedPage as number | undefined;
           
-          logger.log('[Login] Account Type:', accountType);
-          logger.log('[Login] Has Completed Onboarding:', hasCompletedOnboarding);
-          logger.log('[Login] Last Completed Page:', lastCompletedPage);
+          // logger.log('[Login] Account Type:', accountType);
+          // logger.log('[Login] Has Completed Onboarding:', hasCompletedOnboarding);
+          // logger.log('[Login] Last Completed Page:', lastCompletedPage);
           
           // Preserve local onboarding data - don't clear it
           // Instead, update the onboarding store with the latest data from login API
@@ -385,13 +585,13 @@ export function useAuthActions() {
             // lastCompletedPage is 1-based (API page), currentStep is 0-based (UI step)
             // If lastCompletedPage is 1, we want to show step 1 (page 2), so currentStep = lastCompletedPage
             setCurrentStep(lastCompletedPage || 0);
-            logger.log('[Login] Set onboarding currentStep to:', lastCompletedPage || 0);
+            // logger.log('[Login] Set onboarding currentStep to:', lastCompletedPage || 0);
           }
           
           // Update auth store with user data
-          logger.log('[Login] loginData keys:', Object.keys(loginData));
-          logger.log('[Login] loginData.userProfile:', loginData.userProfile);
-          logger.log('[Login] loginData.extractedUserData:', loginData.extractedUserData);
+          // logger.log('[Login] loginData keys:', Object.keys(loginData));
+          // logger.log('[Login] loginData.userProfile:', loginData.userProfile);
+          // logger.log('[Login] loginData.extractedUserData:', loginData.extractedUserData);
           
           if (loginData.userProfile && typeof loginData.userProfile === 'object') {
             const userProfile = loginData.userProfile as unknown as Record<string, unknown>;
@@ -408,21 +608,20 @@ export function useAuthActions() {
             const userWithAccountType: User = {
               id: userProfile.email as string || '', // Use email as ID if not provided
               email: userProfile.email as string || '',
-              // For organizations, use firstName as org name (backend sends it there)
+              // For organizations, use foundationName from userProfile
               firstName: userProfile.firstName as string || '',
               lastName: userProfile.lastName as string || '',
               otherName: userProfile.otherName as string || '',
-              organizationName: normalizedAccountTypeForUser === 'Organization' 
-                ? (userProfile.firstName as string || undefined)
-                : undefined,
+              organizationName: loginData.organizationName as string || userProfile.foundationName as string || undefined,
               accountType: normalizedAccountTypeForUser,
               userImage: userProfile.userImage as string | null || null,
+              logo: loginData.organizationLogo as string || userProfile.logo as string | null || undefined,
               location: userProfile.city && userProfile.stateName ? `${userProfile.city}, ${userProfile.stateName}` : null,
               bio: userProfile.bio as string | null || null,
               skills: userProfile.skillNames as string[] || [],
               interests: userProfile.interestNames as string[] || [],
             };
-            logger.log('[Login] Using userProfile:', userWithAccountType);
+            // logger.log('[Login] Using userProfile:', userWithAccountType);
             setLogin(userWithAccountType, loginData.accessToken as string || '');
           } else if (loginData.extractedUserData) {
             // TEMPORARY WORKAROUND: Use extracted user data from JWT since userProfile is null
@@ -437,7 +636,7 @@ export function useAuthActions() {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            logger.log('[Login] Using extracted user data from JWT:', userFromJwt);
+            // logger.log('[Login] Using extracted user data from JWT:', userFromJwt);
             setLogin(userFromJwt, loginData.accessToken as string || '');
           } else {
             // If userProfile is not available, create minimal user object with account type
@@ -448,7 +647,7 @@ export function useAuthActions() {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            logger.log('[Login] Using minimal user object:', minimalUser);
+            // logger.log('[Login] Using minimal user object:', minimalUser);
             setLogin(minimalUser, loginData.accessToken as string || '');
           }
           
@@ -465,7 +664,7 @@ export function useAuthActions() {
           if (!hasCompletedOnboarding) {
             // Redirect to onboarding (account type is read from cookies)
             if (normalizedAccountType === 'organization') {
-              logger.log('[Login] Redirecting to organization onboarding');
+              // logger.log('[Login] Redirecting to organization onboarding');
               return {
                 success: true, 
                 data: result.data, 
@@ -477,7 +676,7 @@ export function useAuthActions() {
                 hasCompletedOnboarding: hasCompletedOnboarding || false
               } as EnhancedLoginResult;
             } else if (normalizedAccountType === 'volunteer') {
-              logger.log('[Login] Redirecting to volunteer onboarding');
+              // logger.log('[Login] Redirecting to volunteer onboarding');
               return {
                 success: true, 
                 data: result.data, 
@@ -492,7 +691,7 @@ export function useAuthActions() {
           } else {
             // User has completed onboarding, redirect to appropriate dashboard
             if (normalizedAccountType === 'organization') {
-              logger.log('[Login] Redirecting to organization dashboard');
+              // logger.log('[Login] Redirecting to organization dashboard');
               return { 
                 success: true, 
                 data: result.data, 
@@ -502,7 +701,7 @@ export function useAuthActions() {
                 accountType: 'organization'
               } as EnhancedLoginResult;
             } else if (normalizedAccountType === 'volunteer') {
-              logger.log('[Login] Redirecting to volunteer dashboard');
+              // logger.log('[Login] Redirecting to volunteer dashboard');
               return {
                 success: true,
                 data: result.data,
@@ -512,7 +711,7 @@ export function useAuthActions() {
                 accountType: 'volunteer'
               } as EnhancedLoginResult;
             } else if (normalizedAccountType === 'admin') {
-              logger.log('[Login] Redirecting to admin dashboard');
+              // logger.log('[Login] Redirecting to admin dashboard');
               return { 
                 success: true, 
                 data: result.data, 
@@ -544,7 +743,7 @@ export function useAuthActions() {
           } as EnhancedLoginResult;
         }
         
-        toast.error(errorMessage, {
+        showToast.error(errorMessage, {
           duration: 4000,
         });
         return { success: false, error: result.error } as EnhancedLoginResult;
@@ -554,20 +753,20 @@ export function useAuthActions() {
       // Check if this is a network/system error vs API error
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('.next')) {
-          toast.error('Application error: Please refresh the page and try again.', {
+          showToast.error('Application error: Please refresh the page and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
-          toast.error('Request timed out. Please check your connection and try again.', {
+          showToast.error('Request timed out. Please check your connection and try again.', {
             duration: 5000,
           });
         } else {
-          toast.error('An unexpected error occurred during login. Please try again.', {
+          showToast.error('An unexpected error occurred during login. Please try again.', {
             duration: 5000,
           });
         }
       } else {
-        toast.error('An unexpected error occurred during login. Please try again.', {
+        showToast.error('An unexpected error occurred during login. Please try again.', {
           duration: 5000,
         });
       }
@@ -655,14 +854,14 @@ export function useAuthActions() {
           });
         }
 
-        toast.success('Logged out successfully', {
+        showToast.success('Logged out successfully', {
           duration: 2000,
         });
 
         return { success: true };
       } else {
         // Even if server logout fails, we've cleared local state
-        toast.error('Logout completed with warnings. Please clear your browser cookies.', {
+        showToast.error('Logout completed with warnings. Please clear your browser cookies.', {
           duration: 3000,
         });
         return { success: true }; // Return success since local state is cleared
@@ -673,20 +872,20 @@ export function useAuthActions() {
       // Check if this is a network/system error vs API error
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('.next')) {
-          toast.error('Application error: Please refresh the page and try again.', {
+          showToast.error('Application error: Please refresh the page and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
-          toast.error('Request timed out. Please check your connection and try again.', {
+          showToast.error('Request timed out. Please check your connection and try again.', {
             duration: 5000,
           });
         } else {
-          toast.error('Logout completed. Local data has been cleared.', {
+          showToast.error('Logout completed. Local data has been cleared.', {
             duration: 5000,
           });
         }
       } else {
-        toast.error('Logout completed. Local data has been cleared.', {
+        showToast.error('Logout completed. Local data has been cleared.', {
           duration: 5000,
         });
       }
@@ -699,25 +898,22 @@ export function useAuthActions() {
   const forgotPassword = async (data: { email: string; newPassword: string; confirmPassword: string; token: string }) => {
     setIsLoading(true);
     try {
+      console.log('[useAuthActions] forgotPassword called with email:', data.email);
+      console.log('[useAuthActions] Token present:', !!data.token);
       const result = await forgotPasswordAction(data.email, data.newPassword, data.confirmPassword, data.token);
+      console.log('[useAuthActions] forgotPassword result:', result);
 
       if (result.success) {
-        toast.success(result.message || 'Password reset successfully', {
-          duration: 3000,
-        });
         return { success: true, message: result.message };
       } else {
         // Check for invalid token error
         if (result.error?.toLowerCase().includes('invalid token')) {
-          // Clear cookies and redirect to forgot password on invalid token
-          document.cookie = 'reset_email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-          document.cookie = 'reset_otp=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-          toast.error('Invalid or expired token. Please request a new OTP.', {
+          showToast.error('Invalid or expired token. Please request a new OTP.', {
             duration: 5000,
           });
           window.location.href = '/forgotpassword';
         } else {
-          toast.error(result.error || 'Failed to reset password. Please try again.', {
+          showToast.error(result.error || 'Failed to reset password. Please try again.', {
             duration: 4000,
           });
         }
@@ -728,29 +924,29 @@ export function useAuthActions() {
       // Check if this is a network/system error vs API error
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('.next')) {
-          toast.error('Application error: Please refresh the page and try again.', {
+          showToast.error('Application error: Please refresh the page and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
-          toast.error('Request timed out. Please check your connection and try again.', {
+          showToast.error('Request timed out. Please check your connection and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('invalid token')) {
           // Clear cookies and redirect to forgot password on invalid token
           document.cookie = 'reset_email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
           document.cookie = 'reset_otp=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-          toast.error('Invalid or expired token. Please request a new OTP.', {
+          showToast.error('Invalid or expired token. Please request a new OTP.', {
             duration: 5000,
           });
           window.location.href = '/forgotpassword';
         } else {
           // Show the actual error message from the API
-          toast.error(error.message || 'An unexpected error occurred. Please try again.', {
+          showToast.error(error.message || 'An unexpected error occurred. Please try again.', {
             duration: 5000,
           });
         }
       } else {
-        toast.error('An unexpected error occurred. Please try again.', {
+        showToast.error('An unexpected error occurred. Please try again.', {
           duration: 5000,
         });
       }
@@ -766,12 +962,12 @@ export function useAuthActions() {
       const result = await resetPasswordAction(email);
 
       if (result.success) {
-        toast.success(result.message || 'Password reset email sent', {
+        showToast.success(result.message || 'Password reset email sent', {
           duration: 3000,
         });
         return { success: true, message: result.message };
       } else {
-        toast.error(result.error || 'Failed to send reset email. Please try again.', {
+        showToast.error(result.error || 'Failed to send reset email. Please try again.', {
           duration: 4000,
         });
         return { success: false, error: result.error };
@@ -781,20 +977,20 @@ export function useAuthActions() {
       // Check if this is a network/system error vs API error
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('.next')) {
-          toast.error('Application error: Please refresh the page and try again.', {
+          showToast.error('Application error: Please refresh the page and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
-          toast.error('Request timed out. Please check your connection and try again.', {
+          showToast.error('Request timed out. Please check your connection and try again.', {
             duration: 5000,
           });
         } else {
-          toast.error('An unexpected error occurred. Please try again.', {
+          showToast.error('An unexpected error occurred. Please try again.', {
             duration: 5000,
           });
         }
       } else {
-        toast.error('An unexpected error occurred. Please try again.', {
+        showToast.error('An unexpected error occurred. Please try again.', {
           duration: 5000,
         });
       }
@@ -810,7 +1006,7 @@ export function useAuthActions() {
       const result = await volunteerOnboardingAction(data);
 
       if (result.success) {
-        toast.success(result.message || 'Volunteer onboarding completed!', {
+        showToast.success(result.message || 'Volunteer onboarding completed!', {
           duration: 3000,
         });
         return { success: true, data: result.data, message: result.message };
@@ -825,12 +1021,12 @@ export function useAuthActions() {
             ? errors.filter((e): e is string => typeof e === 'string')
             : Object.values(errors).flat();
           errorMessages.forEach((message) => {
-            toast.error(message, {
+            showToast.error(message, {
               duration: 4000,
             });
           });
         } else {
-          toast.error(result.error || 'Onboarding failed. Please try again.', {
+          showToast.error(result.error || 'Onboarding failed. Please try again.', {
             duration: 4000,
           });
         }
@@ -839,11 +1035,11 @@ export function useAuthActions() {
     } catch (error) {
       console.error('useAuthActions: Error caught in volunteerOnboarding:', error);
       if (error instanceof Error) {
-        toast.error('An unexpected error occurred during onboarding. Please try again.', {
+        showToast.error('An unexpected error occurred during onboarding. Please try again.', {
           duration: 5000,
         });
       } else {
-        toast.error('An unexpected error occurred during onboarding. Please try again.', {
+        showToast.error('An unexpected error occurred during onboarding. Please try again.', {
           duration: 5000,
         });
       }
@@ -859,7 +1055,7 @@ export function useAuthActions() {
       const result = await organizationOnboardingAction(data);
 
       if (result.success) {
-        toast.success(result.message || 'Organization onboarding completed!', {
+        showToast.success(result.message || 'Organization onboarding completed!', {
           duration: 3000,
         });
         return { success: true, data: result.data, message: result.message };
@@ -874,12 +1070,12 @@ export function useAuthActions() {
             ? errors.filter((e): e is string => typeof e === 'string')
             : Object.values(errors).flat();
           errorMessages.forEach((message) => {
-            toast.error(message, {
+            showToast.error(message, {
               duration: 4000,
             });
           });
         } else {
-          toast.error(result.error || 'Onboarding failed. Please try again.', {
+          showToast.error(result.error || 'Onboarding failed. Please try again.', {
             duration: 4000,
           });
         }
@@ -888,11 +1084,11 @@ export function useAuthActions() {
     } catch (error) {
       console.error('useAuthActions: Error caught in organizationOnboarding:', error);
       if (error instanceof Error) {
-        toast.error('An unexpected error occurred during onboarding. Please try again.', {
+        showToast.error('An unexpected error occurred during onboarding. Please try again.', {
           duration: 5000,
         });
       } else {
-        toast.error('An unexpected error occurred during onboarding. Please try again.', {
+        showToast.error('An unexpected error occurred during onboarding. Please try again.', {
           duration: 5000,
         });
       }
@@ -908,12 +1104,12 @@ export function useAuthActions() {
       const result = await verifyResetPasswordAction(email, newPassword, confirmPassword, token);
 
       if (result.success) {
-        toast.success(result.message || 'Password reset successfully', {
+        showToast.success(result.message || 'Password reset successfully', {
           duration: 3000,
         });
         return { success: true, message: result.message };
       } else {
-        toast.error(result.error || 'Failed to reset password. Please try again.', {
+        showToast.error(result.error || 'Failed to reset password. Please try again.', {
           duration: 4000,
         });
         return { success: false, error: result.error };
@@ -923,20 +1119,94 @@ export function useAuthActions() {
       // Check if this is a network/system error vs API error
       if (error instanceof Error) {
         if (error.message.includes('ENOENT') || error.message.includes('.next')) {
-          toast.error('Application error: Please refresh the page and try again.', {
+          showToast.error('Application error: Please refresh the page and try again.', {
             duration: 5000,
           });
         } else if (error.message.toLowerCase().includes('timeout') || error.message.toLowerCase().includes('timed out')) {
-          toast.error('Request timed out. Please check your connection and try again.', {
+          showToast.error('Request timed out. Please check your connection and try again.', {
             duration: 5000,
           });
         } else {
-          toast.error('An unexpected error occurred. Please try again.', {
+          showToast.error('An unexpected error occurred. Please try again.', {
             duration: 5000,
           });
         }
       } else {
-        toast.error('An unexpected error occurred. Please try again.', {
+        showToast.error('An unexpected error occurred. Please try again.', {
+          duration: 5000,
+        });
+      }
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyForgotPasswordOtp = async (otpCode: string) => {
+    setIsLoading(true);
+    try {
+      console.log('[useAuthActions] verifyForgotPasswordOtp called with:', otpCode);
+      const result = await verifyForgotPasswordOtpAction(otpCode);
+      console.log('[useAuthActions] verifyForgotPasswordOtp result:', result);
+
+      if (result.success) {
+        return { success: true, token: result.token, message: result.message };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('[useAuthActions] Error caught in verifyForgotPasswordOtp:', error);
+      // Check if this is a network/system error vs API error
+      if (error instanceof Error) {
+        if (error.name === 'AbortError' || error.message.includes('timeout')) {
+          showToast.error('Request timed out. Please check your connection and try again.', {
+            duration: 5000,
+          });
+        } else {
+          showToast.error('An unexpected error occurred. Please try again.', {
+            duration: 5000,
+          });
+        }
+      } else {
+        toast.dismiss();
+        showToast.error('An unexpected error occurred. Please try again.', {
+          duration: 5000,
+        });
+      }
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyResetPasswordOtp = async (otpCode: string) => {
+    setIsLoading(true);
+    try {
+      console.log('[useAuthActions] verifyResetPasswordOtp called with:', otpCode);
+      const result = await verifyResetPasswordOtpAction(otpCode);
+      console.log('[useAuthActions] verifyResetPasswordOtp result:', result);
+
+      if (result.success) {
+        return { success: true, token: result.token, message: result.message };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('[useAuthActions] Error caught in verifyResetPasswordOtp:', error);
+      // Check if this is a network/system error vs API error
+      if (error instanceof Error) {
+        if (error.name === 'AbortError' || error.message.includes('timeout')) {
+          showToast.error('Request timed out. Please check your connection and try again.', {
+            duration: 5000,
+          });
+        } else {
+          showToast.error('An unexpected error occurred. Please try again.', {
+            duration: 5000,
+          });
+        }
+      } else {
+        toast.dismiss();
+        showToast.error('An unexpected error occurred. Please try again.', {
           duration: 5000,
         });
       }
@@ -950,14 +1220,21 @@ export function useAuthActions() {
     volunteerSignUp,
     organizationSignUp,
     verifyOtp,
+    verifyTwoFactor,
     resendOtp,
     login,
     logout,
+    refreshAccessToken,
+    validateToken,
     forgotPassword,
     resetPassword,
+    verifyForgotPasswordOtp,
+    verifyResetPasswordOtp,
     verifyResetPassword,
     volunteerOnboarding,
     organizationOnboarding,
+    getVolunteerProfile,
+    getFoundationProfile,
     isLoading,
   };
 }

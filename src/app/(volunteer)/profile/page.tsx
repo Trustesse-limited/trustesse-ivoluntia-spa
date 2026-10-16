@@ -1,11 +1,13 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { SmartImage } from "@/components/SmartImage";
 import Link from "next/link";
 import { AppButton } from "@/components/AppButton";
 import { useAuthStore } from "@/store";
+import { useAuthActions } from "@/hooks/useAuthActions";
+import type { VolunteerProfile } from "@/types/api";
 import { 
   FiUser, 
   FiDollarSign, 
@@ -25,21 +27,48 @@ import {
 
 export default function VolunteerProfilePage() {
   const { user } = useAuthStore();
+  const { getVolunteerProfile } = useAuthActions();
   const [activeTab, setActiveTab] = useState('profile');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState('date');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [newSkill, setNewSkill] = useState('');
+  const [profileData, setProfileData] = useState<VolunteerProfile | null>(null);
+  const hasFetched = useRef(false);
+  
+  // Fetch volunteer profile data on mount
+  useEffect(() => {
+    // Prevent infinite loop - only fetch once
+    if (hasFetched.current) {
+      return;
+    }
+
+    const fetchProfile = async () => {
+      hasFetched.current = true;
+      try {
+        const result = await getVolunteerProfile();
+        if (result.success && result.data) {
+          setProfileData(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch volunteer profile:', error);
+      }
+    };
+
+    fetchProfile();
+  }, [getVolunteerProfile]);
   
   // Use user data from auth store or fallback to mock data
   const profile = {
-    name: user?.firstName && user?.lastName 
-      ? `${user.firstName} ${user.lastName}` 
+    name: profileData?.firstName && profileData?.lastName 
+      ? `${profileData.firstName} ${profileData.lastName}` 
+      : user?.firstName && user?.lastName
+      ? `${user.firstName} ${user.lastName}`
       : user?.email?.split('@')[0] || 'Volunteer',
-    email: user?.email || '',
-    location: user?.location || 'Not specified',
+    email: profileData?.email || user?.email || '',
+    location: profileData?.address || user?.location || 'Not specified',
     memberSince: user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'January 2024',
-    bio: user?.bio || 'No bio provided',
+    bio: profileData?.bio || user?.bio || 'No bio provided',
     totalDonations: 12500, // These would come from actual API
     totalHours: 156, // These would come from actual API
     badgesEarned: 12, // These would come from actual API
@@ -47,7 +76,7 @@ export default function VolunteerProfilePage() {
   };
   
   // Use user skills from auth store or fallback to mock data
-  const [skills, setSkills] = useState(user?.skills || [
+  const [skills, setSkills] = useState<string[]>(profileData?.skillNames || user?.skills || [
     "Environmental Science",
     "Community Outreach", 
     "Event Planning",

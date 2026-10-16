@@ -6,15 +6,37 @@ import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { organizationProjects } from "@/lib/mockData";
 import { useAuthStore } from "@/store";
-import { useOnboardingStore } from "@/store";
 
 
 export default function OrgDashboardPage() {
   const { user } = useAuthStore();
-  const { organizationData } = useOnboardingStore();
 
-  // Get organization name from onboarding store first, then auth store
-  const organizationName = organizationData?.formData?.orgData?.name || user?.organizationName || user?.firstName || 'Organization';
+  // Get organization name from multiple sources with priority:
+  // 1. Onboarding local storage (for first-time users after completing onboarding)
+  // 2. Auth store organizationName (from login response userProfile.foundationName)
+  // 3. Auth store firstName
+  // 4. Fallback to "Organization"
+  const getOrganizationName = () => {
+    // Check onboarding local storage first
+    if (typeof window !== 'undefined') {
+      const onboardingData = localStorage.getItem('onboarding-storage');
+      if (onboardingData) {
+        try {
+          const parsed = JSON.parse(onboardingData);
+          if (parsed.state?.formData?.orgData?.name) {
+            return parsed.state.formData.orgData.name;
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
+    // Fall back to auth store (industry standard - Zustand)
+    return user?.organizationName || user?.firstName || 'Organization';
+  };
+
+  const organizationName = getOrganizationName();
 
    {/* Mock data for statistics and pie chart */}
   const orgStats = [
@@ -55,158 +77,176 @@ const projectsToRender = isViewingAll
   : organizationProjects?.slice(0, 3); // Show only the first 3 projects when not viewing all
 
   return (
-    <div>
+    <div className="px-4 sm:px-6 py-4">
       {/* Header Section with Date and Greeting */}
-      <div className="flex flex-row items-center justify-between bg-white p-4 mb-4 sm:mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white p-3 sm:p-4 mb-4 rounded-lg">
         {/* Greeting Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="text-xl sm:text-2xl font-bold text-[#161616] mb-2">Welcome {organizationName},</h2>
-          <p className="text-gray-600 text-sm sm:text-base">See your progress, insights, and recent actions</p>
+          <h2 className="text-lg sm:text-xl font-bold text-[#161616] mb-1">Welcome {organizationName},</h2>
+          <p className="text-gray-600 text-xs sm:text-sm">See your progress, insights, and recent actions</p>
         </motion.div>
-        
+
         {/* Current Date Display */}
-        <div className="text-xs sm:text-base text-[#161616] font-[700]">
+        <div className="text-xs sm:text-sm text-[#161616] font-semibold mt-2 sm:mt-0">
           {currentDate}
         </div>
       </div>
 
-       {/* Statistics Section */}
-      <div className="grid px-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6 w-full">
-      {orgStats.map((stat, index) => (
-        <div key={index} className="flex flex-col items-left gap-5.5 p-4 bg-white  shadow-md ">
-          <h1 className="text-sm font-semiBold text-[#818181]" >{stat.title}</h1>
-          <h1 className="xl:text-4xl text-3xl font-semibold">{stat.value}</h1>
-          <div className="flex justify-end w-full">
-          <Image src={stat.icon} alt={stat.title} width={60} height={60} />   
-          </div>
-        </div>
-      ))}
-      </div>
-      <div className=' grid xl:grid-cols-[66%_32%] gap-6  px-4 mb-6  '>
-      
-        {/*donations list */}
-        <div className="bg-white shadow-md max-h-120 overflow-y-scroll w-full scrollbar-hide pt-3.5">
-         <ul className="flex justify-between mx-5 gap-6 border-b whitespace-nowrap border-gray-200  ">
-   {tabs.map((tab) => (
-    <li
-      key={tab.key}
-      className={`pb-3 text-[14px] cursor-pointer font-medium transition border-b-2 w-fit ${activeTab === tab.key ? "text-[#0E68DC] border-[#42A5F5]"
-                      : "text-black border-transparent hover:text-[#0E68DC]"}`}
-        onClick={() => setActiveTab(tab.key)}
-   >
-      {tab.label}
-    </li>
-  ))} 
-</ul>
-     {projectsToRender?.length === 0 ? (
-  <p className="text-gray-500 text-center py-4 flex justify-center items-center w-full h-full">No Recent Donations.</p>
-) : (
-  projectsToRender.map((project) => {
-    const percentage = project.targetAmount
-      ? (project.raisedAmount / project.targetAmount) * 100
-      : 0;
-
-    return (
-      <div key={project.id} className="py-4 px-11 flex md:flex-row flex-col gap-6 border-gray-200">
-        <SmartImage
-          src={project.image}
-          alt={project.title}
-          width={126}
-          height={90}
-          className="w-full md:w-[126px] h-[180px] md:h-[90px] rounded-md mb-4"
-          objectFit="cover"
-          fallbackSrc="/placeholder.svg"
-        />
-
-        <div className="flex flex-col gap-[4px] md:w-[calc(100%-126px)]">
-          <h1 className="text-base font-semibold">{project.title}</h1>
-
-          <span className="flex items-center gap-2">
-            <Image
-              src="/org/devicon.svg"
-              alt="icon"
-              width={20}
-              height={20}
-              className="w-5 h-5 object-cover"
-            />
-            <p className="text-sm">{project.category}</p>
-          </span>
-
-          <div className="w-full h-[7px] bg-[var(--primary)]/30 rounded-full overflow-hidden mt-3 transition-all duration-1000 ease-out">
-            <motion.div
-              className="h-full bg-[var(--buttonPrimary)] rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${percentage}%` }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
-            />
-          </div>
-
-          <div className="flex justify-between text-[12px] text-[#161616] mb-2">
-            <span className="font-semibold">
-              {percentage}% Completed
-            </span>
-
-            <span className="font-semibold">
-              ₦{project.raisedAmount.toLocaleString()} /
-              ₦{project.targetAmount.toLocaleString()}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  })
-)}
-        </div>
-        <div className="bg-white shadow-md overflow-y-scroll max-h-auto pt-3.5">
-         <h1 className='text-2xl font-bold text-[#073B78] text-center'>Donations by Program</h1>
-
-         {/*chart render */}
-          <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              outerRadius={120}
-              stroke="none"
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={index}
-                  fill={COLORS[index]}
-                />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="flex flex-col gap-4 my-4 px-8">
-        {data.length === 0?(
-         <p className="text-gray-500 text-center py-4 flex justify-center items-center w-full h-full">No Recent Donations.</p>
-) : 
-     (      data.map((item, index) => (
-          <div
-            key={item.name}
-            className="flex items-center justify-between"
+      {/* Statistics Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
+        {orgStats.map((stat, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="flex flex-col items-start gap-2 p-2.5 sm:p-3 bg-white shadow-sm rounded-lg"
           >
-            <div className="flex items-center gap-3">
-              <span
-                className="w-6.5 h-6.5 rounded-full"
-                style={{
-                  backgroundColor: COLORS[index],
-                }}
-              />
-
-              <span>{item.name}</span>
+            <h3 className="text-xs sm:text-sm font-medium text-[#818181]">{stat.title}</h3>
+            <h1 className="text-xl sm:text-2xl font-semibold text-[#161616]">{stat.value}</h1>
+            <div className="flex justify-end w-full">
+              <Image src={stat.icon} alt={stat.title} width={32} height={32} className="w-6 h-6 sm:w-8 sm:h-8" />
             </div>
-
-                     </div>
-        )))}
+          </motion.div>
+        ))}
       </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-[66%_32%] gap-4 mb-4">
+        {/* Donations List */}
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden xl:order-1 order-2 relative">
+          <ul className="flex justify-between px-4 sm:px-5 pt-3 sm:pt-4 gap-4 sm:gap-6 border-b border-gray-200">
+            {tabs.map((tab) => (
+              <li
+                key={tab.key}
+                className={`pb-3 text-xs sm:text-sm cursor-pointer font-medium transition border-b-2 w-fit ${activeTab === tab.key ? "text-[#0E68DC] border-[#42A5F5]"
+                  : "text-black border-transparent hover:text-[#0E68DC]"}`}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {tab.label}
+              </li>
+            ))}
+          </ul>
+
+          {projectsToRender?.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-8">No Recent Donations.</p>
+          ) : (
+            <div className="xl:max-h-96 xl:overflow-y-auto">
+              {projectsToRender.map((project, index) => {
+                const percentage = project.targetAmount
+                  ? (project.raisedAmount / project.targetAmount) * 100
+                  : 0;
+                const isLast = index === projectsToRender.length - 1;
+
+                return (
+                  <div key={project.id} className={`py-3 px-4 sm:px-5 flex flex-col sm:flex-row gap-3 sm:gap-4 ${isLast ? '' : 'border-b border-gray-100'}`}>
+                    <SmartImage
+                      src={project.image}
+                      alt={project.title}
+                      width={100}
+                      height={70}
+                      className="w-full sm:w-25 h-35 sm:h-17.5 rounded-md object-cover"
+                      objectFit="cover"
+                      fallbackSrc="/placeholder.svg"
+                    />
+
+                    <div className="flex flex-col gap-2 flex-1">
+                      <h3 className="text-sm sm:text-base font-semibold text-[#161616]">{project.title}</h3>
+
+                      <span className="flex items-center gap-2">
+                        <Image
+                          src="/org/devicon.svg"
+                          alt="icon"
+                          width={16}
+                          height={16}
+                          className="w-4 h-4 object-cover"
+                        />
+                        <p className="text-xs sm:text-sm text-gray-600">{project.category}</p>
+                      </span>
+
+                      <div className="w-full h-1.5 bg-[var(--primary)]/30 rounded-full overflow-hidden mt-1">
+                        <motion.div
+                          className="h-full bg-[var(--buttonPrimary)] rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percentage}%` }}
+                          transition={{ duration: 1.2, ease: "easeOut" }}
+                        />
+                      </div>
+
+                      <div className="flex justify-between text-xs text-[#161616]">
+                        <span className="font-medium">
+                          {percentage.toFixed(0)}% Completed
+                        </span>
+
+                        <span className="font-medium">
+                          ₦{project.raisedAmount.toLocaleString()} /
+                          ₦{project.targetAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {/* Scroll indicator shadow for desktop - fixed at bottom */}
+          <div className="hidden xl:block absolute bottom-0 left-0 right-0 h-12 bg-linear-to-t from-white via-white/90 to-transparent pointer-events-none z-10" />
+        </div>
+
+        {/* Pie Chart Section */}
+        <div className="bg-white shadow-sm rounded-lg p-4 xl:order-2 order-1">
+          <h2 className='text-lg sm:text-xl font-bold text-[#073B78] text-center mb-4'>Donations by Program</h2>
+
+          {/* Chart render */}
+          <div className="h-48 sm:h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  outerRadius={80}
+                  innerRadius={40}
+                  stroke="none"
+                  label={(entry) => entry.name}
+                  labelLine={false}
+                >
+                  {data.map((entry, index) => (
+                    <Cell
+                      key={index}
+                      fill={COLORS[index]}
+                    />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex flex-col gap-3 mt-4">
+            {data.length === 0 ? (
+              <p className="text-gray-500 text-sm text-center py-4">No Recent Donations.</p>
+            ) : (
+              data.map((item, index) => (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between text-xs sm:text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-3 h-3 sm:w-4 sm:h-4 rounded-full"
+                      style={{
+                        backgroundColor: COLORS[index],
+                      }}
+                    />
+                    <span className="text-gray-700">{item.name}</span>
+                  </div>
+                  <span className="font-medium text-gray-900">{item.value}%</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

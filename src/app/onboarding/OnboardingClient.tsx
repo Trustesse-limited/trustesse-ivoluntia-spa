@@ -7,7 +7,7 @@ import { useAuthStore } from "@/store";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import logger from '@/lib/logger';
+// import logger from '@/lib/logger';
 import { VolunteerFormData, OrganizationFormData } from "@/types";
 import { OrganizationOnboardingData } from "@/types/onboarding";
 import { PartialVolunteerSignUpDto, VolunteerOnboardingRequest, OrganizationOnboardingRequest } from "@/types/api";
@@ -213,12 +213,12 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
     return 'volunteer';
   })() as "volunteer" | "organization";
   
-  logger.log('[Onboarding Client] accountTypeFromCookie prop:', accountTypeFromCookie);
-  logger.log('[Onboarding Client] accountType from cookie (lowercased):', accountTypeFromCookie?.toLowerCase());
-  logger.log('[Onboarding Client] accountType from auth store:', user?.accountType);
-  logger.log('[Onboarding Client] accountType from store:', onboardingFormData.metaData?.accountType);
-  logger.log('[Onboarding Client] final accountType:', accountType);
-  logger.log('[Onboarding Client] store currentStep:', storeCurrentStep);
+  // logger.log('[Onboarding Client] accountTypeFromCookie prop:', accountTypeFromCookie);
+  // logger.log('[Onboarding Client] accountType from cookie (lowercased):', accountTypeFromCookie?.toLowerCase());
+  // logger.log('[Onboarding Client] accountType from auth store:', user?.accountType);
+  // logger.log('[Onboarding Client] accountType from store:', onboardingFormData.metaData?.accountType);
+  // logger.log('[Onboarding Client] final accountType:', accountType);
+  // logger.log('[Onboarding Client] store currentStep:', storeCurrentStep);
   
   // Filter steps based on account type
   const filteredSteps = steps.filter(s => s.isVolunteer === (accountType !== "organization"));
@@ -228,7 +228,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
     // Store's currentStep: 0-based UI step index (0-4 for onboarding screens)
     // No conversion needed - store now stores 0-based UI step
     const initialStep = storeCurrentStep;
-    logger.log('[Onboarding Client] Initial step from store:', initialStep, '(store currentStep:', storeCurrentStep, ')');
+    // logger.log('[Onboarding Client] Initial step from store:', initialStep, '(store currentStep:', storeCurrentStep, ')');
     return initialStep;
   });
   const [formData, setFormData] = useState<VolunteerFormData | OrganizationFormData>(
@@ -269,21 +269,21 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
 
   // On mount, switch account type and update form data when account type changes
   useEffect(() => {
-    logger.log('[OnboardingClient] useEffect triggered - accountType:', accountType);
+    // logger.log('[OnboardingClient] useEffect triggered - accountType:', accountType);
     switchAccountType(accountType as "volunteer" | "organization");
 
     // Get the account-specific data from localStorage
     const accountSpecificData = accountType === "organization" ? organizationData : volunteerData;
 
-    logger.log('[OnboardingClient] Account type changed - accountType:', accountType);
-    logger.log('[OnboardingClient] volunteerData:', volunteerData);
-    logger.log('[OnboardingClient] organizationData:', organizationData);
+    // logger.log('[OnboardingClient] Account type changed - accountType:', accountType);
+    // logger.log('[OnboardingClient] volunteerData:', volunteerData);
+    // logger.log('[OnboardingClient] organizationData:', organizationData);
 
     // Only populate form data if there's actual data from successful API calls
     // Don't populate from login response - that only sets currentStep now
     if (accountType === "volunteer") {
       const volunteerFormData = accountSpecificData.formData as PartialVolunteerSignUpDto;
-      logger.log('[OnboardingClient] volunteerFormData.bioData:', volunteerFormData.bioData);
+      // logger.log('[OnboardingClient] volunteerFormData.bioData:', volunteerFormData.bioData);
 
       // Only populate if bioData has actual values (from successful API, not empty/initial)
       if (volunteerFormData.bioData && volunteerFormData.bioData.firstName) {
@@ -291,7 +291,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
         const genderValue = volunteerFormData.bioData.gender;
         const genderNum = typeof genderValue === 'string' ? parseInt(genderValue, 10) : genderValue;
 
-        logger.log('[OnboardingClient] Updating form data - genderValue:', genderValue, 'genderNum:', genderNum);
+        // logger.log('[OnboardingClient] Updating form data - genderValue:', genderValue, 'genderNum:', genderNum);
 
         // Format date of birth to YYYY-MM-DD for date input (if it's in ISO format)
         let formattedDob = volunteerFormData.bioData.dateOfBirth || "";
@@ -300,7 +300,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
         }
 
         const sexValue = genderNum === 1 ? "male" : genderNum === 2 ? "female" : "";
-        logger.log('[OnboardingClient] Setting sex value:', sexValue);
+        // logger.log('[OnboardingClient] Setting sex value:', sexValue);
 
         const locationData = {
           country: volunteerFormData.locationDto?.countryId || "",
@@ -312,7 +312,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           address: volunteerFormData.locationDto?.address || "",
         };
 
-        logger.log('[OnboardingClient] Location data from API:', locationData);
+        // logger.log('[OnboardingClient] Location data from API:', locationData);
 
         setFormData({
           firstName: volunteerFormData.bioData.firstName || "",
@@ -352,10 +352,10 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
 
   // Sync step with store's currentStep
   useEffect(() => {
-    logger.log('[OnboardingClient] Step sync effect - storeCurrentStep:', storeCurrentStep, 'current step:', step);
+    // logger.log('[OnboardingClient] Step sync effect - storeCurrentStep:', storeCurrentStep, 'current step:', step);
     // storeCurrentStep is now 0-based UI step, so sync directly
     setStep(storeCurrentStep);
-    logger.log('[OnboardingClient] Synced step with store:', storeCurrentStep);
+    // logger.log('[OnboardingClient] Synced step with store:', storeCurrentStep);
   }, [storeCurrentStep, step]);
 
   // Check if current step is valid
@@ -376,7 +376,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
                  (volunteerData.state?.trim() || "") !== "";
         case "interest":
           const isValid = (volunteerData.interests?.length || 0) > 0;
-          logger.log('[OnboardingClient] Interest step validation:', { interests: volunteerData.interests, isValid });
+          // logger.log('[OnboardingClient] Interest step validation:', { interests: volunteerData.interests, isValid });
           return isValid;
         case "skills":
           return (volunteerData.skills?.length || 0) > 0;
@@ -398,7 +398,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
                  (orgData.state?.trim() || "") !== "";
         case "causes":
           const isValid = (orgData.causes?.length || 0) > 0;
-          logger.log('[OnboardingClient] Causes step validation:', { causes: orgData.causes, isValid });
+          // logger.log('[OnboardingClient] Causes step validation:', { causes: orgData.causes, isValid });
           return isValid;
         case "disclaimer":
           return orgData.disclaimerAgreed === true;
@@ -506,11 +506,11 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'ProfileAndBioData.Bio': volunteerData.bio || "",
           'ProfileAndBioData.ImageUrl': volunteerData.photo || undefined,
         };
-        logger.log('[Onboarding Client] Volunteer photo URL:', volunteerData.photo);
+        // logger.log('[Onboarding Client] Volunteer photo URL:', volunteerData.photo);
         apiResult = await volunteerOnboarding(volunteerRequest);
       } else {
         const orgData = formData as OrganizationFormData;
-        logger.log('[Onboarding Client] Organization logo file:', orgData.logo);
+        // logger.log('[Onboarding Client] Organization logo file:', orgData.logo);
         const orgRequest: OrganizationOnboardingRequest = {
           'MetaData.AccountType': "organization",
           'MetaData.CurrentPage': step + 1,
@@ -532,17 +532,18 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
       
       // Only proceed to next step if API returns success
       if (!apiResult.success) {
-        logger.log('[Onboarding Client] API call failed, staying on current step');
+        // logger.log('[Onboarding Client] API call failed, staying on current step');
         return;
       }
 
-      logger.log('[Onboarding Client] API call successful, proceeding to next step');
-      logger.log('[Onboarding Client] API response data:', apiResult.data);
+      // logger.log('[Onboarding Client] API call successful, proceeding to next step');
+      // logger.log('[Onboarding Client] API response data:', apiResult.data);
 
       // Save form data to store ONLY after successful API response
       saveFormDataToStore();
     } catch (error) {
-      logger.log('[Onboarding Client] API call error:', error);
+      // logger.log('[Onboarding Client] API call error:', error);
+      console.error('Failed to save progress:', error);
       toast.error("Failed to save progress. Please try again.");
       return;
     } finally {
@@ -552,7 +553,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
     if (step < filteredSteps.length - 2) {
       // Normal step progression
       const newStep = step + 1;
-      logger.log('[Onboarding Client] Moving to next step:', newStep);
+      // logger.log('[Onboarding Client] Moving to next step:', newStep);
       setStep(newStep);
       setCurrentStep(newStep); // currentStep is 0-based UI step
       updateFormData({
@@ -662,11 +663,11 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'ProfileAndBioData.Bio': volunteerData.bio || "",
           'ProfileAndBioData.ImageUrl': volunteerData.photo || undefined,
         };
-        logger.log('[Onboarding Client] Volunteer photo URL (submit):', volunteerData.photo);
+        // logger.log('[Onboarding Client] Volunteer photo URL (submit):', volunteerData.photo);
         await volunteerOnboarding(volunteerRequest);
       } else {
         const orgData = formData as OrganizationFormData;
-        logger.log('[Onboarding Client] Organization logo file:', orgData.logo);
+        // logger.log('[Onboarding Client] Organization logo file:', orgData.logo);
         const orgRequest: OrganizationOnboardingRequest = {
           'MetaData.AccountType': "organization",
           'MetaData.CurrentPage': step + 1,
@@ -702,8 +703,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
   const CurrentComponent = filteredSteps[step].Component as React.ElementType;
   const isCongratulations = filteredSteps[step].key === "congratulations" || filteredSteps[step].key === "orgCongratulations";
 
-  const stepValid = isStepValid();
-  logger.log('[OnboardingClient] Render - step:', step, 'isStepValid:', stepValid, 'isSubmitting:', isSubmitting);
+  // logger.log('[OnboardingClient] Render - step:', step, 'isStepValid:', isStepValid(), 'isSubmitting:', isSubmitting);
 
   return (
     <Layout

@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
     volunteerSignup: buildApiEndpoint('Auth/volunteer-signup'),
     organizationSignup: buildApiEndpoint('Auth/organization-signup'),
     resetPassword: buildApiEndpoint('Auth/resetpassword'),
+    resetForgotPassword: buildApiEndpoint('Auth/resetforgotpassword'),
     changePassword: buildApiEndpoint('Auth/changepassword'),
     forgotPassword: buildApiEndpoint('Auth/forgotpassword'),
     twoFactorSetup: buildApiEndpoint('Auth/2fa-setup'),
@@ -144,6 +145,7 @@ export const API_ENDPOINTS = {
     confirm: buildApiEndpoint('Otp/confirm-otp'),
     resend: buildApiEndpoint('Otp/resendotp'),
     verifyEmail: buildApiEndpoint('Otp/verify-email-confirm-otp'),
+    verifyForgotPassword: buildApiEndpoint('Otp/verify-forgot-password-otp'),
     verifyResetPassword: buildApiEndpoint('Otp/verify-reset-password-otp'),
   },
 
@@ -210,6 +212,12 @@ export const API_ENDPOINTS = {
   // Volunteers endpoints (non-versioned)
   volunteers: {
     getByFoundation: buildApiEndpointNoVersion('Volunteers/get-volunteer-by-foundation-id'),
+  },
+
+  // UserProfile endpoints (non-versioned)
+  userProfile: {
+    volunteerProfile: buildApiEndpointNoVersion('UserProfile/volunteer-profile'),
+    foundationProfile: buildApiEndpointNoVersion('UserProfile/foundation-profile'),
   },
 } as const;
 

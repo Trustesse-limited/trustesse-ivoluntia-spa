@@ -15,6 +15,8 @@ export interface AuthTokens {
 }
 
 export interface TokenRefreshRequest {
+  email: string;
+  accessToken: string;
   refreshToken: string;
 }
 
@@ -269,6 +271,20 @@ export interface OtpVerificationResponse {
   isEmailVerified?: boolean;
 }
 
+// 2FA Verification Request
+// POST /api/v1/Auth/2fa-verify
+export interface TwoFactorVerificationRequest {
+  twoFactorAuthCode: string;
+  email: string;
+}
+
+// 2FA Verification Response
+export interface TwoFactorVerificationResponse {
+  success: boolean;
+  message?: string;
+  data?: unknown;
+}
+
 // Resend OTP Request
 // POST /api/v1/Otp/resendotp
 export interface ResendOtpRequest {
@@ -420,4 +436,62 @@ export interface Skill {
   id: string;
   name: string;
   description: string | null;
+}
+
+// UserProfile types
+export interface VolunteerProfile {
+  firstName: string | null;
+  lastName: string | null;
+  otherName: string | null;
+  email: string;
+  userImage: string | null;
+  role: string;
+  userType: string;
+  isActive: boolean;
+  hasTwoFactorEnabled: boolean;
+  lastLogin: string;
+  dateOfBirth: string | null;
+  gender: string | null;
+  address: string | null;
+  city: string | null;
+  zipCode: string | null;
+  countryName: string | null;
+  stateName: string | null;
+  interestNames: string[] | null;
+  skillNames: string[] | null;
+  bio: string | null;
+}
+
+export interface FoundationProfile {
+  firstName: string | null;
+  name: string;
+  lastName: string | null;
+  otherName: string | null;
+  email: string;
+  userImage: string | null;
+  role: string;
+  foundationName: string;
+  userType: string;
+  isActive: boolean;
+  hasTwoFactorEnabled: boolean;
+  lastLogin: string;
+  dateOfBirth: string | null;
+  gender: string | null;
+  address: string;
+  city: string;
+  foundationCity: string | null;
+  zipCode: string;
+  countryName: string;
+  stateName: string;
+  foundationCountry: string;
+  foundationState: string;
+  interestNames: string[] | null;
+  skillNames: string[] | null;
+  bio: string | null;
+  category: string;
+  website: string;
+  mission: string;
+  causeNames: string[] | null;
+  logo: string;
+  foundationAddress: string;
 }

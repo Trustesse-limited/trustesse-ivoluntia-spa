@@ -1,16 +1,33 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { InputComponent } from "@/components/input";
 import { AppButton } from '@/components/AppButton';
 import { sanitizePassword } from '@/lib/sanitize';
 import { useAuthActions } from '@/hooks/useAuthActions';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import Image from 'next/image';
+
+// Helper function to prevent duplicate toasts
+const showToast: {
+  success: (message: string, options?: Parameters<typeof toast.success>[1]) => void;
+  error: (message: string, options?: Parameters<typeof toast.error>[1]) => void;
+} = {
+  success: (message: string, options?: Parameters<typeof toast.success>[1]) => {
+    toast.dismiss();
+    toast.success(message, options);
+  },
+  error: (message: string, options?: Parameters<typeof toast.error>[1]) => {
+    toast.dismiss();
+    toast.error(message, options);
+  },
+};
 
 const Page = () => {
     const { forgotPassword, isLoading } = useAuthActions();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const hasExtractedParams = React.useRef(false);
 
     const [form, setForm] = useState({
         newPassword: "",
@@ -22,30 +39,13 @@ const Page = () => {
     const [passwordError, setPasswordError] = useState('');
     const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
-    // Get cookie value
-    const getCookie = (name: string): string | null => {
-        const nameEQ = name + "=";
-        const ca = document.cookie.split(';');
-        for (let i = 0; i < ca.length; i++) {
-            let c = ca[i];
-            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-        }
-        return null;
-    };
-
-    // Clear cookie
-    const clearCookie = (name: string) => {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-    };
-
     const validatePassword = (password: string) => {
         if (!password) {
             return '';
         }
-        
+
         const errors = [];
-        
+
         if (password.length < 8) {
             errors.push('at least 8 characters');
         }
@@ -61,28 +61,34 @@ const Page = () => {
         if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
             errors.push('one special character');
         }
-        
+
         if (errors.length > 0) {
             return `Password must contain ${errors.join(', ')}`;
         }
-        
+
         return '';
     };
 
-    // Check for cookies on mount
+    // Get email and token from URL parameters on mount
     useEffect(() => {
-        const emailCookie = getCookie('reset_email');
-        const otpCookie = getCookie('reset_otp');
-        
-        if (!emailCookie || !otpCookie) {
-            toast.error('Session expired. Please start over.');
+        if (hasExtractedParams.current) return;
+
+        const emailParam = searchParams.get('email');
+        const tokenParam = searchParams.get('token');
+
+        if (!emailParam || !tokenParam) {
+            showToast.error('Invalid link. Please start over.');
             router.push('/forgotpassword');
             return;
         }
-        
-        setEmail(emailCookie);
-        setToken(otpCookie);
-    }, [router]);
+
+        setEmail(emailParam);
+        setToken(tokenParam);
+        hasExtractedParams.current = true;
+
+        // Clear the URL parameters to prevent sharing/reuse
+        router.replace('/resetpassword', { scroll: false });
+    }, [searchParams, router]);
 
     const isFormValid = form.newPassword.trim() !== "" && 
                         form.confirmPassword.trim() !== "" && 
@@ -93,11 +99,19 @@ const Page = () => {
       const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
+        if (isLoading) {
+            console.log('[RESET PASSWORD] Already submitting, ignoring duplicate call');
+            return;
+        }
+
         if (!email || !token) {
-            toast.error('Session expired. Please start over.');
+            showToast.error('Invalid link. Please start over.');
             router.push('/forgotpassword');
             return;
         }
+
+        console.log('[RESET PASSWORD] Submitting with email:', email);
+        console.log('[RESET PASSWORD] Token:', token);
 
         const result = await forgotPassword({
             email,
@@ -107,10 +121,7 @@ const Page = () => {
         });
 
         if (result.success) {
-            // Clear cookies on success
-            clearCookie('reset_email');
-            clearCookie('reset_otp');
-            toast.success('Password reset successfully. Please login with your new password.');
+            showToast.success('Password reset successfully. Please login with your new password.');
             router.push('/login');
         }
       };
@@ -142,7 +153,7 @@ const Page = () => {
     <>
     <div className='flex flex-col items-center w-full min-h-screen pt-20'>
       <div className='flex flex-col items-center w-full max-w-md mx-auto px-6 sm:px-4 flex-grow'>
-      <h1 className='text-center md:text-[32px] text-xl sm:text-2xl font-[600] sm:mt-16'>Reset Password</h1>
+      <h1 className='text-center md:text-[32px] text-xl sm:text-2xl font-semibold sm:mt-16'>Reset Password</h1>
       <p className='text-center text-sm sm:text-base'>Enter your new password below</p>
       <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-4 md:mx-auto'>
         <div>
