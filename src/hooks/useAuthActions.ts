@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import logger from '@/lib/logger';
 
 // Helper function to prevent duplicate toasts
 const showToast: {
@@ -465,9 +466,9 @@ export function useAuthActions() {
   const resendOtp = async (data: ResendOtpRequest) => {
     setIsLoading(true);
     try {
-      console.log('[useAuthActions] resendOtp called with:', data);
+      logger.log('[useAuthActions] resendOtp called with:', data);
       const result = await resendOtpAction(data);
-      console.log('[useAuthActions] resendOtp result:', result);
+      logger.log('[useAuthActions] resendOtp result:', result);
 
       if (result.success) {
         return { success: true, data: result.data, message: result.message };
@@ -898,10 +899,10 @@ export function useAuthActions() {
   const forgotPassword = async (data: { email: string; newPassword: string; confirmPassword: string; token: string }) => {
     setIsLoading(true);
     try {
-      console.log('[useAuthActions] forgotPassword called with email:', data.email);
-      console.log('[useAuthActions] Token present:', !!data.token);
+      logger.log('[useAuthActions] forgotPassword called with email:', data.email);
+      logger.log('[useAuthActions] Token present:', !!data.token);
       const result = await forgotPasswordAction(data.email, data.newPassword, data.confirmPassword, data.token);
-      console.log('[useAuthActions] forgotPassword result:', result);
+      logger.log('[useAuthActions] forgotPassword result:', result);
 
       if (result.success) {
         return { success: true, message: result.message };
@@ -1145,9 +1146,9 @@ export function useAuthActions() {
   const verifyForgotPasswordOtp = async (otpCode: string) => {
     setIsLoading(true);
     try {
-      console.log('[useAuthActions] verifyForgotPasswordOtp called with:', otpCode);
+      logger.log('[useAuthActions] verifyForgotPasswordOtp called with:', otpCode);
       const result = await verifyForgotPasswordOtpAction(otpCode);
-      console.log('[useAuthActions] verifyForgotPasswordOtp result:', result);
+      logger.log('[useAuthActions] verifyForgotPasswordOtp result:', result);
 
       if (result.success) {
         return { success: true, token: result.token, message: result.message };
@@ -1182,9 +1183,9 @@ export function useAuthActions() {
   const verifyResetPasswordOtp = async (otpCode: string) => {
     setIsLoading(true);
     try {
-      console.log('[useAuthActions] verifyResetPasswordOtp called with:', otpCode);
+      logger.log('[useAuthActions] verifyResetPasswordOtp called with:', otpCode);
       const result = await verifyResetPasswordOtpAction(otpCode);
-      console.log('[useAuthActions] verifyResetPasswordOtp result:', result);
+      logger.log('[useAuthActions] verifyResetPasswordOtp result:', result);
 
       if (result.success) {
         return { success: true, token: result.token, message: result.message };

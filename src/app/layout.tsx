@@ -5,6 +5,7 @@ import { BRAND_NAME } from "../../constants";
 import { Toaster } from "@/components/Toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import CookieConsent from "@/components/CookieConsent";
+import OnboardingProgress from "@/components/OnboardingProgress";
 
 const openSans = Open_Sans({
   subsets: ["latin"],
@@ -33,6 +34,7 @@ export default function RootLayout({
         </AuthProvider>
         <Toaster />
         <CookieConsent />
+        <OnboardingProgress />
       </body>
     </html>
   );

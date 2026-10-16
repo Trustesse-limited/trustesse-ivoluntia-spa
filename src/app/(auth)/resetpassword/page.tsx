@@ -7,6 +7,7 @@ import { sanitizePassword } from '@/lib/sanitize';
 import { useAuthActions } from '@/hooks/useAuthActions';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
+import logger from '@/lib/logger';
 
 // Helper function to prevent duplicate toasts
 const showToast: {
@@ -100,7 +101,7 @@ const Page = () => {
         e.preventDefault();
 
         if (isLoading) {
-            console.log('[RESET PASSWORD] Already submitting, ignoring duplicate call');
+            logger.log('[RESET PASSWORD] Already submitting, ignoring duplicate call');
             return;
         }
 
@@ -110,8 +111,8 @@ const Page = () => {
             return;
         }
 
-        console.log('[RESET PASSWORD] Submitting with email:', email);
-        console.log('[RESET PASSWORD] Token:', token);
+        logger.log('[RESET PASSWORD] Submitting with email:', email);
+        logger.log('[RESET PASSWORD] Token:', token);
 
         const result = await forgotPassword({
             email,

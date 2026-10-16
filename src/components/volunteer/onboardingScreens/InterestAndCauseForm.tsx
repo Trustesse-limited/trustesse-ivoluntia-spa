@@ -19,22 +19,24 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchInterests = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getInterestsAction();
-        if (result.success && result.data) {
-          setInterests(result.data);
-        } else {
-          setError(result.error || 'Failed to fetch interests');
-        }
-      } catch (err) {
-        setError('Failed to fetch interests');
-      } finally {
-        setIsLoading(false);
+  const fetchInterests = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await getInterestsAction();
+      if (result.success && result.data) {
+        setInterests(result.data);
+      } else {
+        setError(result.error || 'Failed to fetch interests');
       }
-    };
+    } catch {
+      setError('Failed to fetch interests');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchInterests();
   }, []);
 
@@ -81,9 +83,19 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
           <h2 className="text-2xl font-normal text-[#161616]">
             Interests and Causes
           </h2>
-          <p className="text-sm font-normal mt-1 text-red-500">
+          <p className="text-sm font-normal mt-1 text-gray-500">
             {error}
           </p>
+          <div className="mt-4">
+            <AppButton
+              type="button"
+              onClick={fetchInterests}
+              isLoading={false}
+              className="bg-[#21537B] text-white rounded-full px-6 py-1.5 text-sm!"
+            >
+              Retry
+            </AppButton>
+          </div>
         </div>
       </form>
     );

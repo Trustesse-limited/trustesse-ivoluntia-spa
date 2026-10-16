@@ -19,22 +19,24 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSkills = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getSkillsAction();
-        if (result.success && result.data) {
-          setSkills(result.data);
-        } else {
-          setError(result.error || 'Failed to fetch skills');
-        }
-      } catch (err) {
-        setError('Failed to fetch skills');
-      } finally {
-        setIsLoading(false);
+  const fetchSkills = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await getSkillsAction();
+      if (result.success && result.data) {
+        setSkills(result.data);
+      } else {
+        setError(result.error || 'Failed to fetch skills');
       }
-    };
+    } catch {
+      setError('Failed to fetch skills');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchSkills();
   }, []);
 
@@ -85,9 +87,19 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
           <h2 className="text-2xl font-normal text-[#161616]">
             Skills and Strength
           </h2>
-          <p className="text-sm font-normal mt-1 text-red-500">
+          <p className="text-sm font-normal mt-1 text-gray-500">
             {error}
           </p>
+          <div className="mt-4">
+            <AppButton
+              type="button"
+              onClick={fetchSkills}
+              isLoading={false}
+              className="bg-[#21537B] text-white rounded-full px-6 py-1.5 text-sm!"
+            >
+              Retry
+            </AppButton>
+          </div>
         </div>
       </form>
     );

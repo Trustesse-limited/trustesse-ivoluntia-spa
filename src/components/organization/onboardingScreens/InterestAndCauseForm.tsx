@@ -14,22 +14,24 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCauses = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getCausesAction();
-        if (result.success && result.data) {
-          setCauses(result.data);
-        } else {
-          setError(result.error || 'Failed to fetch causes');
-        }
-      } catch (err) {
-        setError('Failed to fetch causes');
-      } finally {
-        setIsLoading(false);
+  const fetchCauses = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await getCausesAction();
+      if (result.success && result.data) {
+        setCauses(result.data);
+      } else {
+        setError(result.error || 'Failed to fetch causes');
       }
-    };
+    } catch {
+      setError('Failed to fetch causes');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCauses();
   }, []);
 
@@ -80,9 +82,19 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
           <h2 className="text-2xl font-normal text-[#161616]">
             Causes you support
           </h2>
-          <p className="text-sm font-normal mt-1 text-red-500">
+          <p className="text-sm font-normal mt-1 text-gray-500">
             {error}
           </p>
+          <div className="mt-4">
+            <AppButton
+              type="button"
+              onClick={fetchCauses}
+              isLoading={false}
+              className="bg-[#21537B] text-white rounded-full px-6 py-1.5 text-sm!"
+            >
+              Retry
+            </AppButton>
+          </div>
         </div>
       </form>
     );
