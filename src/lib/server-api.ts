@@ -368,7 +368,37 @@ export async function forgotPassword(
 }
 
 /**
- * Verify Reset Password OTP
+ * Verify Reset Password OTP (verification only)
+ * POST /api/v1/Otp/verify-reset-password-otp?otpCode=xxx
+ */
+export async function verifyResetPasswordOtp(
+  otpCode: string
+): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.otp.verifyResetPassword);
+    // logger.log('[API] Request Payload:', { otpCode });
+
+    const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
+      API_ENDPOINTS.otp.verifyResetPassword,
+      null,
+      {
+        params: {
+          otpCode: otpCode,
+        },
+      }
+    );
+
+    // logger.log('[API] Response Status:', response.status);
+    // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Verify Reset Password (with password reset)
  * POST /api/v1/Otp/verify-reset-password-otp
  * Takes email, newPassword, confirmPassword, and token (OTP) as request body
  */
@@ -381,7 +411,7 @@ export async function verifyResetPassword(
   try {
     logger.log('[API] POST', API_ENDPOINTS.otp.verifyResetPassword);
     // logger.log('[API] Request Payload:', { email, newPassword: '[REDACTED]', confirmPassword: '[REDACTED]', token });
-    
+
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.otp.verifyResetPassword,
       {
@@ -391,10 +421,10 @@ export async function verifyResetPassword(
         token,
       }
     );
-    
+
     // logger.log('[API] Response Status:', response.status);
     // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
-    
+
     return response.data;
   } catch (error) {
     throw handleServerError(error);

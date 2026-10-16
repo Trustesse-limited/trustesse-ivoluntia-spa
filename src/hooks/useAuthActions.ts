@@ -29,6 +29,7 @@ import {
   forgotPasswordAction,
   resetPasswordAction,
   verifyForgotPasswordOtpAction,
+  verifyResetPasswordOtpAction,
   verifyResetPasswordAction,
   volunteerOnboardingAction,
   organizationOnboardingAction,
@@ -239,10 +240,7 @@ export function useAuthActions() {
       const result = await verifyOtpAction(data);
 
       if (result.success) {
-        // Display the backend success message if available, otherwise fallback
-        showToast.success(result.message || 'OTP verified successfully!', {
-          duration: 3000,
-        });
+        // Don't show toast here - let the calling component handle it
         return { success: true, data: result.data, message: result.message };
       } else {
         // Handle validation errors - only when there are actual error entries
@@ -1181,6 +1179,43 @@ export function useAuthActions() {
     }
   };
 
+  const verifyResetPasswordOtp = async (otpCode: string) => {
+    setIsLoading(true);
+    try {
+      console.log('[useAuthActions] verifyResetPasswordOtp called with:', otpCode);
+      const result = await verifyResetPasswordOtpAction(otpCode);
+      console.log('[useAuthActions] verifyResetPasswordOtp result:', result);
+
+      if (result.success) {
+        return { success: true, token: result.token, message: result.message };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('[useAuthActions] Error caught in verifyResetPasswordOtp:', error);
+      // Check if this is a network/system error vs API error
+      if (error instanceof Error) {
+        if (error.name === 'AbortError' || error.message.includes('timeout')) {
+          showToast.error('Request timed out. Please check your connection and try again.', {
+            duration: 5000,
+          });
+        } else {
+          showToast.error('An unexpected error occurred. Please try again.', {
+            duration: 5000,
+          });
+        }
+      } else {
+        toast.dismiss();
+        showToast.error('An unexpected error occurred. Please try again.', {
+          duration: 5000,
+        });
+      }
+      return { success: false, error: 'An unexpected error occurred' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     volunteerSignUp,
     organizationSignUp,
@@ -1194,6 +1229,7 @@ export function useAuthActions() {
     forgotPassword,
     resetPassword,
     verifyForgotPasswordOtp,
+    verifyResetPasswordOtp,
     verifyResetPassword,
     volunteerOnboarding,
     organizationOnboarding,

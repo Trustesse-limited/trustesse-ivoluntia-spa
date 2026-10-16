@@ -11,6 +11,7 @@ import {
   forgotPassword,
   resetForgotPassword,
   verifyForgotPasswordOtp,
+  verifyResetPasswordOtp,
   verifyResetPassword,
   volunteerOnboarding,
   organizationOnboarding,
@@ -1272,6 +1273,66 @@ export async function verifyForgotPasswordOtpAction(otpCode: string): Promise<{
   } catch (error) {
     const apiError = error as ApiError;
     logger.log('[OTP VERIFY ACTION] API Error:', apiError);
+
+    // Return the actual API error message
+    return {
+      success: false,
+      error: apiError.message || 'Failed to verify OTP',
+    };
+  }
+}
+
+/**
+ * Server Action for Verify Reset Password OTP
+ * Verifies the OTP sent to the user's email and returns a token
+ * This token must be used in the reset password API
+ */
+export async function verifyResetPasswordOtpAction(otpCode: string): Promise<{
+  success: boolean;
+  token?: string;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[RESET PASSWORD OTP VERIFY ACTION] Starting OTP verification');
+    logger.log('[RESET PASSWORD OTP VERIFY ACTION] Input OTP:', otpCode);
+
+    // SECURITY: Server-side sanitization (authoritative layer)
+    const sanitizedOtp = sanitizeOtp(otpCode);
+    logger.log('[RESET PASSWORD OTP VERIFY ACTION] Sanitized OTP:', sanitizedOtp);
+
+    if (!sanitizedOtp || sanitizedOtp.length !== 6) {
+      logger.log('[RESET PASSWORD OTP VERIFY ACTION] Invalid OTP format');
+      return {
+        success: false,
+        error: 'Please enter a valid 6-digit OTP',
+      };
+    }
+
+    logger.log('[RESET PASSWORD OTP VERIFY ACTION] Calling API with sanitized OTP');
+    const response: ApiResponse<unknown> = await verifyResetPasswordOtp(sanitizedOtp);
+    logger.log('[RESET PASSWORD OTP VERIFY ACTION] API Response:', response);
+
+    // Extract token from the response data
+    // The API returns the token as a string with "token:" prefix or as an object
+    let token: string | undefined;
+    if (typeof response.data === 'string') {
+      // Token is returned as a string with "token:" prefix
+      token = response.data.startsWith('token:') ? response.data.substring(6) : response.data;
+    } else if (response.data && typeof response.data === 'object' && 'token' in response.data) {
+      // Token is returned as an object with a token property
+      token = (response.data as { token: string }).token;
+    }
+    logger.log('[RESET PASSWORD OTP VERIFY ACTION] Extracted token:', token ? 'present' : 'missing');
+
+    return {
+      success: true,
+      token: token,
+      message: response.message || 'OTP verified successfully',
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[RESET PASSWORD OTP VERIFY ACTION] API Error:', apiError);
 
     // Return the actual API error message
     return {

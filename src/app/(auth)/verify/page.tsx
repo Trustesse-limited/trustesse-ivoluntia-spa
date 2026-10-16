@@ -28,7 +28,7 @@ import { sanitizeEmail, sanitizeOtp } from '@/lib/sanitize'
 function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { verifyOtp, verifyTwoFactor, verifyForgotPasswordOtp, resendOtp } = useAuthActions();
+  const { verifyOtp, verifyTwoFactor, verifyForgotPasswordOtp, verifyResetPasswordOtp, resendOtp } = useAuthActions();
 
   const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('');
@@ -66,9 +66,15 @@ function VerifyContent() {
     } else if (purposeToUse === 'ForgotPassword') {
       otpPurpose = 'ForgotPassWord';
       notificationType = 'ForgotPassWord';
+    } else if (purposeToUse === 'Signup') {
+      otpPurpose = 'Signup';
+      notificationType = 'EmailConfirmationOtp';
+    } else if (purposeToUse === 'PasswordReset') {
+      otpPurpose = 'PasswordReset';
+      notificationType = 'ResetPasswordOtp';
     } else {
       otpPurpose = purposeToUse;
-      notificationType = 'email';
+      notificationType = 'EmailConfirmationOtp';
     }
 
     console.log('[VERIFY PAGE] OTP Purpose:', otpPurpose);
@@ -109,7 +115,7 @@ function VerifyContent() {
       return;
     }
 
-    // Store params in ref on first render
+    // Store params in ref on first render only
     if (emailParam && !emailRef.current) {
       emailRef.current = sanitizeEmail(emailParam);
       setEmail(emailRef.current);
@@ -128,7 +134,8 @@ function VerifyContent() {
     }
 
     // Clean URL by removing query parameters after reading them
-    if (searchParams.has('email') || searchParams.has('purpose') || searchParams.has('resend')) {
+    // Only do this once after params are stored
+    if ((emailParam || purposeParam || resendParam) && emailRef.current && purposeRef.current) {
       router.replace('/verify');
     }
   }, [searchParams, router, handleResendOtp]);
@@ -200,8 +207,27 @@ function VerifyContent() {
         setIsVerifying(false);
         return;
       }
+    } else if (purpose === 'PasswordReset') {
+      // Use reset password OTP verify endpoint
+      console.log('[VERIFY PAGE] Calling verifyResetPasswordOtp');
+      result = await verifyResetPasswordOtp(otpToVerify);
+      console.log('[VERIFY PAGE] verifyResetPasswordOtp result:', result);
+      if (result.success && result.token) {
+        // Pass token as URL parameter to reset password page
+        toast.dismiss();
+        showToast.success('OTP verified successfully!');
+        router.push(`/resetpassword?email=${encodeURIComponent(email)}&token=${encodeURIComponent(result.token)}`);
+        setIsVerifying(false);
+        return;
+      } else {
+        // Handle reset password OTP verification failure
+        toast.dismiss();
+        showToast.error(result.error || 'Failed to verify OTP');
+        setIsVerifying(false);
+        return;
+      }
     } else {
-      // Use normal OTP verify endpoint for signup
+      // Use normal OTP verify endpoint for signup (email confirmation)
       result = await verifyOtp({
         otpCode: otpToVerify,
       });
@@ -219,9 +245,12 @@ function VerifyContent() {
           router.push('/login');
         }
       } else {
-        // For signup, redirect to login page
+        // For signup and other purposes, redirect to login page
         router.push('/login');
       }
+    } else {
+      // Handle verification failure
+      showToast.error(result.error || 'Failed to verify OTP');
     }
 
     setIsVerifying(false);
