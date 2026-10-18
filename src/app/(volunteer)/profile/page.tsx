@@ -7,6 +7,7 @@ import Link from "next/link";
 import { AppButton } from "@/components/AppButton";
 import { useAuthStore } from "@/store";
 import { useAuthActions } from "@/hooks/useAuthActions";
+import { useActiveTab } from "@/hooks/useActiveTab";
 import type { VolunteerProfile } from "@/types/api";
 import { 
   FiUser, 
@@ -25,10 +26,21 @@ import {
   FiX
 } from "react-icons/fi";
 
+const PROFILE_TAB_IDS = ['profile', 'history', 'skills', 'settings'] as const;
+type ProfileTab = (typeof PROFILE_TAB_IDS)[number];
+
+const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
+  { id: 'profile', label: 'Profile Information' },
+  { id: 'history', label: 'My History' },
+  { id: 'skills', label: 'Skills and Interests' },
+  { id: 'settings', label: 'Account Settings' },
+];
+
 export default function VolunteerProfilePage() {
   const { user } = useAuthStore();
   const { getVolunteerProfile } = useAuthActions();
-  const [activeTab, setActiveTab] = useState('profile');
+  // Active tab is persisted in the URL (?tab=...) so it survives refresh
+  const [activeTab, setActiveTab] = useActiveTab<ProfileTab>('profile', PROFILE_TAB_IDS);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterBy, setFilterBy] = useState('date');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
@@ -215,12 +227,7 @@ export default function VolunteerProfilePage() {
         {/* Tab Headers */}
         <div className="border-b border-gray-200">
           <div className="flex flex-wrap">
-            {[
-              { id: 'profile', label: 'Profile Information' },
-              { id: 'history', label: 'My History' },
-              { id: 'skills', label: 'Skills and Interests' },
-              { id: 'settings', label: 'Account Settings' }
-            ].map((tab) => (
+            {PROFILE_TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}

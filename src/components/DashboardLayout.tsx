@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { BRAND_NAME } from "../../constants";
 import LogoutModal from "./LogoutModal";
 import SessionExpiredModal from "./SessionExpiredModal";
+import logger from "@/lib/logger";
 
 type NavLink = {
   label: string;
@@ -99,11 +100,15 @@ export default function DashboardLayout({
   const [isSessionExpiredModalOpen, setIsSessionExpiredModalOpen] = useState(false);
   const [canRefreshSession, setCanRefreshSession] = useState(true);
   const pathname = usePathname();
-  const { validateToken } = useAuthActions();
+  const { validateToken, getFoundationProfile } = useAuthActions();
+  const { user, setOrganizationProfile } = useAuthStore();
   const validationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check token expiration periodically
   useEffect(() => {
+    const readCookie = (name: string): string | undefined =>
+      document.cookie.split('; ').find(row => row.startsWith(`${name}=`))?.split('=')[1];
+
     const checkTokenExpiration = async () => {
       // Skip validation if user is currently logging out
       if (isLoggingOut) {
@@ -111,22 +116,31 @@ export default function DashboardLayout({
       }
 
       try {
-        const result = await validateToken();
+        // Local clock check first: token_expiration is a client-readable
+        // cookie, so we can detect expiry at the exact moment it happens
+        // (validateTokenAction performs the same check server-side with a
+        // 1-minute safety buffer)
+        const expirationTime = readCookie('token_expiration');
+        const isLocallyExpired =
+          expirationTime !== undefined &&
+          expirationTime !== '' &&
+          !Number.isNaN(parseInt(expirationTime, 10)) &&
+          Date.now() >= parseInt(expirationTime, 10);
+
+        const result = isLocallyExpired ? { isValid: false } : await validateToken();
         if (!result.isValid) {
           // Check if refresh token is still valid
-          const refreshExpiration = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('refresh_token_expiration='))
-            ?.split('=')[1];
+          const refreshExpiration = readCookie('refresh_token_expiration');
 
           if (refreshExpiration) {
-            const expirationTime = parseInt(refreshExpiration);
-            const currentTime = Date.now();
-            const isRefreshTokenValid = currentTime < expirationTime;
+            const refreshExpiryTime = parseInt(refreshExpiration, 10);
+            const isRefreshTokenValid = !Number.isNaN(refreshExpiryTime) && Date.now() < refreshExpiryTime;
             setCanRefreshSession(isRefreshTokenValid);
           } else {
-            // No refresh token expiry stored, assume it's valid
-            setCanRefreshSession(true);
+            // No refresh token expiry stored — we cannot verify the refresh
+            // token is still valid, so hide the refresh button and only offer
+            // logout. A working refresh requires a re-login.
+            setCanRefreshSession(false);
           }
 
           setIsSessionExpiredModalOpen(true);
@@ -142,12 +156,26 @@ export default function DashboardLayout({
     // Check immediately on mount
     checkTokenExpiration();
 
-    // Check every 5 minutes
+    // Check every 5 minutes (covers server-side revocation / clock drift)
     validationIntervalRef.current = setInterval(checkTokenExpiration, 5 * 60 * 1000);
+
+    // Also fire the moment the access token actually expires so the modal
+    // doesn't appear up to 5 minutes late
+    let expiryTimeout: NodeJS.Timeout | null = null;
+    const expirationTime = readCookie('token_expiration');
+    if (expirationTime) {
+      const remainingMs = parseInt(expirationTime, 10) - Date.now();
+      if (!Number.isNaN(remainingMs) && remainingMs > 0) {
+        expiryTimeout = setTimeout(checkTokenExpiration, remainingMs);
+      }
+    }
 
     return () => {
       if (validationIntervalRef.current) {
         clearInterval(validationIntervalRef.current);
+      }
+      if (expiryTimeout) {
+        clearTimeout(expiryTimeout);
       }
     };
   }, [validateToken, isLoggingOut]);
@@ -159,8 +187,53 @@ export default function DashboardLayout({
       validationIntervalRef.current = null;
     }
   }, [isLoggingOut]);
+
+  // Fetch organization profile once for organization users
+  useEffect(() => {
+    const fetchOrganizationProfile = async () => {
+      // Check for both 'Foundation' (from backend) and 'Organization' (normalized in auth store)
+      const isOrganizationUser = user?.accountType === 'Foundation' || user?.accountType === 'Organization';
+
+      if (dashboardType === 'organization' && !user?.organizationProfile && isOrganizationUser) {
+        try {
+          const result = await getFoundationProfile();
+          if (result.success && result.data) {
+            // Create default location from profile address data
+            const defaultLocation = {
+              address: result.data.address || '',
+              city: result.data.city || '',
+              state: result.data.foundationState || '',
+              country: result.data.foundationCountry || '',
+              zipcode: result.data.zipCode || '',
+            };
+
+            const profileData = {
+              name: result.data.name,
+              email: result.data.email,
+              foundationCategory: result.data.foundationCategory,
+              website: result.data.website,
+              mission: result.data.mission,
+              address: result.data.address,
+              city: result.data.city,
+              zipcode: result.data.zipCode,
+              foundationCountry: result.data.foundationCountry,
+              foundationState: result.data.foundationState,
+              causes: result.data.causes || undefined,
+              logoUrl: result.data.logoUrl,
+              locations: [defaultLocation],
+            };
+
+            setOrganizationProfile(profileData);
+          }
+        } catch (error) {
+          logger.error('Failed to fetch organization profile:', error);
+        }
+      }
+    };
+    fetchOrganizationProfile();
+  }, [dashboardType, user?.organizationProfile, user?.accountType, getFoundationProfile, setOrganizationProfile]);
+
   const { logout } = useAuthActions();
-  const { user } = useAuthStore();
   const router = useRouter();
 
   // Get organization logo with priority:

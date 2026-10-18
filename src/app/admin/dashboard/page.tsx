@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
-import { api } from "@/lib/api";
+import { getProgramsAction } from "@/app/actions/auth";
 import { ProgramApiResponse } from "@/types/api";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
@@ -22,7 +22,10 @@ export default function AdminDashboard() {
     const fetchPrograms = async () => {
       try {
         setIsLoading(true);
-        const response = await api.programs.getAll();
+        // Programs endpoints must go through server actions: calling the API
+        // directly from the browser fails CORS (backend returns a wildcard
+        // Access-Control-Allow-Origin, which is invalid with credentials)
+        const response = await getProgramsAction();
         
         if (response.success && response.data) {
           setPrograms(response.data as ProgramApiResponse[]);

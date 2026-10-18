@@ -3,12 +3,24 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { FiSearch, FiFilter, FiEye, FiEdit, FiTrash2, FiMoreVertical, FiShield, FiUsers } from "react-icons/fi";
+import { useActiveTab } from "@/hooks/useActiveTab";
+
+const ROLE_TAB_IDS = ["all", "active", "inactive", "system"] as const;
+type RoleTab = (typeof ROLE_TAB_IDS)[number];
+
+const ROLE_TABS: { key: RoleTab; label: string }[] = [
+  { key: "all", label: "All Roles" },
+  { key: "active", label: "Active" },
+  { key: "inactive", label: "Inactive" },
+  { key: "system", label: "System Roles" },
+];
 
 export default function RolesPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState("all");
+  // Active tab is persisted in the URL (?tab=...) so it survives refresh
+  const [activeTab, setActiveTab] = useActiveTab<RoleTab>("all", ROLE_TAB_IDS);
 
   const roles = [
     { id: 1, name: "Super Admin", description: "Full system access with all permissions", userCount: 3, status: "active", created: "2024-01-15", lastModified: "2024-03-20" },
@@ -51,12 +63,7 @@ export default function RolesPage() {
     }
   };
 
-  const tabs = [
-    { key: "all", label: "All Roles" },
-    { key: "active", label: "Active" },
-    { key: "inactive", label: "Inactive" },
-    { key: "system", label: "System Roles" },
-  ];
+  const tabs = ROLE_TABS;
 
   return (
     <motion.div

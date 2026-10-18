@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProgramItem } from "@/types";
 import { formatNumberWithCommas } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { joinProgramAction } from "@/app/actions/auth";
 import toast from "react-hot-toast";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
@@ -15,6 +15,7 @@ type ProgramTableProps = {
   showStatus?: boolean;
   showProgress?: boolean;
   showCertificate?: boolean;
+  isLoading?: boolean;
 };
 
 export default function ProgramTable({
@@ -25,6 +26,7 @@ export default function ProgramTable({
   showStatus = false,
   showProgress = false,
   showCertificate = false,
+  isLoading = false,
 }: ProgramTableProps) {
   const router = useRouter();
   const [enrollingIndex, setEnrollingIndex] = useState<number | null>(null);
@@ -33,7 +35,10 @@ export default function ProgramTable({
     setEnrollingIndex(index);
     try {
       const program = data[index];
-      const response = await api.programs.join(program.id);
+      // Join must go through a server action: calling the API directly from
+      // the browser fails CORS (wildcard Access-Control-Allow-Origin with
+      // credentialed requests is rejected by the browser)
+      const response = await joinProgramAction(program.id);
       if (response.success) {
         toast.success('Successfully enrolled in program');
         onEnroll?.(program, index);
@@ -56,6 +61,14 @@ export default function ProgramTable({
     const total = end.getTime() - start.getTime();
     const elapsed = now.getTime() - start.getTime();
     return Math.min(100, Math.max(0, (elapsed / total) * 100));
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
   return (
@@ -94,18 +107,96 @@ export default function ProgramTable({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {data.map((program, index) => (
-            <tr key={index}>
+          {isLoading ? (
+            [1, 2, 3].map((row) => (
+              <tr key={row} className="bg-white">
+                <td className="w-[180px] px-4 py-2 whitespace-nowrap overflow-hidden">
+                  <div
+                    aria-hidden="true"
+                    className="h-4 w-full max-w-[140px] bg-shimmer animate-shimmer rounded-sm"
+                  />
+                </td>
+                <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                  <div
+                    aria-hidden="true"
+                    className="h-4 w-[72px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                  />
+                </td>
+                <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                  <div
+                    aria-hidden="true"
+                    className="h-4 w-[72px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                  />
+                </td>
+                <td className="w-[160px] px-4 py-2 whitespace-nowrap text-center">
+                  <div
+                    aria-hidden="true"
+                    className="h-4 w-[112px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                  />
+                </td>
+                <td className="w-[140px] px-4 py-2 whitespace-nowrap text-center">
+                  <div
+                    aria-hidden="true"
+                    className="h-4 w-[84px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                  />
+                </td>
+                {showStatus && (
+                  <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                    <div
+                      aria-hidden="true"
+                      className="h-4 w-[60px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                    />
+                  </td>
+                )}
+                {showProgress && (
+                  <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                    <div aria-hidden="true" className="flex flex-col items-center gap-1">
+                      <div
+                        aria-hidden="true"
+                        className="h-2 w-full max-w-[60px] bg-shimmer animate-shimmer rounded-full"
+                      />
+                      <div
+                        aria-hidden="true"
+                        className="h-3 w-[24px] bg-shimmer animate-shimmer rounded-sm"
+                      />
+                    </div>
+                  </td>
+                )}
+                <td className="w-[160px] px-4 py-2 whitespace-nowrap text-center">
+                  <div aria-hidden="true" className="flex justify-center gap-2">
+                    <div
+                      aria-hidden="true"
+                      className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-[6px]"
+                    />
+                    {showEnrollButton && (
+                      <div
+                        aria-hidden="true"
+                        className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-[6px]"
+                      />
+                    )}
+                    {showCertificate && (
+                      <div
+                        aria-hidden="true"
+                        className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-[6px]"
+                      />
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))
+          ) : (
+            data.map((program, index) => (
+              <tr key={index}>
               <td className="w-[180px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap overflow-hidden">
                 <span className="block truncate text-left w-50">
                   {program.title}
                 </span>
               </td>
               <td className="w-[120px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
-                {program.startDate}
+                {formatDate(program.startDate)}
               </td>
               <td className="w-[120px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
-                {program.endDate}
+                {formatDate(program.endDate)}
               </td>
               <td className="w-[160px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
                 {program.location}
@@ -182,7 +273,7 @@ export default function ProgramTable({
                 )}
               </td>
             </tr>
-          ))}
+          )))}
         </tbody>
       </table>
     </div>

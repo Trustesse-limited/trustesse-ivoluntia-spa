@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { PartialVolunteerSignUpDto } from '@/types/api';
+import { PartialVolunteerSignUpDto, FoundationProfile, VolunteerProfile } from '@/types/api';
 import { OnboardingState, OnboardingFormData, OrganizationOnboardingData } from '@/types/onboarding';
-import logger from '@/lib/logger';
 
 const initialFormData: PartialVolunteerSignUpDto = {
   metaData: {
@@ -309,13 +308,13 @@ export const useOnboardingStore = create<OnboardingState>()(
         const hasCompletedOnboarding = loginResponse.hasCompletedOnboarding || false;
         const userProfile = loginResponse.userProfile || {};
 
-        // logger.log('[Onboarding] INITIALIZE FROM LOGIN RESPONSE:', {
-        //   accountType,
-        //   lastCompletedPage,
-        //   hasCompletedOnboarding,
-        //   userProfile: !!userProfile,
-        //   userProfileData: userProfile,
-        // });
+        console.log('[Onboarding] INITIALIZE FROM LOGIN RESPONSE:', {
+          accountType,
+          lastCompletedPage,
+          hasCompletedOnboarding,
+          userProfile: !!userProfile,
+          userProfileData: userProfile,
+        });
 
         // Set currentStep for redirection
         // lastCompletedPage is 1-based API page, currentStep is 0-based UI step
@@ -325,14 +324,15 @@ export const useOnboardingStore = create<OnboardingState>()(
         // Populate form data from login response for completed pages
         // This allows users to see their previously entered data
         if (accountType === 'volunteer') {
+          const volunteerProfile = userProfile as VolunteerProfile;
           // Handle gender conversion from both string and number formats
-          const genderValue = userProfile.gender;
+          const genderValue = volunteerProfile.gender;
           const genderNum = genderValue ? (typeof genderValue === 'string' ? parseInt(genderValue, 10) : genderValue) : 0;
 
           // logger.log('[Onboarding] Gender conversion - genderValue:', genderValue, 'genderNum:', genderNum);
 
           // Format date of birth to YYYY-MM-DD for date input
-          let formattedDob = userProfile.dateOfBirth || '';
+          let formattedDob = volunteerProfile.dateOfBirth || '';
           if (formattedDob && formattedDob.includes('T')) {
             formattedDob = formattedDob.split('T')[0];
           }
@@ -343,30 +343,30 @@ export const useOnboardingStore = create<OnboardingState>()(
               currentPage: lastCompletedPage,
             },
             bioData: {
-              firstName: userProfile.firstName || '',
-              lastName: userProfile.lastName || '',
-              otherName: userProfile.otherName || '',
+              firstName: volunteerProfile.firstName || '',
+              lastName: volunteerProfile.lastName || '',
+              otherName: volunteerProfile.otherName || '',
               gender: genderNum,
               dateOfBirth: formattedDob,
             },
             locationDto: {
-              address: userProfile.address || '',
-              city: userProfile.city || '',
-              zipCode: userProfile.zipCode || '',
-              countryId: userProfile.country || '',
-              countryName: userProfile.countryName || '',
-              stateId: userProfile.state || '',
-              stateName: userProfile.stateName || '',
+              address: volunteerProfile.address || '',
+              city: volunteerProfile.city || '',
+              zipCode: volunteerProfile.zipCode || '',
+              countryId: '',
+              countryName: volunteerProfile.countryName || '',
+              stateId: '',
+              stateName: volunteerProfile.stateName || '',
             },
             interest: {
-              names: userProfile.interestNames || [],
+              names: volunteerProfile.interestNames || [],
             },
             skill: {
-              names: userProfile.skillNames || [],
+              names: volunteerProfile.skillNames || [],
             },
             profileAndBioData: {
-              bio: userProfile.bio || '',
-              profileImageurl: userProfile.profileImage || '',
+              bio: volunteerProfile.bio || '',
+              profileImageurl: volunteerProfile.userImage || '',
             },
           };
 
@@ -385,29 +385,33 @@ export const useOnboardingStore = create<OnboardingState>()(
           });
         } else {
           // Update organization data with login response
+          const foundationProfile = userProfile as FoundationProfile;
           const orgFormData: OrganizationOnboardingData = {
             metaData: {
               accountType: 'organization',
               currentPage: lastCompletedPage,
             },
             orgData: {
-              name: userProfile.firstName || '', // Use firstName as org name (backend sends it here)
-              category: userProfile.category || '',
-              website: userProfile.website || '',
-              mission: userProfile.mission || '',
-              causes: userProfile.causeNames || [],
-              logo: userProfile.foundationLogoUrl || null,
+              name: foundationProfile.foundationName || foundationProfile.name || foundationProfile.firstName || '',
+              category: foundationProfile.category || '',
+              website: foundationProfile.website || '',
+              mission: foundationProfile.mission || '',
+              causes: foundationProfile.causeNames || [],
+              logo: foundationProfile.logo || null,
               disclaimerAgreed: false,
             },
             locationDto: {
-              address: userProfile.address || '',
-              city: userProfile.city || '',
-              zipCode: userProfile.zipCode || '',
-              countryId: userProfile.foundationCountry || '',
-              countryName: userProfile.countryName || '',
-              stateId: userProfile.foundationState || '',
+              address: foundationProfile.foundationAddress || foundationProfile.address || '',
+              city: foundationProfile.foundationCity || foundationProfile.city || '',
+              zipCode: foundationProfile.zipCode || '',
+              countryId: '',
+              countryName: foundationProfile.foundationCountry || foundationProfile.countryName || '',
+              stateId: '',
+              stateName: foundationProfile.foundationState || foundationProfile.stateName || '',
             },
           };
+
+          console.log('[Onboarding] Setting organization form data:', orgFormData);
 
           set({
             accountType: 'organization',
@@ -484,6 +488,7 @@ export const useOnboardingStore = create<OnboardingState>()(
     }),
     {
       name: 'onboarding-storage',
+      version: 1,
       // SECURITY: Persist ONLY non-sensitive progress data.
       // Email addresses are NEVER persisted implicitly — they are only stored
       // in localStorage via saveRememberMe() when the user explicitly

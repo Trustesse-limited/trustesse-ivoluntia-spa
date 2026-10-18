@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { AppButton } from "@/components/AppButton";
+import { ErrorState } from "@/components/ErrorState";
 import { OrganizationFormProps } from "@/types";
 import { getCausesAction } from "@/app/actions/auth";
 import { Cause } from "@/types/api";
 import { motion } from "framer-motion";
+import { FiAlertCircle } from "react-icons/fi";
 
 const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFormData }) => {
   const [selected, setSelected] = useState<string[]>(formData.causes || []);
@@ -82,19 +84,11 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
           <h2 className="text-2xl font-normal text-[#161616]">
             Causes you support
           </h2>
-          <p className="text-sm font-normal mt-1 text-gray-500">
-            {error}
-          </p>
-          <div className="mt-4">
-            <AppButton
-              type="button"
-              onClick={fetchCauses}
-              isLoading={false}
-              className="bg-[#21537B] text-white rounded-full px-6 py-1.5 text-sm!"
-            >
-              Retry
-            </AppButton>
-          </div>
+          <ErrorState
+            message={error}
+            onRetry={fetchCauses}
+            icon={<FiAlertCircle className="text-4xl" />}
+          />
         </div>
       </form>
     );

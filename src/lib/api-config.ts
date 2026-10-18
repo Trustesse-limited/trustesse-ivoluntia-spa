@@ -153,12 +153,19 @@ export const API_ENDPOINTS = {
   programs: {
     create: buildApiEndpointNoVersion('Programs/create'),
     getAll: buildApiEndpointNoVersion('Programs/get-programs'),
+    getStats: buildApiEndpointNoVersion('Programs/get-program-stats'),
     getById: (id: string) => buildApiEndpointNoVersion(`Programs/get-program-by-id?id=${id}`),
     update: buildApiEndpointNoVersion('Programs/update'),
     deleteGoal: buildApiEndpointNoVersion('Programs/delete-program-goal'),
+    delete: buildApiEndpointNoVersion('Programs/delete-program'),
     updateStatus: buildApiEndpointNoVersion('Programs/updateprogramstatus'),
     join: buildApiEndpointNoVersion('Programs/join-program'),
     leave: buildApiEndpointNoVersion('Programs/leave-program'),
+  },
+
+  // Location endpoints (non-versioned)
+  location: {
+    create: buildApiEndpointNoVersion('Location/create-location'),
   },
 
   // Qualification endpoints (non-versioned)

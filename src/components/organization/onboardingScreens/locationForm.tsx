@@ -73,19 +73,27 @@ const LocationForm: React.FC<OrganizationFormProps> = ({
         setFormData({ ...formData, countryName: selectedCountry.name });
       }
     }
-  }, [countries, formData.country]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countries, formData.country, formData.countryName, setFormData]);
 
   // Match country by name when countries are loaded (for pre-filled data from login)
   useEffect(() => {
+    logger.log('[LocationForm] Country matching check:', {
+      countryName: formData.countryName,
+      countriesCount: countries.length,
+      currentCountry: formData.country
+    });
     if (formData.countryName && countries.length > 0 && !formData.country) {
       const matchedCountry = countries.find(c => c.name === formData.countryName);
       if (matchedCountry) {
         logger.log('[LocationForm] Matched country by name:', formData.countryName, '-> ID:', matchedCountry.id);
         setFormData({ ...formData, country: matchedCountry.id });
         setHasMatchedState(false); // Reset state matching flag when country changes
+      } else {
+        logger.log('[LocationForm] No country match found for:', formData.countryName);
       }
     }
-  }, [countries, formData.countryName, formData.country]);
+  }, [countries, formData.countryName, formData.country, setFormData]);
 
   // Match state by name when states are loaded AND country is already set (for pre-filled data from login)
   useEffect(() => {
@@ -97,7 +105,7 @@ const LocationForm: React.FC<OrganizationFormProps> = ({
         setHasMatchedState(true); // Mark state as matched to prevent re-matching
       }
     }
-  }, [states, formData.stateName, formData.state, formData.country, hasMatchedState]);
+  }, [states, formData.stateName, formData.state, formData.country, hasMatchedState, setFormData]);
 
   return (
     <form className="space-y-6 pb-16 sm:px-6 md:px-8 max-w-6xl mx-auto">

@@ -60,6 +60,7 @@ export interface ProgramItem {
   image?: string;
   volunteers: number;
   status: string;
+  foundationId?: string;
   organization: string;
   isFavourited?: boolean;
   duration?: string;

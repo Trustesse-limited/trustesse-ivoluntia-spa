@@ -1,11 +1,19 @@
 'use client'
 import Image from "next/image";
 import { SmartImage } from "@/components/SmartImage";
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { organizationProjects } from "@/lib/mockData";
 import { useAuthStore } from "@/store";
+import { useActiveTab } from "@/hooks/useActiveTab";
+
+const DASHBOARD_TAB_IDS = ['donations', 'see-all'] as const;
+type DashboardTab = (typeof DASHBOARD_TAB_IDS)[number];
+
+const DASHBOARD_TABS: { key: DashboardTab; label: string }[] = [
+  { key: 'donations', label: 'Recent donations' },
+  { key: 'see-all', label: 'see all' },
+];
 
 
 export default function OrgDashboardPage() {
@@ -63,12 +71,9 @@ const currentDate = new Date().toLocaleDateString('en-US', {
 const COLORS = ["#3B82F6", "#22C55E", "#EAB308"];
 
 {/* State for active tab */}
-  const [activeTab, setActiveTab] = useState("donations");
+  const [activeTab, setActiveTab] = useActiveTab<DashboardTab>("donations", DASHBOARD_TAB_IDS);
    
-  const  tabs =[
-    {"label":"Recent donations", key: "donations" }, 
-    {"label":"see all", key: "see-all" }
-  ];
+  const tabs = DASHBOARD_TABS;
 
   const isViewingAll = activeTab === "see-all";
 

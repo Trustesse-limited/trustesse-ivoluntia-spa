@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { AppButton } from "@/components/AppButton";
+import { ErrorState } from "@/components/ErrorState";
 import { getSkillsAction } from "@/app/actions/auth";
 import { Skill } from "@/types/api";
 import { VolunteerFormData } from "@/types";
 import { motion } from "framer-motion";
+import { FiAlertCircle } from "react-icons/fi";
 
 interface SkillsAndStrengthFormProps {
   formData: VolunteerFormData;
@@ -87,19 +89,11 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
           <h2 className="text-2xl font-normal text-[#161616]">
             Skills and Strength
           </h2>
-          <p className="text-sm font-normal mt-1 text-gray-500">
-            {error}
-          </p>
-          <div className="mt-4">
-            <AppButton
-              type="button"
-              onClick={fetchSkills}
-              isLoading={false}
-              className="bg-[#21537B] text-white rounded-full px-6 py-1.5 text-sm!"
-            >
-              Retry
-            </AppButton>
-          </div>
+          <ErrorState
+            message={error}
+            onRetry={fetchSkills}
+            icon={<FiAlertCircle className="text-4xl" />}
+          />
         </div>
       </form>
     );

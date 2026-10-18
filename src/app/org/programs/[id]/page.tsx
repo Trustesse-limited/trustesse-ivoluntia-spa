@@ -7,11 +7,12 @@ import { FiCalendar, FiMapPin, FiUsers, FiTrash2 } from "react-icons/fi";
 import BackButton from "@/components/BackButton";
 import Modal from "@/components/Modal";
 import { AppButton } from "@/components/AppButton";
-import { api } from "@/lib/api";
+import { getProgramByIdAction, updateProgramStatusAction, deleteProgramGoalAction } from "@/app/actions/auth";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse, ProgramGoal } from "@/types/api";
 import toast from "react-hot-toast";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { formatProgramLocation, normalizeProgramStatus } from "@/lib/utils";
 
 const formatNumberWithCommas = (num: number) => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -32,7 +33,10 @@ export default function ProgramDetailPage() {
 
       try {
         setIsLoading(true);
-        const response = await api.programs.getById(Array.isArray(id) ? id[0] : id);
+        // Programs endpoints must go through server actions: calling the API
+        // directly from the browser fails CORS (backend returns a wildcard
+        // Access-Control-Allow-Origin, which is invalid with credentials)
+        const response = await getProgramByIdAction(Array.isArray(id) ? id[0] : id);
         
         if (response.success && response.data) {
           // Map API response to ProgramItem interface
@@ -42,7 +46,7 @@ export default function ProgramDetailPage() {
             title: programData.title || programData.name || '',
             startDate: programData.startDate || '',
             endDate: programData.endDate || '',
-            location: programData.location || programData.city || '',
+            location: formatProgramLocation(programData.location || programData.city),
             donationTarget: programData.donationTarget || programData.targetAmount || 0,
             raised: programData.raised || programData.raisedAmount || 0,
             category: programData.category || programData.foundationCategory || '',
@@ -50,7 +54,7 @@ export default function ProgramDetailPage() {
             description: programData.description || programData.mission || '',
             image: programData.image || programData.logo || '',
             volunteers: programData.volunteers || 0,
-            status: programData.status || 'Active',
+            status: normalizeProgramStatus(programData.status),
             organization: programData.organization || programData.organizationName || '',
             isFavourited: false,
             duration: programData.duration || '',
@@ -112,7 +116,7 @@ export default function ProgramDetailPage() {
 
   const handleDelete = async () => {
     try {
-      const response = await api.programs.updateStatus({
+      const response = await updateProgramStatusAction({
         programId: program.id,
         status: 'Deleted',
         queriedComment: 'Program deleted by organization'
@@ -122,7 +126,7 @@ export default function ProgramDetailPage() {
         toast.success('Program deleted successfully');
         router.push('/org/programs');
       } else {
-        toast.error('Failed to delete program');
+        toast.error(response.error || 'Failed to delete program');
       }
     } catch (error) {
       console.error('Error deleting program:', error);
@@ -133,7 +137,7 @@ export default function ProgramDetailPage() {
 
   const handleForfeit = async () => {
     try {
-      const response = await api.programs.updateStatus({
+      const response = await updateProgramStatusAction({
         programId: program.id,
         status: 'Forfeited',
         queriedComment: 'Program forfeited by organization'
@@ -143,7 +147,7 @@ export default function ProgramDetailPage() {
         toast.success('Program forfeited successfully');
         router.push('/org/programs');
       } else {
-        toast.error('Failed to forfeit program');
+        toast.error(response.error || 'Failed to forfeit program');
       }
     } catch (error) {
       console.error('Error forfeiting program:', error);
@@ -154,7 +158,7 @@ export default function ProgramDetailPage() {
 
   const handleDeleteGoal = async (goalId: string) => {
     try {
-      const response = await api.programs.deleteGoal(goalId);
+      const response = await deleteProgramGoalAction(goalId);
       if (response.success) {
         toast.success('Goal deleted successfully');
         setProgramGoals(prev => prev.filter(goal => goal.id !== goalId));

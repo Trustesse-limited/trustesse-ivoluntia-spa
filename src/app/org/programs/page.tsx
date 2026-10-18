@@ -4,12 +4,22 @@ import { useRouter } from "next/navigation";
 import ProgramTable from "@/components/organization/programTable";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse } from "@/types/api";
-import { api } from "@/lib/api";
+import { getProgramsAction } from "@/app/actions/auth";
+import { useActiveTab } from "@/hooks/useActiveTab";
+import { useAuthStore } from "@/store";
 import { motion } from "framer-motion";
 import { AppButton } from "@/components/AppButton";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { formatProgramLocation, normalizeProgramStatus } from "@/lib/utils";
 
 type TabKey = "pending" | "active" | "history";
+
+const PROGRAM_TAB_IDS = ["pending", "active", "history"] as const;
+
+const PROGRAM_TABS: { key: TabKey; label: string }[] = [
+  { key: "pending", label: "Pending Programs" },
+  { key: "active", label: "Active Programs" },
+  { key: "history", label: "History" },
+];
 
 const getProgramStats = (programs: ProgramItem[]) => [
   { title: "Total Programs", value: programs.length, color: "bg-blue-500" },
@@ -19,7 +29,10 @@ const getProgramStats = (programs: ProgramItem[]) => [
 
 export default function ProgramsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabKey>("pending");
+  const { user } = useAuthStore();
+  const foundationId = user?.foundationId;
+  // Active tab is persisted in the URL (?tab=...) so it survives refresh
+  const [activeTab, setActiveTab] = useActiveTab<TabKey>("pending", PROGRAM_TAB_IDS);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -27,8 +40,16 @@ export default function ProgramsPage() {
     const fetchPrograms = async () => {
       try {
         setIsLoading(true);
-        const response = await api.programs.getAll();
-        
+        // Programs endpoints must go through server actions: calling the API
+        // directly from the browser fails CORS (backend returns a wildcard
+        // Access-Control-Allow-Origin, which is invalid with credentials)
+        // Scope to this organization's programs when the foundation id is
+        // known — without it the endpoint returns every organization's
+        // programs (hundreds of rows), which is slow and leaks other orgs' data
+        const response = await getProgramsAction(
+          foundationId ? { foundationId } : undefined
+        );
+
         if (response.success && response.data) {
           // Map API response to ProgramItem interface
           const mappedPrograms = (response.data as ProgramApiResponse[]).map((program: ProgramApiResponse): ProgramItem => ({
@@ -36,7 +57,7 @@ export default function ProgramsPage() {
             title: program.title || program.name || '',
             startDate: program.startDate || '',
             endDate: program.endDate || '',
-            location: program.location || program.city || '',
+            location: formatProgramLocation(program.location || program.city),
             donationTarget: program.donationTarget || program.targetAmount || 0,
             raised: program.raised || program.raisedAmount || 0,
             category: program.category || program.foundationCategory || '',
@@ -44,13 +65,19 @@ export default function ProgramsPage() {
             description: program.description || program.mission || '',
             image: program.image || program.logo || '',
             volunteers: program.volunteers || 0,
-            status: program.status || 'Active',
+            status: normalizeProgramStatus(program.status),
+            foundationId: program.foundationId,
             organization: program.organization || program.organizationName || '',
             isFavourited: false,
             duration: program.duration || '',
             targetVolunteers: program.targetVolunteers || 0,
           }));
-          setPrograms(mappedPrograms);
+          // Defense in depth: if the backend ignores the foundationId param,
+          // filter client-side so an organization only ever sees its own programs
+          const visiblePrograms = foundationId
+            ? mappedPrograms.filter(p => !p.foundationId || p.foundationId === foundationId)
+            : mappedPrograms;
+          setPrograms(visiblePrograms);
         } else {
           setPrograms([]);
         }
@@ -63,7 +90,7 @@ export default function ProgramsPage() {
     };
 
     fetchPrograms();
-  }, []);
+  }, [foundationId]);
 
   const programData: Record<TabKey, ProgramItem[]> = {
     pending: programs.filter(p => p.status?.toLowerCase() === 'pending'),
@@ -71,11 +98,7 @@ export default function ProgramsPage() {
     history: programs.filter(p => ['completed', 'forfeited', 'cancelled'].includes(p.status?.toLowerCase() || '')),
   };
 
-  const tabs = [
-    { key: "pending", label: "Pending Programs" },
-    { key: "active", label: "Active Programs" },
-    { key: "history", label: "History" },
-  ];
+  const tabs = PROGRAM_TABS;
 
   const getEmptyMessage = () =>
     activeTab === "history"
@@ -131,7 +154,7 @@ export default function ProgramsPage() {
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key as TabKey)}
+                  onClick={() => setActiveTab(tab.key)}
                   className={`pb-3 text-[14px] cursor-pointer font-medium transition border-b-2 w-fit ${
                     activeTab === tab.key
                       ? "text-[#0E68DC] border-[#42A5F5]"
@@ -148,9 +171,12 @@ export default function ProgramsPage() {
 
         {/* Tab Content */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <LoadingSpinner size="xl" opacity={0.8} />
-          </div>
+          <ProgramTable
+            data={programData[activeTab]}
+            isLoading
+            showStatus={activeTab === "history"}
+            showDeleteButton={activeTab === "history"}
+          />
         ) : programData[activeTab].length === 0 ? (
           <div className="text-center text-gray-400 italic py-12">
             {getEmptyMessage()}

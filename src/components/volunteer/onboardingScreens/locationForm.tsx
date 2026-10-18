@@ -96,8 +96,8 @@ const LocationForm: React.FC<FormProps> = ({ formData, setFormData }) => {
       country: formData.country,
       hasMatchedState
     });
-    
-    if (formData.stateName && states.length > 0 && formData.country && !hasMatchedState) {
+
+    if (formData.stateName && states.length > 0 && !formData.state && formData.country && !hasMatchedState) {
       const matchedState = states.find(s => s.name === formData.stateName);
       logger.log('[LocationForm] State match result:', matchedState ? matchedState.name : 'NOT FOUND');
       if (matchedState) {

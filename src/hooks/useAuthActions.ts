@@ -38,6 +38,16 @@ import {
   validateTokenAction,
   getVolunteerProfileAction,
   getFoundationProfileAction,
+  createProgramAction,
+  getProgramsAction,
+  getProgramStatsAction,
+  getProgramByIdAction,
+  updateProgramAction,
+  deleteProgramGoalAction,
+  deleteProgramAction,
+  updateProgramStatusAction,
+  joinProgramAction,
+  leaveProgramAction,
 } from '@/app/actions/auth';
 import {
   VolunteerSignUpRequest,
@@ -48,6 +58,9 @@ import {
   VolunteerOnboardingRequest,
   OrganizationOnboardingRequest,
   TwoFactorVerificationRequest,
+  CreateProgramRequest,
+  UpdateProgramRequest,
+  UpdateProgramStatusRequest,
 } from '@/types/api';
 import { useAuthStore, useOnboardingStore } from '@/store';
 import type { User, UserRole } from '@/store/authStore';
@@ -60,6 +73,8 @@ interface LoginDataWithExtractedUser {
     role: UserRole;
     firstName: string;
     lastName: string;
+    organizationName?: string;
+    foundationId?: string;
   };
   nameid?: string;
   email?: string;
@@ -99,7 +114,7 @@ export interface TwoFactorVerifyResult {
 export function useAuthActions() {
   const [isLoading, setIsLoading] = useState(false);
   const { login: setLogin, logout: setLogout } = useAuthStore();
-  const { clearOnboarding, clearAllOnboarding, setCurrentStep, switchAccountType } = useOnboardingStore();
+  const { clearOnboarding, clearAllOnboarding, initializeFromLoginResponse } = useOnboardingStore();
 
   const volunteerSignUp = async (data: VolunteerSignUpRequest) => {
     setIsLoading(true);
@@ -579,14 +594,16 @@ export function useAuthActions() {
             return type as 'volunteer' | 'organization' | undefined;
           })();
           
-          if (normalizedAccountTypeForOnboarding) {
-            // Only set the currentStep for redirection, don't populate form data
-            // Form data should only be populated when the onboarding API succeeds or when user navigates to a page
-            switchAccountType(normalizedAccountTypeForOnboarding === 'organization' ? 'organization' : 'volunteer');
-            // lastCompletedPage is 1-based (API page), currentStep is 0-based (UI step)
-            // If lastCompletedPage is 1, we want to show step 1 (page 2), so currentStep = lastCompletedPage
-            setCurrentStep(lastCompletedPage || 0);
-            // logger.log('[Login] Set onboarding currentStep to:', lastCompletedPage || 0);
+          if (normalizedAccountTypeForOnboarding && loginData.userProfile) {
+            // Initialize onboarding store with login response data
+            // This will populate form data from userProfile and set the correct currentStep
+            initializeFromLoginResponse({
+              accountType: accountType,
+              hasCompletedOnboarding: hasCompletedOnboarding || false,
+              lastCompletedPage: lastCompletedPage || 0,
+              userProfile: loginData.userProfile as unknown as Record<string, unknown>,
+            });
+            // logger.log('[Login] Initialized onboarding store from login response');
           }
           
           // Update auth store with user data
@@ -614,6 +631,7 @@ export function useAuthActions() {
               lastName: userProfile.lastName as string || '',
               otherName: userProfile.otherName as string || '',
               organizationName: loginData.organizationName as string || userProfile.foundationName as string || undefined,
+              foundationId: (userProfile.foundationId as string) || (loginData.foundationId as string) || undefined,
               accountType: normalizedAccountTypeForUser,
               userImage: userProfile.userImage as string | null || null,
               logo: loginData.organizationLogo as string || userProfile.logo as string | null || undefined,
@@ -633,6 +651,8 @@ export function useAuthActions() {
               role: extracted.role as UserRole,
               firstName: extracted.firstName as string,
               lastName: extracted.lastName as string,
+              organizationName: extracted.organizationName,
+              foundationId: extracted.foundationId,
               accountType: accountType as 'Volunteer' | 'Organization' | 'Admin',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -1236,6 +1256,241 @@ export function useAuthActions() {
     organizationOnboarding,
     getVolunteerProfile,
     getFoundationProfile,
+    createProgram: async (request: CreateProgramRequest) => {
+      setIsLoading(true);
+      try {
+        const result = await createProgramAction(request);
+        if (result.success) {
+          showToast.success(result.message || 'Program created successfully', {
+            duration: 3000,
+          });
+          return { success: true, data: result.data, message: result.message };
+        } else {
+          showToast.error(result.error || 'Failed to create program', {
+            duration: 4000,
+          });
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error creating program:', error);
+        showToast.error('Failed to create program. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    getPrograms: async (params?: { foundationId?: string; status?: string; search?: string }) => {
+      setIsLoading(true);
+      try {
+        const result = await getProgramsAction(params);
+        if (result.success) {
+          return { success: true, data: result.data, message: result.message };
+        } else {
+          showToast.error(result.error || 'Failed to fetch programs', {
+            duration: 4000,
+          });
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error fetching programs:', error);
+        showToast.error('Failed to fetch programs. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    getProgramStats: async (foundationId: string) => {
+      setIsLoading(true);
+      try {
+        const result = await getProgramStatsAction(foundationId);
+        if (result.success) {
+          return { success: true, data: result.data, message: result.message };
+        } else {
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error fetching program stats:', error);
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    getProgramById: async (id: string) => {
+      setIsLoading(true);
+      try {
+        const result = await getProgramByIdAction(id);
+        if (result.success) {
+          return { success: true, data: result.data, message: result.message };
+        } else {
+          showToast.error(result.error || 'Failed to fetch program', {
+            duration: 4000,
+          });
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error fetching program:', error);
+        showToast.error('Failed to fetch program. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    updateProgram: async (request: UpdateProgramRequest) => {
+      setIsLoading(true);
+      try {
+        const result = await updateProgramAction(request);
+        if (result.success) {
+          showToast.success(result.message || 'Program updated successfully', {
+            duration: 3000,
+          });
+          return { success: true, data: result.data, message: result.message };
+        } else {
+          showToast.error(result.error || 'Failed to update program', {
+            duration: 4000,
+          });
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error updating program:', error);
+        showToast.error('Failed to update program. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    deleteProgramGoal: async (programGoalId: string) => {
+      setIsLoading(true);
+      try {
+        const result = await deleteProgramGoalAction(programGoalId);
+        if (result.success) {
+          showToast.success(result.message || 'Program goal deleted successfully', {
+            duration: 3000,
+          });
+          return { success: true, message: result.message };
+        } else {
+          showToast.error(result.error || 'Failed to delete program goal', {
+            duration: 4000,
+          });
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error deleting program goal:', error);
+        showToast.error('Failed to delete program goal. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    deleteProgram: async (programId: string) => {
+      setIsLoading(true);
+      try {
+        const result = await deleteProgramAction(programId);
+        if (result.success) {
+          showToast.success(result.message || 'Program deleted successfully', {
+            duration: 3000,
+          });
+          return { success: true, message: result.message };
+        } else {
+          showToast.error(result.error || 'Failed to delete program', {
+            duration: 4000,
+          });
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error deleting program:', error);
+        showToast.error('Failed to delete program. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    updateProgramStatus: async (request: UpdateProgramStatusRequest) => {
+      setIsLoading(true);
+      try {
+        const result = await updateProgramStatusAction(request);
+        if (result.success) {
+          showToast.success(result.message || 'Program status updated successfully', {
+            duration: 3000,
+          });
+          return { success: true, message: result.message };
+        } else {
+          showToast.error(result.error || 'Failed to update program status', {
+            duration: 4000,
+          });
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error updating program status:', error);
+        showToast.error('Failed to update program status. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    joinProgram: async (programId: string) => {
+      setIsLoading(true);
+      try {
+        const result = await joinProgramAction(programId);
+        if (result.success) {
+          showToast.success(result.message || 'Successfully joined program', {
+            duration: 3000,
+          });
+          return { success: true, message: result.message };
+        } else {
+          showToast.error(result.error || 'Failed to join program', {
+            duration: 4000,
+          });
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error joining program:', error);
+        showToast.error('Failed to join program. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    leaveProgram: async (programId: string) => {
+      setIsLoading(true);
+      try {
+        const result = await leaveProgramAction(programId);
+        if (result.success) {
+          showToast.success(result.message || 'Successfully left program', {
+            duration: 3000,
+          });
+          return { success: true, message: result.message };
+        } else {
+          showToast.error(result.error || 'Failed to leave program', {
+            duration: 4000,
+          });
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error('Error leaving program:', error);
+        showToast.error('Failed to leave program. Please try again.', {
+          duration: 4000,
+        });
+        return { success: false, error: 'An unexpected error occurred' };
+      } finally {
+        setIsLoading(false);
+      }
+    },
     isLoading,
   };
 }

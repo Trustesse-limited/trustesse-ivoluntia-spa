@@ -6,10 +6,11 @@ import SearchBar from "@/components/volunteer/SearchBar";
 import { AppButton } from "@/components/AppButton";
 import { useAuthStore } from "@/store";
 import { useOnboardingStore } from "@/store";
-import { api } from "@/lib/api";
+import { getProgramsAction } from "@/app/actions/auth";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse } from "@/types/api";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { formatProgramLocation, normalizeProgramStatus } from "@/lib/utils";
 
 export default function VolunteerHomePage() {
   const { user } = useAuthStore();
@@ -26,7 +27,10 @@ export default function VolunteerHomePage() {
     const fetchPrograms = async () => {
       try {
         setIsLoading(true);
-        const response = await api.programs.getAll();
+        // Programs endpoints must go through server actions: calling the API
+        // directly from the browser fails CORS (backend returns a wildcard
+        // Access-Control-Allow-Origin, which is invalid with credentials)
+        const response = await getProgramsAction();
         
         if (response.success && response.data) {
           // Map API response to ProgramItem interface
@@ -35,7 +39,7 @@ export default function VolunteerHomePage() {
             title: program.title || program.name || '',
             startDate: program.startDate || '',
             endDate: program.endDate || '',
-            location: program.location || program.city || '',
+            location: formatProgramLocation(program.location || program.city),
             donationTarget: program.donationTarget || program.targetAmount || 0,
             raised: program.raised || program.raisedAmount || 0,
             category: program.category || program.foundationCategory || '',
@@ -43,7 +47,7 @@ export default function VolunteerHomePage() {
             description: program.description || program.mission || '',
             image: program.image || program.logo || '',
             volunteers: program.volunteers || 0,
-            status: program.status || 'Active',
+            status: normalizeProgramStatus(program.status),
             organization: program.organization || program.organizationName || '',
             isFavourited: false,
             duration: program.duration || '',

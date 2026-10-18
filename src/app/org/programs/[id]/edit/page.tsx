@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import BackButton from "@/components/BackButton";
 import DatePicker from "@/components/DatePicker";
-import { api } from "@/lib/api";
+import { getProgramByIdAction, updateProgramAction, deleteProgramGoalAction } from "@/app/actions/auth";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse, UpdateProgramRequest, ProgramGoal } from "@/types/api";
 import toast from "react-hot-toast";
 import { FiTrash2 } from "react-icons/fi";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { formatProgramLocation, normalizeProgramStatus } from "@/lib/utils";
 
 export default function EditProgramPage() {
   const router = useRouter();
@@ -38,7 +39,10 @@ export default function EditProgramPage() {
 
       try {
         setIsLoading(true);
-        const response = await api.programs.getById(Array.isArray(id) ? id[0] : id);
+        // Programs endpoints must go through server actions: calling the API
+        // directly from the browser fails CORS (backend returns a wildcard
+        // Access-Control-Allow-Origin, which is invalid with credentials)
+        const response = await getProgramByIdAction(Array.isArray(id) ? id[0] : id);
         
         if (response.success && response.data) {
           const programData = response.data as ProgramApiResponse;
@@ -47,7 +51,7 @@ export default function EditProgramPage() {
             title: programData.title || programData.name || '',
             startDate: programData.startDate || '',
             endDate: programData.endDate || '',
-            location: programData.location || programData.city || '',
+            location: formatProgramLocation(programData.location || programData.city),
             donationTarget: programData.donationTarget || programData.targetAmount || 0,
             raised: programData.raised || programData.raisedAmount || 0,
             category: programData.category || programData.foundationCategory || '',
@@ -55,7 +59,7 @@ export default function EditProgramPage() {
             description: programData.description || programData.mission || '',
             image: programData.image || programData.logo || '',
             volunteers: programData.volunteers || 0,
-            status: programData.status || 'Active',
+            status: normalizeProgramStatus(programData.status),
             organization: programData.organization || programData.organizationName || '',
             isFavourited: false,
             duration: programData.duration || '',
@@ -122,7 +126,7 @@ export default function EditProgramPage() {
         bannerImage: formData.bannerImage,
       };
 
-      const response = await api.programs.update(updateRequest);
+      const response = await updateProgramAction(updateRequest);
       
       if (response.success) {
         toast.success(isDraft ? 'Program saved as draft' : 'Program updated successfully');
@@ -140,7 +144,7 @@ export default function EditProgramPage() {
 
   const handleDeleteGoal = async (goalId: string) => {
     try {
-      const response = await api.programs.deleteGoal(goalId);
+      const response = await deleteProgramGoalAction(goalId);
       if (response.success) {
         toast.success('Goal deleted successfully');
         setProgramGoals(prev => prev.filter(goal => goal.id !== goalId));
@@ -179,7 +183,7 @@ export default function EditProgramPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <header className="mb-10">
           <div className="flex items-center justify-start gap-4 mb-4">

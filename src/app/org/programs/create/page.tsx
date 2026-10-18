@@ -1,25 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ImageUpload from "@/components/onboarding/components/ImageUpload";
 import BackButton from "@/components/BackButton";
 import DatePicker from "@/components/DatePicker";
 import { FormInput } from "@/components/ui/FormInput";
 import { FormTextarea } from "@/components/ui/FormTextarea";
-import { FormSelect } from "@/components/ui/FormSelect";
 import { TagInput } from "@/components/ui/TagInput";
-import { api } from "@/lib/api";
+import { createProgramAction } from "@/app/actions/auth";
 import { CreateProgramRequest, ProgramGoal } from "@/types/api";
 import { useAuthStore } from "@/store";
+import { useAuthActions } from "@/hooks/useAuthActions";
 import toast from "react-hot-toast";
 import logger from "@/lib/logger";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export default function CreatePage() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(false);
+  const { user, setOrganizationProfile } = useAuthStore();
+  const { getFoundationProfile } = useAuthActions();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -34,6 +37,49 @@ export default function CreatePage() {
     skills: [] as string[],
   });
   const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(null);
+
+  // Fetch organization profile if not already in store
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.organizationProfile && (user?.accountType === 'Foundation' || user?.accountType === 'Organization')) {
+        setIsLoadingProfile(true);
+        try {
+          const result = await getFoundationProfile();
+          if (result.success && result.data) {
+            // Create default location from profile address data
+            const defaultLocation = {
+              address: result.data.address || '',
+              city: result.data.city || '',
+              state: result.data.foundationState || '',
+              country: result.data.foundationCountry || '',
+              zipcode: result.data.zipCode || '',
+            };
+
+            setOrganizationProfile({
+              name: result.data.name,
+              email: result.data.email,
+              foundationCategory: result.data.foundationCategory,
+              website: result.data.website,
+              mission: result.data.mission,
+              address: result.data.address,
+              city: result.data.city,
+              zipcode: result.data.zipCode,
+              foundationCountry: result.data.foundationCountry,
+              foundationState: result.data.foundationState,
+              causes: result.data.causes || undefined,
+              logoUrl: result.data.logoUrl,
+              locations: [defaultLocation],
+            });
+          }
+        } catch (error) {
+          logger.error('Failed to fetch organization profile:', error);
+        } finally {
+          setIsLoadingProfile(false);
+        }
+      }
+    };
+    fetchProfile();
+  }, [user?.organizationProfile, user?.accountType, getFoundationProfile, setOrganizationProfile]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -73,63 +119,83 @@ export default function CreatePage() {
 
   const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
     e.preventDefault();
-    
+
     if (!formData.title || !formData.description || !formData.startDate || !formData.endDate) {
       toast.error('Please fill in all required fields');
       return;
     }
 
     try {
-      setIsLoading(true);
-      
+      if (isDraft) {
+        setIsSavingDraft(true);
+      } else {
+        setIsSubmitting(true);
+      }
+
       // Use the uploaded image URL if present (uploaded via ImageUpload)
       const bannerImage = bannerImageUrl || formData.bannerImage;
-      
+
       const createRequest: CreateProgramRequest = {
         title: formData.title,
         description: formData.description,
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
         locationId: formData.locationId || 'default-location-id',
-        foundationId: user?.organizationName || 'default-foundation-id',
+        foundationId: user?.foundationId || 'default-foundation-id',
         creatorEmail: user?.email || '',
         donationTarget: formData.donationTarget,
         bannerImage,
+        causeId: formData.category,
+        saveAsDraft: isDraft,
         skillIds: formData.skills,
         programGoals: formData.goals,
       };
 
       logger.log('[Create Program] Request Payload:', createRequest);
 
-      const response = await api.programs.create(createRequest);
-      
+      // Programs endpoints must go through server actions: calling the API
+      // directly from the browser fails CORS (backend returns a wildcard
+      // Access-Control-Allow-Origin, which is invalid with credentialed
+      // requests), and the auth token lives in an HTTP-only cookie the
+      // browser JS can never attach as an Authorization header.
+      const response = await createProgramAction(createRequest);
+
       logger.log('[Create Program] API Response:', response);
-      
+
       if (response.success) {
         toast.success(isDraft ? 'Program saved as draft' : 'Program created successfully');
         router.push('/org/programs');
       } else {
-        toast.error('Failed to create program');
+        toast.error(response.error || 'Failed to create program');
       }
     } catch (error) {
       console.error('Error creating program:', error);
       toast.error('Failed to create program');
     } finally {
-      setIsLoading(false);
+      if (isDraft) {
+        setIsSavingDraft(false);
+      } else {
+        setIsSubmitting(false);
+      }
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto p-4 sm:p-6 lg:p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-start gap-4 mb-4">
-            <BackButton />
-            <h1 className="text-2xl sm:text-3xl  font-bold text-foreground">Create a Program</h1>
-          </div>
-          <p className="text-base sm:text-lg text-muted-foreground">Fill in the details to create your program</p>
+      {isLoadingProfile ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <LoadingSpinner />
         </div>
+      ) : (
+        <div className="mx-auto p-4 sm:p-6 lg:p-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-start gap-4 mb-4">
+              <BackButton />
+              <h1 className="text-2xl sm:text-3xl  font-bold text-foreground">Create a Program</h1>
+            </div>
+            <p className="text-base sm:text-lg text-muted-foreground">Fill in the details to create your program</p>
+          </div>
 
         {/* Form */}
         <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-8">
@@ -205,13 +271,26 @@ export default function CreatePage() {
                     />
                   </div>
 
-                  <FormInput
-                    label="Location"
-                    placeholder="Enter program location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    name="location"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Location
+                    </label>
+                    <input
+                      list="location-options"
+                      placeholder="Enter or select program location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      name="location"
+                      className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base text-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200"
+                    />
+                    <datalist id="location-options">
+                      {user?.organizationProfile?.locations?.map((loc, index) => (
+                        <option key={index} value={`${loc.city}, ${loc.state}, ${loc.country}`}>
+                          {loc.address}, {loc.city}, {loc.state}, {loc.country}
+                        </option>
+                      ))}
+                    </datalist>
+                  </div>
                 </div>
               </div>
 
@@ -220,18 +299,26 @@ export default function CreatePage() {
                 <h2 className="text-lg font-semibold text-foreground mb-6">Category & Target</h2>
                 
                 <div className="space-y-5">
-                  <FormSelect
-                    label="Program Category"
-                    placeholder="Select Category"
-                    value={formData.category}
-                    onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                    options={[
-                      { value: 'education', label: 'Education' },
-                      { value: 'health', label: 'Health' },
-                      { value: 'community', label: 'Community Development' },
-                      { value: 'environment', label: 'Environment' },
-                    ]}
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Program Category
+                    </label>
+                    <input
+                      list="category-options"
+                      placeholder="Enter or select program category"
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      name="category"
+                      className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base text-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200"
+                    />
+                    <datalist id="category-options">
+                      {user?.organizationProfile?.causes?.map((cause, index) => (
+                        <option key={index} value={cause}>
+                          {cause}
+                        </option>
+                      ))}
+                    </datalist>
+                  </div>
 
                   <FormInput
                     label="Donation Target"
@@ -271,10 +358,10 @@ export default function CreatePage() {
             <button
               type="button"
               onClick={(e) => handleSubmit(e, true)}
-              disabled={isLoading}
+              disabled={isSavingDraft || isSubmitting}
               className="px-6 py-3 rounded-xl font-semibold text-foreground bg-[#42A5F5]/20 hover:bg-[#42A5F5]/30 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {isSavingDraft ? (
                 <>
                   Save as Draft
                   <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} />
@@ -286,10 +373,10 @@ export default function CreatePage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting || isSavingDraft}
               className="px-6 py-3 rounded-xl font-semibold text-white bg-[#0E68DC] hover:bg-[#0b5cc4] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <>
                   Publish
                   <LoadingSpinner size="sm" opacity={0.9} withSpacing={true} />
@@ -301,6 +388,7 @@ export default function CreatePage() {
           </div>
         </form>
       </div>
+      )}
     </div>
   );
 }

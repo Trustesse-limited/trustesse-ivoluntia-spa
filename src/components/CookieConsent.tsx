@@ -68,7 +68,7 @@ const CookieConsent = () => {
                 Cookie Preferences
               </h3>
               <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
-                We use cookies to keep you logged in and improve your experience. Please choose your preference to continue.
+                We use cookies to improve your experience. Please choose your preference to continue.
               </p>
             </div>
           </div>

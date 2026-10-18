@@ -4,13 +4,23 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse } from "@/types/api";
-import { api } from "@/lib/api";
+import { getProgramsAction, updateProgramStatusAction } from "@/app/actions/auth";
+import { useActiveTab } from "@/hooks/useActiveTab";
 import toast from "react-hot-toast";
 import Modal from "@/components/Modal";
 import { AppButton } from "@/components/AppButton";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { formatProgramLocation, normalizeProgramStatus } from "@/lib/utils";
 
 type TabKey = "pending" | "active" | "history";
+
+const PROGRAM_TAB_IDS = ["pending", "active", "history"] as const;
+
+const PROGRAM_TABS: { key: TabKey; label: string }[] = [
+  { key: "pending", label: "Pending Programs" },
+  { key: "active", label: "Active Programs" },
+  { key: "history", label: "History" },
+];
 
 const getProgramStats = (programs: ProgramItem[]) => [
   { title: "Total Programs", value: programs.length, color: "bg-blue-500" },
@@ -19,7 +29,8 @@ const getProgramStats = (programs: ProgramItem[]) => [
 ];
 
 export default function AdminProgramsPage() {
-  const [activeTab, setActiveTab] = useState<TabKey>("pending");
+  // Active tab is persisted in the URL (?tab=...) so it survives refresh
+  const [activeTab, setActiveTab] = useActiveTab<TabKey>("pending", PROGRAM_TAB_IDS);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -32,7 +43,10 @@ export default function AdminProgramsPage() {
     const fetchPrograms = async () => {
       try {
         setIsLoading(true);
-        const response = await api.programs.getAll();
+        // Programs endpoints must go through server actions: calling the API
+        // directly from the browser fails CORS (backend returns a wildcard
+        // Access-Control-Allow-Origin, which is invalid with credentials)
+        const response = await getProgramsAction();
         
         if (response.success && response.data) {
           const mappedPrograms = (response.data as ProgramApiResponse[]).map((program: ProgramApiResponse): ProgramItem => ({
@@ -40,7 +54,7 @@ export default function AdminProgramsPage() {
             title: program.title || program.name || '',
             startDate: program.startDate || '',
             endDate: program.endDate || '',
-            location: program.location || program.city || '',
+            location: formatProgramLocation(program.location || program.city),
             donationTarget: program.donationTarget || program.targetAmount || 0,
             raised: program.raised || program.raisedAmount || 0,
             category: program.category || program.foundationCategory || '',
@@ -48,7 +62,7 @@ export default function AdminProgramsPage() {
             description: program.description || program.mission || '',
             image: program.image || program.logo || '',
             volunteers: program.volunteers || 0,
-            status: program.status || 'Active',
+            status: normalizeProgramStatus(program.status),
             organization: program.organization || program.organizationName || '',
             isFavourited: false,
             duration: program.duration || '',
@@ -75,11 +89,7 @@ export default function AdminProgramsPage() {
     history: programs.filter(p => ['completed', 'forfeited', 'cancelled'].includes(p.status?.toLowerCase() || '')),
   };
 
-  const tabs = [
-    { key: "pending", label: "Pending Programs" },
-    { key: "active", label: "Active Programs" },
-    { key: "history", label: "History" },
-  ];
+  const tabs = PROGRAM_TABS;
 
   const getEmptyMessage = () =>
     activeTab === "history"
@@ -91,7 +101,7 @@ export default function AdminProgramsPage() {
 
     try {
       setIsUpdating(true);
-      const response = await api.programs.updateStatus({
+      const response = await updateProgramStatusAction({
         programId: selectedProgram.id,
         status: newStatus,
         queriedComment: comment,
@@ -100,14 +110,14 @@ export default function AdminProgramsPage() {
       if (response.success) {
         toast.success('Program status updated successfully');
         setPrograms(prev => prev.map(p => 
-          p.id === selectedProgram.id ? { ...p, status: newStatus } : p
+          p.id === selectedProgram.id ? { ...p, status: normalizeProgramStatus(newStatus) } : p
         ));
         setShowStatusModal(false);
         setSelectedProgram(null);
         setNewStatus('');
         setComment('');
       } else {
-        toast.error('Failed to update program status');
+        toast.error(response.error || 'Failed to update program status');
       }
     } catch (error) {
       console.error('Error updating program status:', error);
@@ -166,7 +176,7 @@ export default function AdminProgramsPage() {
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key as TabKey)}
+                  onClick={() => setActiveTab(tab.key)}
                   className={`pb-3 text-[14px] cursor-pointer font-medium transition border-b-2 w-fit ${
                     activeTab === tab.key
                       ? "text-[#0E68DC] border-[#42A5F5]"

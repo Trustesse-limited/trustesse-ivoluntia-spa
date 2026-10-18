@@ -61,7 +61,9 @@ export interface ProgramApiResponse {
   name?: string;
   startDate?: string;
   endDate?: string;
-  location?: string;
+  // The API returns a Location object on program payloads (a plain string on
+  // some other payloads) — normalize with formatProgramLocation before use
+  location?: string | Record<string, unknown>;
   city?: string;
   donationTarget?: number;
   targetAmount?: number;
@@ -75,7 +77,10 @@ export interface ProgramApiResponse {
   image?: string;
   logo?: string;
   volunteers?: number;
-  status?: string;
+  // The API returns a numeric enum on reads (0 = draft, 1 = active, ...) but
+  // accepts string statuses on writes — normalize with normalizeProgramStatus
+  status?: string | number;
+  isActive?: boolean;
   organization?: string;
   organizationName?: string;
   duration?: string;
@@ -103,6 +108,8 @@ export interface CreateProgramRequest extends Record<string, unknown> {
   creatorEmail: string;
   donationTarget: number;
   bannerImage?: string;
+  causeId?: string;
+  saveAsDraft?: boolean;
   skillIds?: string[];
   programGoals?: ProgramGoal[];
 }
@@ -134,6 +141,15 @@ export interface LeaveProgramRequest {
 
 export interface DeleteProgramGoalRequest {
   programGoalId: string;
+}
+
+// Location API types
+export interface CreateLocationRequest {
+  address: string;
+  city: string;
+  zipcode: string;
+  country: string;
+  state: string;
 }
 
 // Category API types
@@ -489,9 +505,12 @@ export interface FoundationProfile {
   skillNames: string[] | null;
   bio: string | null;
   category: string;
+  foundationCategory: string;
   website: string;
   mission: string;
   causeNames: string[] | null;
+  causes: string[] | null;
   logo: string;
+  logoUrl: string | null;
   foundationAddress: string;
 }
