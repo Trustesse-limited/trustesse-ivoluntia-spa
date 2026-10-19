@@ -103,6 +103,7 @@ export default function DashboardLayout({
   const { validateToken, getFoundationProfile } = useAuthActions();
   const { user, setOrganizationProfile } = useAuthStore();
   const validationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAttemptedProfileFetch = useRef(false);
 
   // Check token expiration periodically
   useEffect(() => {
@@ -188,13 +189,19 @@ export default function DashboardLayout({
     }
   }, [isLoggingOut]);
 
+  // Reset profile fetch attempt flag when user or dashboard type changes
+  useEffect(() => {
+    hasAttemptedProfileFetch.current = false;
+  }, [user?.id, dashboardType]);
+
   // Fetch organization profile once for organization users
   useEffect(() => {
     const fetchOrganizationProfile = async () => {
       // Check for both 'Foundation' (from backend) and 'Organization' (normalized in auth store)
       const isOrganizationUser = user?.accountType === 'Foundation' || user?.accountType === 'Organization';
 
-      if (dashboardType === 'organization' && !user?.organizationProfile && isOrganizationUser) {
+      if (dashboardType === 'organization' && !user?.organizationProfile && isOrganizationUser && !hasAttemptedProfileFetch.current) {
+        hasAttemptedProfileFetch.current = true;
         try {
           const result = await getFoundationProfile();
           if (result.success && result.data) {
