@@ -12,7 +12,7 @@ import { ProgramItem } from "@/types";
 import { ProgramApiResponse, ProgramGoal } from "@/types/api";
 import toast from "react-hot-toast";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { formatProgramLocation, normalizeProgramStatus } from "@/lib/utils";
+import { formatProgramLocation, formatProgramDateRange, normalizeProgramStatus } from "@/lib/utils";
 
 const formatNumberWithCommas = (num: number) => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -189,7 +189,7 @@ export default function ProgramDetailPage() {
         <div className="flex items-center justify-start gap-6 w-full flex-wrap">
           <h2 className="text-xl font-bold">{program.title}</h2>
           <span
-            className={`inline-block py-3 px-4 text-xs font-medium rounded-[8px] ${
+            className={`inline-block py-3 px-4 text-xs font-medium rounded-xl ${
               isActive()
                 ? "bg-[#F3F3F3] text-[#66BB6A]"
                 : "bg-[#F3F3F3] text-[#F7BA32]"
@@ -200,7 +200,7 @@ export default function ProgramDetailPage() {
           <AppButton
             text="Edit Program"
             onClick={() => router.push(`/org/programs/${id}/edit`)}
-            className="!py-3 !px-6 !rounded-xl !text-sm !font-medium"
+            className="py-3! px-6! rounded-xl! text-sm! font-medium!"
           />
         </div>
 
@@ -209,7 +209,7 @@ export default function ProgramDetailPage() {
           <div className="font-medium text-base">{program.category}</div>
           <div className="flex items-center gap-2">
             <FiCalendar className="text-black" />
-            {program.startDate} – {program.endDate}
+            {formatProgramDateRange(program.startDate, program.endDate)}
           </div>
           <div className="flex items-center gap-2">
             <FiMapPin className="text-black" />
@@ -275,13 +275,13 @@ export default function ProgramDetailPage() {
             text="Forfeit"
             onClick={() => setShowForfeitModal(true)}
             variant="outline"
-            className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+            className="py-3! px-8! rounded-xl! text-base! font-medium!"
           />
           <AppButton
             text="Delete"
             onClick={() => setShowDeleteModal(true)}
             variant="danger"
-            className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+            className="py-3! px-8! rounded-xl! text-base! font-medium!"
           />
         </div>
       </motion.section>
@@ -300,13 +300,13 @@ export default function ProgramDetailPage() {
               text="Cancel"
               onClick={() => setShowDeleteModal(false)}
               variant="outline"
-              className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+              className="py-3! px-8! rounded-xl! text-base! font-medium!"
             />
             <AppButton
               text="Delete"
               onClick={handleDelete}
               variant="danger"
-              className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+              className="py-3! px-8! rounded-xl! text-base! font-medium!"
             />
           </div>
         </div>
@@ -326,13 +326,13 @@ export default function ProgramDetailPage() {
               text="Cancel"
               onClick={() => setShowForfeitModal(false)}
               variant="outline"
-              className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+              className="py-3! px-8! rounded-xl! text-base! font-medium!"
             />
             <AppButton
               text="Forfeit"
               onClick={handleForfeit}
               variant="secondary"
-              className="!py-3 !px-8 !rounded-xl !text-base !font-medium"
+              className="py-3! px-8! rounded-xl! text-base! font-medium!"
             />
           </div>
         </div>

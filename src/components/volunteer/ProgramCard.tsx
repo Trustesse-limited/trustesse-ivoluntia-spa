@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { ProgramItem } from "@/types";
 import { FiHeart, FiMapPin, FiClock, FiUsers, FiDollarSign } from "react-icons/fi";
 import { RippleEffect } from "@/components/RippleEffect";
+import { formatProgramDateRange } from "@/lib/utils";
 
 type ProgramCardProps = {
   program: ProgramItem;
@@ -19,7 +20,7 @@ export default function ProgramCard({ program }: ProgramCardProps) {
   };
 
   const handleLearnMore = () => {
-    router.push(`/programs/${program.id}`);
+    router.push(`/home/programs/${program.id}`);
   };
 
   const getProgressPercentage = () => {
@@ -37,7 +38,7 @@ export default function ProgramCard({ program }: ProgramCardProps) {
   };
 
   return (
-    <RippleEffect onClick={handleLearnMore} className="bg-white border border-black rounded-[16px] p-4 hover:shadow-lg transition-shadow duration-300 cursor-pointer">
+    <RippleEffect onClick={handleLearnMore} className="bg-white border border-black rounded-2xl p-4 hover:shadow-lg transition-shadow duration-300 cursor-pointer">
       {/* Header with favourite button */}
       <div className="flex justify-between items-start mb-3">
         <h3 className="text-lg font-semibold text-black flex-1 mr-2">
@@ -45,7 +46,7 @@ export default function ProgramCard({ program }: ProgramCardProps) {
         </h3>
         <button
           onClick={handleFavourite}
-          className="flex-shrink-0 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          className="shrink-0 p-1 rounded-full hover:bg-gray-100 transition-colors"
           aria-label="Add to favourites"
         >
           <FiHeart 
@@ -69,7 +70,7 @@ export default function ProgramCard({ program }: ProgramCardProps) {
         </div>
         <div className="flex items-center gap-1 text-xs text-black bg-gray-100 px-2 py-1 rounded-full">
           <FiClock className="w-3 h-3" />
-          <span>{program.startDate} - {program.endDate}</span>
+          <span>{formatProgramDateRange(program.startDate, program.endDate)}</span>
         </div>
         <div className="flex items-center gap-1 text-xs text-black bg-gray-100 px-2 py-1 rounded-full">
           <FiUsers className="w-3 h-3" />

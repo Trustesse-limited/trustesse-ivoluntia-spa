@@ -133,12 +133,12 @@ export default function ProgramTable({
                     <div aria-hidden="true" className="flex justify-center gap-2">
                       <div
                         aria-hidden="true"
-                        className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-[6px]"
+                        className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-lg"
                       />
                       {showDeleteButton && (
                         <div
                           aria-hidden="true"
-                          className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-[6px]"
+                          className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-lg"
                         />
                       )}
                     </div>

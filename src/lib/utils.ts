@@ -76,3 +76,46 @@ export function formatProgramLocation(location: unknown): string {
   return "";
 }
 
+/**
+ * Format a program start/end date range for display.
+ *
+ * Produces strings like "July 30 - Aug 20, 2026".
+ *
+ * The Programs API sometimes returns timestamps with more than 3 fractional
+ * seconds (e.g. `2026-07-30T13:46:05.9193372`). ECMAScript's ISO date parser
+ * only accepts exactly 3 digits (milliseconds), so `new Date()` on those
+ * strings yields an Invalid Date. We normalize the fractional seconds to 3
+ * digits before parsing, and return an empty string when the dates are
+ * missing or unparseable so callers never render "Invalid Date".
+ */
+export function formatProgramDateRange(
+  startDate: string | null | undefined,
+  endDate: string | null | undefined
+): string {
+  if (!startDate || !endDate) return "";
+
+  // Normalize fractional seconds to exactly 3 digits (milliseconds).
+  // Handles 1-7+ digit fractions safely: ".5" -> ".500", ".9193372" -> ".919"
+  const normalizeMs = (iso: string) =>
+    iso.replace(/\.\d+/, (match) => {
+      const digits = match.slice(1);
+      const padded = (digits + "000").slice(0, 3);
+      return "." + padded;
+    });
+
+  const start = new Date(normalizeMs(startDate));
+  const end = new Date(normalizeMs(endDate));
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return "";
+  }
+
+  const startMonth = start.toLocaleDateString("en-US", { month: "long" });
+  const startDay = start.getDate();
+  const endMonth = end.toLocaleDateString("en-US", { month: "short" });
+  const endDay = end.getDate();
+  const endYear = end.getFullYear();
+
+  return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${endYear}`;
+}
+

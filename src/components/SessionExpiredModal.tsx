@@ -74,7 +74,7 @@ export default function SessionExpiredModal({ isOpen, onClose, canRefresh = true
         <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
           {canRefresh 
             ? "Your session has expired. You can refresh your session to continue or log out."
-            : "Your session has expired and your refresh token is also expired. Please log in again."
+            : "Your session has expired. Please log in again."
           }
         </p>
         <div className="flex flex-col gap-3 sm:gap-4">

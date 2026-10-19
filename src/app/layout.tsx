@@ -4,6 +4,7 @@ import "./globals.css";
 import { BRAND_NAME } from "../../constants";
 import { Toaster } from "@/components/Toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SessionProvider } from "@/components/SessionProvider";
 import CookieConsent from "@/components/CookieConsent";
 import OnboardingProgress from "@/components/OnboardingProgress";
 
@@ -29,7 +30,7 @@ export default function RootLayout({
       <body className="antialiased font-sans">
         <AuthProvider>
           <div className="font-openSans min-h-screen flex flex-col justify-start items-center relative w-full">
-            {children}
+            <SessionProvider>{children}</SessionProvider>
           </div>
         </AuthProvider>
         <Toaster />

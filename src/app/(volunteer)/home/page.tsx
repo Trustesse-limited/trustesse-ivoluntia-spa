@@ -1,7 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 import ProgramCard from "@/components/volunteer/ProgramCard";
+import ProgramCardSkeleton from "@/components/volunteer/ProgramCardSkeleton";
 import SearchBar from "@/components/volunteer/SearchBar";
 import { AppButton } from "@/components/AppButton";
 import { useAuthStore } from "@/store";
@@ -9,7 +11,6 @@ import { useOnboardingStore } from "@/store";
 import { getProgramsAction } from "@/app/actions/auth";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse } from "@/types/api";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatProgramLocation, normalizeProgramStatus } from "@/lib/utils";
 
 export default function VolunteerHomePage() {
@@ -17,21 +18,23 @@ export default function VolunteerHomePage() {
   const { volunteerData } = useOnboardingStore();
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchFilters, setSearchFilters] = useState({
-    program: "",
-    interest: "",
-    location: ""
-  });
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const fetchPrograms = async () => {
       try {
         setIsLoading(true);
-        // Programs endpoints must go through server actions: calling the API
-        // directly from the browser fails CORS (backend returns a wildcard
-        // Access-Control-Allow-Origin, which is invalid with credentials)
-        const response = await getProgramsAction();
-        
+        // Pass search and status parameters to the API
+        const params: Record<string, string> = {};
+        if (search) params.search = search;
+        if (status) params.status = status;
+
+        const response = await getProgramsAction(
+          Object.keys(params).length > 0 ? params : undefined
+        );
+
         if (response.success && response.data) {
           // Map API response to ProgramItem interface
           const mappedPrograms = (response.data as ProgramApiResponse[]).map((program: ProgramApiResponse): ProgramItem => ({
@@ -68,25 +71,16 @@ export default function VolunteerHomePage() {
     };
 
     fetchPrograms();
-  }, []);
+  }, [search, status]);
 
-  const filteredPrograms = programs
-    .filter(program => {
-      const matchesSearch = searchFilters.program === "" || 
-        program.title.toLowerCase().includes(searchFilters.program.toLowerCase()) ||
-        program.organization?.toLowerCase().includes(searchFilters.program.toLowerCase());
-      const matchesInterest = searchFilters.interest === "" || 
-        program.category.toLowerCase().includes(searchFilters.interest.toLowerCase());
-      const matchesLocation = searchFilters.location === "" || 
-        program.location.toLowerCase().includes(searchFilters.location.toLowerCase());
-      return matchesSearch && matchesInterest && matchesLocation;
-    });
-
-  const handleSearch = (program: string, interest: string, location: string) => {
-    setSearchFilters({ program, interest, location });
+  const handleSearch = (searchValue: string, statusValue: string) => {
+    setSearch(searchValue);
+    setStatus(statusValue);
   };
 
   const displayName = user?.firstName || volunteerData?.formData?.bioData?.firstName || user?.email?.split('@')[0] || 'Volunteer';
+
+  const hasActiveFilters = search || status;
 
   return (
     <motion.section
@@ -101,33 +95,36 @@ export default function VolunteerHomePage() {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
           Hello, {displayName}
         </h1>
-
       </div>
 
       {/* Search Section */}
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar
+        onSearch={handleSearch}
+        initialSearch={searchParams.get("search") ?? ""}
+        initialStatus={searchParams.get("status") ?? ""}
+      />
 
       {/* Loading State */}
       {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <LoadingSpinner size="xl" opacity={0.8} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, index) => (
+            <ProgramCardSkeleton key={index} />
+          ))}
         </div>
       )}
 
       {/* Empty State */}
-      {!isLoading && filteredPrograms.length === 0 && (
+      {!isLoading && programs.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-lg mb-4">
-            {searchFilters.program || searchFilters.interest || searchFilters.location
+            {hasActiveFilters
               ? "No programs found matching your criteria."
               : "No programs available at the moment."}
           </div>
-          {(searchFilters.program || searchFilters.interest || searchFilters.location) && (
+          {hasActiveFilters && (
             <AppButton
               text="Clear Filters"
-              onClick={() => {
-                setSearchFilters({ program: "", interest: "", location: "" });
-              }}
+              onClick={() => handleSearch("", "")}
               className="!mt-4 !px-4 !py-2 !rounded-md"
             />
           )}
@@ -135,9 +132,9 @@ export default function VolunteerHomePage() {
       )}
 
       {/* Program Cards Grid */}
-      {!isLoading && filteredPrograms.length > 0 && (
+      {!isLoading && programs.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPrograms.map((program) => (
+          {programs.map((program) => (
             <ProgramCard key={program.id} program={program} />
           ))}
         </div>

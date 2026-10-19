@@ -11,7 +11,6 @@ import { useAuthStore } from "@/store";
 import { useRouter } from "next/navigation";
 import { BRAND_NAME } from "../../constants";
 import LogoutModal from "./LogoutModal";
-import SessionExpiredModal from "./SessionExpiredModal";
 import logger from "@/lib/logger";
 
 type NavLink = {
@@ -38,9 +37,9 @@ type DashboardLayoutProps = {
 const getIsActiveLink = (pathname: string, linkHref: string, dashboardType: DashboardType): boolean => {
   switch (dashboardType) {
     case 'volunteer':
-      // Special case for volunteer: exact match for /home, startsWith for others
+      // Special case for volunteer: /home and /home/* should keep Home tab active
       return linkHref === "/home"
-        ? pathname === linkHref
+        ? pathname === linkHref || pathname.startsWith(linkHref + '/')
         : pathname.startsWith(linkHref);
     case 'organization':
       return pathname.startsWith(linkHref);
@@ -97,13 +96,25 @@ export default function DashboardLayout({
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isSessionExpiredModalOpen, setIsSessionExpiredModalOpen] = useState(false);
   const [canRefreshSession, setCanRefreshSession] = useState(true);
   const pathname = usePathname();
   const { validateToken, getFoundationProfile } = useAuthActions();
-  const { user, setOrganizationProfile } = useAuthStore();
+  const { user, setOrganizationProfile, setSessionExpired } = useAuthStore();
   const validationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasAttemptedProfileFetch = useRef(false);
+
+  // useAuthActions() returns a fresh validateToken reference on every render.
+  // The validation effect below must NOT depend on it: otherwise every
+  // re-render re-runs the effect and fires an immediate check, and when that
+  // check updates state (setSessionExpired/setCanRefreshSession) the
+  // re-render re-runs the effect again — an infinite validateTokenAction
+  // POST loop. Refs give the effect a stable, always-current handle.
+  const validateTokenRef = useRef(validateToken);
+  const isLoggingOutRef = useRef(isLoggingOut);
+  useEffect(() => {
+    validateTokenRef.current = validateToken;
+    isLoggingOutRef.current = isLoggingOut;
+  }, [validateToken, isLoggingOut]);
 
   // Check token expiration periodically
   useEffect(() => {
@@ -112,7 +123,7 @@ export default function DashboardLayout({
 
     const checkTokenExpiration = async () => {
       // Skip validation if user is currently logging out
-      if (isLoggingOut) {
+      if (isLoggingOutRef.current) {
         return;
       }
 
@@ -128,8 +139,14 @@ export default function DashboardLayout({
           !Number.isNaN(parseInt(expirationTime, 10)) &&
           Date.now() >= parseInt(expirationTime, 10);
 
-        const result = isLocallyExpired ? { isValid: false } : await validateToken();
+        const result = isLocallyExpired ? { isValid: false } : await validateTokenRef.current();
         if (!result.isValid) {
+          // The session-expired modal is already open — don't touch state
+          // again. Zustand's set() always notifies subscribers (new state
+          // object), which would re-render this component on every check.
+          if (useAuthStore.getState().sessionExpired) {
+            return;
+          }
           // Check if refresh token is still valid
           const refreshExpiration = readCookie('refresh_token_expiration');
 
@@ -144,13 +161,16 @@ export default function DashboardLayout({
             setCanRefreshSession(false);
           }
 
-          setIsSessionExpiredModalOpen(true);
+          setSessionExpired(true);
         }
       } catch (error) {
         console.error("Failed to validate token:", error);
         // If validation fails, show session expired modal but allow refresh
-        setCanRefreshSession(true);
-        setIsSessionExpiredModalOpen(true);
+        // (skip if already shown — see note in the invalid-result branch)
+        if (!useAuthStore.getState().sessionExpired) {
+          setCanRefreshSession(true);
+          setSessionExpired(true);
+        }
       }
     };
 
@@ -179,7 +199,11 @@ export default function DashboardLayout({
         clearTimeout(expiryTimeout);
       }
     };
-  }, [validateToken, isLoggingOut]);
+    // Run once on mount. Volatile values (validateToken, isLoggingOut) are
+    // read through refs — see the note above the refs declaration. Depending
+    // on them here is what caused the infinite validateTokenAction loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Clear validation interval when logout starts to prevent race condition
   useEffect(() => {
@@ -370,7 +394,7 @@ export default function DashboardLayout({
   const handleLogoutConfirm = async () => {
     setIsLoggingOut(true);
     // Close session expired modal if it's open to prevent confusion
-    setIsSessionExpiredModalOpen(false);
+    setSessionExpired(false);
     const result = await logout();
     if (result.success) {
       setIsLogoutModalOpen(false);
@@ -682,12 +706,7 @@ export default function DashboardLayout({
         isLoading={isLoggingOut}
       />
 
-      {/* Session Expired Modal */}
-      <SessionExpiredModal
-        isOpen={isSessionExpiredModalOpen}
-        onClose={() => setIsSessionExpiredModalOpen(false)}
-        canRefresh={canRefreshSession}
-      />
+
     </div>
   );
 }

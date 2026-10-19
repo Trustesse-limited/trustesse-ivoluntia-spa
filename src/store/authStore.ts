@@ -69,6 +69,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   token: string | null; // In-memory only, NOT persisted to localStorage
+  sessionExpired: boolean;
 
   // Actions
   setUser: (user: User | null) => void;
@@ -80,6 +81,7 @@ interface AuthState {
   checkAuth: () => boolean; // Check if user is authenticated
   validateToken: () => Promise<boolean>; // Validate token with server and set isAuthenticated
   setOrganizationProfile: (profile: User['organizationProfile']) => void;
+  setSessionExpired: (expired: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -89,6 +91,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       token: null,
+      sessionExpired: false,
       
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       
@@ -184,6 +187,8 @@ export const useAuthStore = create<AuthState>()(
           });
         }
       },
+
+      setSessionExpired: (expired) => set({ sessionExpired: expired }),
     }),
     {
       name: 'auth-storage',
