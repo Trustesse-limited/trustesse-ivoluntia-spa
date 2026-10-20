@@ -189,7 +189,7 @@ export default function ProgramTable({
                       onClick={() =>
                         onViewDetails
                           ? onViewDetails(program, index)
-                          : router.push(`/org/programs/${index}`)
+                          : router.push(`/org/programs/${program.id}`)
                       }
                       className="px-4 py-2 text-sm bg-[#0E68DC] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer"
                     >

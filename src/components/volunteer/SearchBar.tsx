@@ -245,7 +245,7 @@ export default function SearchBar({
       {/* Search bar with Search button and Filters button */}
       <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         {/* Main search row */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center p-3 sm:p-5">
           {/* Search field - full width on mobile, auto on desktop */}
           <div className="relative flex-1 min-w-0 w-full">
             <FiSearch
@@ -319,8 +319,8 @@ export default function SearchBar({
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="border-t border-gray-200 overflow-hidden"
             >
-              <div className="p-4 sm:p-5">
-                <div className="flex items-center justify-end mb-4">
+              <div className="p-3 sm:p-5">
+                <div className="flex items-center justify-end mb-3 sm:mb-4">
                   {activeFilterCount > 0 && (
                     <button
                       type="button"
@@ -331,7 +331,7 @@ export default function SearchBar({
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-800 mb-2">Date</label>
                     {renderDateField()}
@@ -357,7 +357,7 @@ export default function SearchBar({
 
       {/* Applied filter chips */}
       {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2 mt-3 px-1">
+        <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-3 px-1">
           {chipConfig.map(({ key, label }) =>
             filters[key] ? (
               <span

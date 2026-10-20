@@ -211,8 +211,7 @@ export default function VolunteerFavouritesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-black flex items-center gap-2">
-            <FiHeart className="text-red-500" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">
             My Favourites
           </h1>
           <p className="text-gray-600 mt-1">Your saved volunteer opportunities</p>
@@ -336,26 +335,12 @@ export default function VolunteerFavouritesPage() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
-                    className="relative group"
                   >
                     <ProgramCard
                       program={program}
                       isFavourited
                       onToggleFavorite={handleToggleFavorite}
                     />
-
-                    {/* Quick remove */}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => handleRemoveFavourite(program.id)}
-                        className="p-2 bg-red-500 text-white rounded-full shadow-lg cursor-pointer"
-                        title="Remove from favourites"
-                      >
-                        <FiHeart className="text-sm" />
-                      </motion.button>
-                    </div>
                   </motion.div>
                 ))}
               </div>

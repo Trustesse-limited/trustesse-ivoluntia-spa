@@ -102,6 +102,10 @@ export interface ProgramApiResponse {
   bannerImage?: string;
   skillIds?: string[];
   programGoals?: ProgramGoal[];
+  requiresMeetup?: boolean;
+  meetupSchedules?: MeetupSchedule[];
+  requiresQualification?: boolean;
+  qualificationIds?: string[];
 }
 
 export interface ProgramGoal {
@@ -123,6 +127,15 @@ export interface CreateProgramRequest extends Record<string, unknown> {
   saveAsDraft?: boolean;
   skillIds?: string[];
   programGoals?: ProgramGoal[];
+  requiresMeetup?: boolean;
+  meetupSchedules?: MeetupSchedule[];
+  requiresQualification?: boolean;
+  qualificationIds?: string[];
+}
+
+export interface MeetupSchedule {
+  date: string;
+  time: string;
 }
 
 export interface UpdateProgramRequest extends Record<string, unknown> {
@@ -134,6 +147,10 @@ export interface UpdateProgramRequest extends Record<string, unknown> {
   locationId: string;
   donationTarget: number;
   bannerImage?: string;
+  requiresMeetup?: boolean;
+  meetupSchedules?: MeetupSchedule[];
+  requiresQualification?: boolean;
+  qualificationIds?: string[];
 }
 
 export interface UpdateProgramStatusRequest {
@@ -448,7 +465,7 @@ export interface State {
 }
 
 export interface Cause {
-  causeId: string | null;
+  id: string;
   name: string;
   description: string | null;
 }
@@ -463,6 +480,28 @@ export interface Skill {
   id: string;
   name: string;
   description: string | null;
+}
+
+export interface Qualification {
+  id: string;
+  title: string;
+  supportingDocumentFormat: string;
+  supportingDocumentMaxSize: number;
+  supportingDocumentFileSizeUnit: string;
+}
+
+export interface CreateQualificationRequest {
+  title: string;
+  supportingDocumentFormat: string;
+  supportingDocumentMaxSize: number;
+  supportingDocumentFileSizeUnit: string;
+}
+
+export interface UpdateQualificationRequest {
+  title: string;
+  supportingDocumentFormat: string;
+  supportingDocumentMaxSize: number;
+  supportingDocumentFileSizeUnit: string;
 }
 
 // UserProfile types

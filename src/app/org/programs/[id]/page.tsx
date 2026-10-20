@@ -275,13 +275,13 @@ export default function ProgramDetailPage() {
             text="Forfeit"
             onClick={() => setShowForfeitModal(true)}
             variant="outline"
-            className="py-3! px-8! rounded-xl! text-base! font-medium!"
+            className="py-3! px-8! rounded-xl! text-sm! font-medium!"
           />
           <AppButton
             text="Delete"
             onClick={() => setShowDeleteModal(true)}
             variant="danger"
-            className="py-3! px-8! rounded-xl! text-base! font-medium!"
+            className="py-3! px-8! rounded-xl! text-sm! font-medium!"
           />
         </div>
       </motion.section>
@@ -300,13 +300,13 @@ export default function ProgramDetailPage() {
               text="Cancel"
               onClick={() => setShowDeleteModal(false)}
               variant="outline"
-              className="py-3! px-8! rounded-xl! text-base! font-medium!"
+              className="py-3! px-8! rounded-xl! text-sm! font-medium!"
             />
             <AppButton
               text="Delete"
               onClick={handleDelete}
               variant="danger"
-              className="py-3! px-8! rounded-xl! text-base! font-medium!"
+              className="py-3! px-8! rounded-xl! text-sm! font-medium!"
             />
           </div>
         </div>
@@ -326,13 +326,13 @@ export default function ProgramDetailPage() {
               text="Cancel"
               onClick={() => setShowForfeitModal(false)}
               variant="outline"
-              className="py-3! px-8! rounded-xl! text-base! font-medium!"
+              className="py-3! px-8! rounded-xl! text-sm! font-medium!"
             />
             <AppButton
               text="Forfeit"
               onClick={handleForfeit}
               variant="secondary"
-              className="py-3! px-8! rounded-xl! text-base! font-medium!"
+              className="py-3! px-8! rounded-xl! text-sm! font-medium!"
             />
           </div>
         </div>

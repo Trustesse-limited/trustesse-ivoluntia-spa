@@ -283,14 +283,14 @@ export default function ProgramDetailPage() {
           text="Join Program"
           onClick={handleJoin}
           disabled={isJoining}
-          className="py-3! px-8! rounded-xl! text-base! font-medium!"
+          className="py-3! px-8! rounded-xl! text-sm! font-medium!"
         />
         <AppButton
           text="Leave Program"
           onClick={handleLeave}
           disabled={isLeaving}
           variant="outline"
-          className="py-3! px-8! rounded-xl! text-base! font-medium!"
+          className="py-3! px-8! rounded-xl! text-sm! font-medium!"
         />
       </div>
     </motion.section>

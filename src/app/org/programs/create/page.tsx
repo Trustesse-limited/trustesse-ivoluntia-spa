@@ -1,32 +1,35 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ImageUpload from "@/components/onboarding/components/ImageUpload";
 import BackButton from "@/components/BackButton";
 import DatePicker from "@/components/DatePicker";
 import { FormInput } from "@/components/ui/FormInput";
-import { TagInput } from "@/components/ui/TagInput";
 import { Combobox } from "@/components/ui/Combobox";
 import { Switch } from "@/components/ui/switch";
 import { NumberInput } from "@/components/ui/FormInput";
 import { TextEditor } from "@/components/ui/TextEditor";
+import { getCausesAction, getSkillsAction, getQualificationsAction } from "@/app/actions/auth";
 import { createProgramAction } from "@/app/actions/auth";
-import { CreateProgramRequest, ProgramGoal } from "@/types/api";
+import { CreateProgramRequest, Cause, Skill, Qualification, MeetupSchedule } from "@/types/api";
 import { useAuthStore } from "@/store";
-import { useAuthActions } from "@/hooks/useAuthActions";
 import toast from "react-hot-toast";
 import logger from "@/lib/logger";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { getCurrencyFromCountry, getCurrencySymbol as getCurrencySymbolFromCode } from "@/constants";
+
 
 export default function CreatePage() {
   const router = useRouter();
-  const { user, setOrganizationProfile } = useAuthStore();
-  const { getFoundationProfile } = useAuthActions();
+  const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [causes, setCauses] = useState<Cause[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [qualifications, setQualifications] = useState<Qualification[]>([]);
+  const [isLoadingCauses, setIsLoadingCauses] = useState(true);
+  const [isLoadingSkills, setIsLoadingSkills] = useState(true);
+  const [isLoadingQualifications, setIsLoadingQualifications] = useState(true);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -38,64 +41,57 @@ export default function CreatePage() {
     requiresDonation: false,
     donationTarget: 0,
     bannerImage: '',
-    goals: [] as ProgramGoal[],
+    goals: [] as string[],
     skills: [] as string[],
+    requiresMeetup: false,
+    meetupSchedules: [] as MeetupSchedule[],
+    requiresQualification: false,
+    qualificationIds: [] as string[],
   });
+  const [selectedSkill, setSelectedSkill] = useState('');
+  const [selectedGoal, setSelectedGoal] = useState('');
+  const [selectedQualification, setSelectedQualification] = useState('');
+  const [meetupDate, setMeetupDate] = useState('');
+  const [meetupTime, setMeetupTime] = useState('');
   const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(null);
 
-  // Get currency from organization profile
-  const currencySymbol = useMemo(() => {
-    const country = user?.organizationProfile?.locations?.[0]?.country ||
-                   user?.organizationProfile?.foundationCountry;
-    if (country) {
-      const currencyCode = getCurrencyFromCountry(country);
-      return getCurrencySymbolFromCode(currencyCode);
-    }
-    return "$"; // Default to USD
-  }, [user?.organizationProfile?.locations, user?.organizationProfile?.foundationCountry]);
+  // Default currency symbol
+  const currencySymbol = "$";
 
-  // Fetch organization profile if not already in store
+  // Fetch causes, skills, and qualifications directly from the APIs (not from user profile)
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user?.organizationProfile && (user?.accountType === 'Foundation' || user?.accountType === 'Organization')) {
-        setIsLoadingProfile(true);
-        try {
-          const result = await getFoundationProfile();
-          if (result.success && result.data) {
-            // Create default location from profile address data
-            const defaultLocation = {
-              address: result.data.address || '',
-              city: result.data.city || '',
-              state: result.data.foundationState || '',
-              country: result.data.foundationCountry || '',
-              zipcode: result.data.zipCode || '',
-            };
-
-            setOrganizationProfile({
-              name: result.data.name,
-              email: result.data.email,
-              foundationCategory: result.data.foundationCategory,
-              website: result.data.website,
-              mission: result.data.mission,
-              address: result.data.address,
-              city: result.data.city,
-              zipcode: result.data.zipCode,
-              foundationCountry: result.data.foundationCountry,
-              foundationState: result.data.foundationState,
-              causes: result.data.causes || undefined,
-              logoUrl: result.data.logoUrl,
-              locations: [defaultLocation],
-            });
-          }
-        } catch (error) {
-          logger.error('Failed to fetch organization profile:', error);
-        } finally {
-          setIsLoadingProfile(false);
+    const fetchReferenceData = async () => {
+      try {
+        const causesResult = await getCausesAction();
+        if (causesResult.success && causesResult.data) {
+          setCauses(causesResult.data);
         }
+      } catch (error) {
+        logger.error('Failed to fetch causes:', error);
+      }
+      try {
+        const skillsResult = await getSkillsAction();
+        if (skillsResult.success && skillsResult.data) {
+          setSkills(skillsResult.data);
+        }
+      } catch (error) {
+        logger.error('Failed to fetch skills:', error);
+      }
+      try {
+        const qualificationsResult = await getQualificationsAction();
+        if (qualificationsResult.success && qualificationsResult.data) {
+          setQualifications(qualificationsResult.data);
+        }
+      } catch (error) {
+        logger.error('Failed to fetch qualifications:', error);
+      } finally {
+        setIsLoadingCauses(false);
+        setIsLoadingSkills(false);
+        setIsLoadingQualifications(false);
       }
     };
-    fetchProfile();
-  }, [user?.organizationProfile, user?.accountType, getFoundationProfile, setOrganizationProfile]);
+    fetchReferenceData();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -105,32 +101,89 @@ export default function CreatePage() {
     }));
   };
 
-  const handleAddGoal = (value: string) => {
+  const handleAddGoal = () => {
+    if (selectedGoal && !formData.goals.includes(selectedGoal)) {
+      setFormData(prev => ({
+        ...prev,
+        goals: [...prev.goals, selectedGoal],
+      }));
+      setSelectedGoal('');
+    }
+  };
+
+  const handleRemoveGoal = (goalToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      goals: [...prev.goals, { goal: value }],
+      goals: prev.goals.filter(g => g !== goalToRemove),
     }));
   };
 
-  const handleRemoveGoal = (index: number) => {
+  const handleAddSkill = () => {
+    if (selectedSkill && !formData.skills.includes(selectedSkill)) {
+      setFormData(prev => ({
+        ...prev,
+        skills: [...prev.skills, selectedSkill],
+      }));
+      setSelectedSkill('');
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      goals: prev.goals.filter((_, i) => i !== index),
+      skills: prev.skills.filter(s => s !== skillToRemove),
     }));
   };
 
-  const handleAddSkill = (value: string) => {
+  const handleAddQualification = () => {
+    if (selectedQualification && !formData.qualificationIds.includes(selectedQualification)) {
+      setFormData(prev => ({
+        ...prev,
+        qualificationIds: [...prev.qualificationIds, selectedQualification],
+      }));
+      setSelectedQualification('');
+    }
+  };
+
+  const handleRemoveQualification = (qualificationIdToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      skills: [...prev.skills, value],
+      qualificationIds: prev.qualificationIds.filter(q => q !== qualificationIdToRemove),
     }));
   };
 
-  const handleRemoveSkill = (index: number) => {
+  const handleAddMeetupSchedule = () => {
+    if (meetupDate && meetupTime) {
+      setFormData(prev => ({
+        ...prev,
+        meetupSchedules: [...prev.meetupSchedules, { date: meetupDate, time: meetupTime }],
+      }));
+      setMeetupDate('');
+      setMeetupTime('');
+    }
+  };
+
+  const handleRemoveMeetupSchedule = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      skills: prev.skills.filter((_, i) => i !== index),
+      meetupSchedules: prev.meetupSchedules.filter((_, i) => i !== index),
     }));
+  };
+
+  // Map selected cause name to cause ID using the causes data from the API
+  const getCauseIdByName = (causeName: string): string | null => {
+    const cause = causes.find((c) => c.name === causeName);
+    return cause?.id || null;
+  };
+
+  // Map selected skill names to skill IDs using the skills data from the API
+  const getSkillIdsByNames = (skillNames: string[]): string[] => {
+    return skillNames
+      .map((name) => {
+        const skill = skills.find((s) => s.name === name);
+        return skill?.id || null;
+      })
+      .filter((id): id is string => id !== null);
   };
 
   const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
@@ -139,6 +192,24 @@ export default function CreatePage() {
     if (!formData.title || !formData.description || !formData.startDate || !formData.endDate) {
       toast.error('Please fill in all required fields');
       return;
+    }
+
+    // Map cause name to cause ID and skill names to skill IDs
+    const causeId = getCauseIdByName(formData.category);
+    const skillIds = getSkillIdsByNames(formData.skills);
+
+    // Validate required category
+    if (!formData.category) {
+      toast.error('Please select a program category from the list');
+      return;
+    }
+
+    // Log for debugging if ID isn't mapping correctly
+    if (!causeId && formData.category) {
+      logger.error('[Create Program] Category ID mapping failed:', {
+        selectedCategory: formData.category,
+        availableCauses: causes.map(c => ({ name: c.name, id: c.id })),
+      });
     }
 
     try {
@@ -164,10 +235,14 @@ export default function CreatePage() {
         creatorEmail: user?.email || '',
         donationTarget: formData.requiresDonation ? formData.donationTarget : 0,
         bannerImage,
-        causeId: formData.category,
+        causeId: causeId || '',
         saveAsDraft: isDraft,
-        skillIds: formData.skills,
-        programGoals: formData.goals,
+        skillIds,
+        programGoals: formData.goals.map(g => ({ goal: g })),
+        requiresMeetup: formData.requiresMeetup,
+        meetupSchedules: formData.meetupSchedules,
+        requiresQualification: formData.requiresQualification,
+        qualificationIds: formData.qualificationIds,
       };
 
       logger.log('[Create Program] Request Payload:', createRequest);
@@ -201,12 +276,7 @@ export default function CreatePage() {
 
   return (
     <div className="bg-background">
-      {isLoadingProfile ? (
-        <div className="flex items-center justify-center h-screen">
-          <LoadingSpinner />
-        </div>
-      ) : (
-        <div className="mx-auto p-4 sm:p-6 lg:p-8 pb-24">
+      <div className="mx-auto p-4 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-start gap-4 mb-3">
@@ -216,7 +286,7 @@ export default function CreatePage() {
             <p className="text-sm text-muted-foreground">Fill in the details to create your program</p>
           </div>
 
-        {/* Form */}
+          {/* Form */}
         <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
           {/* Main Content - Two Column on Desktop, One Column on Tablet/Mobile */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -265,13 +335,46 @@ export default function CreatePage() {
               {/* Goals */}
               <div>
                 <h2 className="text-base font-semibold text-foreground mb-4">Program Goals</h2>
-                <TagInput
-                  label="Program Goals"
-                  placeholder="Enter a program goal"
-                  values={formData.goals.map(g => g.goal)}
-                  onAdd={handleAddGoal}
-                  onRemove={handleRemoveGoal}
-                />
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Program Goals
+                  </label>
+                  <div className="flex gap-2">
+                    <FormInput
+                      placeholder="Enter a program goal"
+                      value={selectedGoal}
+                      onChange={(e) => setSelectedGoal(e.target.value)}
+                      className="flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddGoal}
+                      disabled={!selectedGoal}
+                      className="px-4 py-2.5 bg-[#0E68DC] text-white rounded-xl text-sm font-medium hover:bg-[#0a55b0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {formData.goals.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.goals.map((goal) => (
+                        <span
+                          key={goal}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#0E68DC]/10 border border-[#0E68DC]/20 text-[#0E68DC] text-xs font-medium"
+                        >
+                          {goal}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveGoal(goal)}
+                            className="p-1 text-[#0E68DC] hover:bg-[#0E68DC]/20 rounded-full transition-colors"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -297,15 +400,12 @@ export default function CreatePage() {
                     />
                   </div>
 
-                  <Combobox
+                  <FormInput
                     label="Location"
-                    placeholder="Enter or select program location"
+                    placeholder="Enter program location"
                     value={formData.location}
-                    onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
-                    options={user?.organizationProfile?.locations?.map((loc) => ({
-                      value: `${loc.city}, ${loc.state}, ${loc.country}`,
-                      label: `${loc.address}, ${loc.city}, ${loc.state}, ${loc.country}`,
-                    })) || []}
+                    onChange={handleInputChange}
+                    name="location"
                   />
                 </div>
               </div>
@@ -317,13 +417,15 @@ export default function CreatePage() {
                 <div className="space-y-4">
                   <Combobox
                     label="Program Category"
-                    placeholder="Enter or select program category"
+                    placeholder="Select program category"
                     value={formData.category}
                     onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                    options={user?.organizationProfile?.causes?.map((cause) => ({
-                      value: cause,
-                      label: cause,
+                    options={causes.map((cause) => ({
+                      value: cause.name,
+                      label: cause.name,
                     })) || []}
+                    disabled={isLoadingCauses}
+                    required
                   />
 
                   <div className="flex items-center gap-3 py-2">
@@ -351,13 +453,182 @@ export default function CreatePage() {
               {/* Skills */}
               <div>
                 <h2 className="text-base font-semibold text-foreground mb-4">Required Skills</h2>
-                <TagInput
-                  label="Required Skills"
-                  placeholder="Enter required skill"
-                  values={formData.skills}
-                  onAdd={handleAddSkill}
-                  onRemove={handleRemoveSkill}
-                />
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Required Skills
+                  </label>
+                  <div className="flex gap-2">
+                    <Combobox
+                      placeholder="Select required skill"
+                      value={selectedSkill}
+                      onChange={setSelectedSkill}
+                      options={skills
+                        .filter((skill) => !formData.skills.includes(skill.name))
+                        .map((skill) => ({
+                          value: skill.name,
+                          label: skill.name,
+                        })) || []}
+                      disabled={isLoadingSkills}
+                      className="flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSkill}
+                      disabled={!selectedSkill || isLoadingSkills}
+                      className="px-4 py-2.5 bg-[#0E68DC] text-white rounded-xl text-sm font-medium hover:bg-[#0a55b0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {formData.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.skills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#0E68DC]/10 border border-[#0E68DC]/20 text-[#0E68DC] text-xs font-medium"
+                        >
+                          {skill}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSkill(skill)}
+                            className="p-1 text-[#0E68DC] hover:bg-[#0E68DC]/20 rounded-full transition-colors"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Meetup & Qualification */}
+              <div>
+                <h2 className="text-base font-semibold text-foreground mb-4">Meetup & Qualification</h2>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 py-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Does this program require meetup?
+                    </label>
+                    <Switch
+                      checked={formData.requiresMeetup}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requiresMeetup: checked, meetupSchedules: checked ? prev.meetupSchedules : [] }))}
+                    />
+                  </div>
+
+                  {formData.requiresMeetup && (
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Meetup Schedules
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={meetupDate}
+                          onChange={(e) => setMeetupDate(e.target.value)}
+                          className="flex-1 rounded-lg border border-input p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0E68DC]"
+                        />
+                        <input
+                          type="time"
+                          value={meetupTime}
+                          onChange={(e) => setMeetupTime(e.target.value)}
+                          className="flex-1 rounded-lg border border-input p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0E68DC]"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddMeetupSchedule}
+                          disabled={!meetupDate || !meetupTime}
+                          className="px-4 py-2.5 bg-[#0E68DC] text-white rounded-xl text-sm font-medium hover:bg-[#0a55b0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      {formData.meetupSchedules.length > 0 && (
+                        <div className="space-y-2 mt-2">
+                          {formData.meetupSchedules.map((schedule, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#0E68DC]/10 border border-[#0E68DC]/20 text-sm"
+                            >
+                              <span>{schedule.date} at {schedule.time}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMeetupSchedule(index)}
+                                className="text-[#0E68DC] hover:bg-[#0E68DC]/20 rounded-full transition-colors p-1"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 py-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Does this program require qualification?
+                    </label>
+                    <Switch
+                      checked={formData.requiresQualification}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requiresQualification: checked, qualificationIds: checked ? prev.qualificationIds : [] }))}
+                    />
+                  </div>
+
+                  {formData.requiresQualification && (
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Required Qualifications
+                      </label>
+                      <div className="flex gap-2">
+                        <Combobox
+                          placeholder="Select qualification"
+                          value={selectedQualification}
+                          onChange={setSelectedQualification}
+                          options={qualifications
+                            .filter((q) => !formData.qualificationIds.includes(q.id))
+                            .map((q) => ({
+                              value: q.id,
+                              label: q.title,
+                            })) || []}
+                          disabled={isLoadingQualifications}
+                          className="flex-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddQualification}
+                          disabled={!selectedQualification || isLoadingQualifications}
+                          className="px-4 py-2.5 bg-[#0E68DC] text-white rounded-xl text-sm font-medium hover:bg-[#0a55b0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      {formData.qualificationIds.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {formData.qualificationIds.map((qId) => {
+                            const qual = qualifications.find(q => q.id === qId);
+                            return (
+                              <span
+                                key={qId}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#0E68DC]/10 border border-[#0E68DC]/20 text-[#0E68DC] text-xs font-medium"
+                              >
+                                {qual?.title || qId}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveQualification(qId)}
+                                  className="p-1 text-[#0E68DC] hover:bg-[#0E68DC]/20 rounded-full transition-colors"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -405,7 +676,6 @@ export default function CreatePage() {
           </div>
         </form>
       </div>
-      )}
     </div>
   );
 }
