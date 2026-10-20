@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { FiCalendar, FiMapPin, FiUsers, FiTrash2 } from "react-icons/fi";
+import { FiCalendar, FiMapPin, FiUsers } from "react-icons/fi";
 import BackButton from "@/components/BackButton";
 import Modal from "@/components/Modal";
 import { AppButton } from "@/components/AppButton";
-import { getProgramByIdAction, updateProgramStatusAction, deleteProgramGoalAction } from "@/app/actions/auth";
+import { getProgramByIdAction, updateProgramStatusAction } from "@/app/actions/auth";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse, ProgramGoal } from "@/types/api";
 import toast from "react-hot-toast";
@@ -40,7 +40,9 @@ export default function ProgramDetailPage() {
         
         if (response.success && response.data) {
           // Map API response to ProgramItem interface
-          const programData = response.data as ProgramApiResponse;
+          // API returns an array, take the first item
+          const dataArray = Array.isArray(response.data) ? response.data : [response.data];
+          const programData = dataArray[0] as ProgramApiResponse;
           const mappedProgram: ProgramItem = {
             id: programData.id || (Array.isArray(id) ? id[0] : id),
             title: programData.title || programData.name || '',
@@ -88,15 +90,17 @@ export default function ProgramDetailPage() {
 
   if (!program) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Program Not Found
-          </h2>
-          <p className="text-gray-600 mb-4">
-            The program you&apos;re looking for doesn&apos;t exist.
-          </p>
-          <BackButton to="/org/programs" />
+      <div className="px-4 sm:px-6 lg:px-8 pt-6">
+        <BackButton to="/org/programs" />
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Program Not Found
+            </h2>
+            <p className="text-gray-600">
+              The program you&apos;re looking for doesn&apos;t exist.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -109,10 +113,9 @@ export default function ProgramDetailPage() {
     return now >= start && now <= end;
   };
 
-  const progressPercent = Math.min(
-    (program.raised / program.donationTarget) * 100,
-    100
-  );
+  const progressPercent = program.donationTarget > 0
+    ? Math.min((program.raised / program.donationTarget) * 100, 100)
+    : 0;
 
   const handleDelete = async () => {
     try {
@@ -156,21 +159,6 @@ export default function ProgramDetailPage() {
     setShowForfeitModal(false);
   };
 
-  const handleDeleteGoal = async (goalId: string) => {
-    try {
-      const response = await deleteProgramGoalAction(goalId);
-      if (response.success) {
-        toast.success('Goal deleted successfully');
-        setProgramGoals(prev => prev.filter(goal => goal.id !== goalId));
-      } else {
-        toast.error('Failed to delete goal');
-      }
-    } catch (error) {
-      console.error('Error deleting goal:', error);
-      toast.error('Failed to delete goal');
-    }
-  };
-
   return (
     <>
       <motion.section
@@ -186,21 +174,23 @@ export default function ProgramDetailPage() {
         </div>
 
         {/* Title */}
-        <div className="flex items-center justify-start gap-6 w-full flex-wrap">
-          <h2 className="text-xl font-bold">{program.title}</h2>
-          <span
-            className={`inline-block py-3 px-4 text-xs font-medium rounded-xl ${
-              isActive()
-                ? "bg-[#F3F3F3] text-[#66BB6A]"
-                : "bg-[#F3F3F3] text-[#F7BA32]"
-            }`}
-          >
-            {isActive() ? "Active" : "Pending"}
-          </span>
+        <div className="flex items-center justify-between w-full flex-wrap gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <h2 className="text-xl font-bold">{program.title}</h2>
+            <span
+              className={`inline-block py-3 px-4 text-xs font-medium rounded-xl ${
+                isActive()
+                  ? "bg-[#F3F3F3] text-[#66BB6A]"
+                  : "bg-[#F3F3F3] text-[#F7BA32]"
+              }`}
+            >
+              {isActive() ? "Active" : "Pending"}
+            </span>
+          </div>
           <AppButton
             text="Edit Program"
             onClick={() => router.push(`/org/programs/${id}/edit`)}
-            className="py-3! px-6! rounded-xl! text-sm! font-medium!"
+            className="text-sm! py-2! px-4!"
           />
         </div>
 
@@ -228,38 +218,34 @@ export default function ProgramDetailPage() {
         </div>
 
         {/* Donation Target */}
-        <div className="space-y-2 lg:w-8/12">
-          <h3 className="text-lg font-bold">Donation Target</h3>
-          <p className="text-sm mt-1">
-            ${formatNumberWithCommas(program.raised)} Raised of $
-            {formatNumberWithCommas(program.donationTarget)}
-          </p>
-          <div className="w-full bg-[#D9D9D9] rounded-full h-2 overflow-hidden">
-            <div
-              className="h-full bg-[#66BB6A] transition-all"
-              style={{ width: `${progressPercent}%` }}
-            />
+        {program.donationTarget > 0 && (
+          <div className="space-y-2 lg:w-8/12">
+            <h3 className="text-lg font-bold">Donation Target</h3>
+            <p className="text-sm mt-1">
+              ${formatNumberWithCommas(program.raised)} Raised of $
+              {formatNumberWithCommas(program.donationTarget)}
+            </p>
+            <div className="w-full bg-[#D9D9D9] rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full bg-[#66BB6A] transition-all"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Goals */}
         <div className="space-y-2">
           <h3 className="text-lg font-bold">Goals</h3>
           {programGoals.length > 0 ? (
-            <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
               {programGoals.map((goal, index) => (
-                <div key={goal.id || index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                  <span className="text-sm">{goal.goal}</span>
-                  {goal.id && (
-                    <button
-                      onClick={() => handleDeleteGoal(goal.id!)}
-                      className="text-red-500 hover:text-red-700 p-1"
-                      title="Delete goal"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+                <span
+                  key={goal.id || index}
+                  className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#0E68DC]/10 border border-[#0E68DC]/20 text-[#0E68DC] text-xs font-medium"
+                >
+                  {goal.goal}
+                </span>
               ))}
             </div>
           ) : (
@@ -275,13 +261,13 @@ export default function ProgramDetailPage() {
             text="Forfeit"
             onClick={() => setShowForfeitModal(true)}
             variant="outline"
-            className="py-3! px-8! rounded-xl! text-sm! font-medium!"
+            className="text-sm! py-2! px-4!"
           />
           <AppButton
             text="Delete"
             onClick={() => setShowDeleteModal(true)}
             variant="danger"
-            className="py-3! px-8! rounded-xl! text-sm! font-medium!"
+            className="text-sm! py-2! px-4!"
           />
         </div>
       </motion.section>
@@ -300,13 +286,13 @@ export default function ProgramDetailPage() {
               text="Cancel"
               onClick={() => setShowDeleteModal(false)}
               variant="outline"
-              className="py-3! px-8! rounded-xl! text-sm! font-medium!"
+              className="text-sm! py-2! px-4!"
             />
             <AppButton
               text="Delete"
               onClick={handleDelete}
               variant="danger"
-              className="py-3! px-8! rounded-xl! text-sm! font-medium!"
+              className="text-sm! py-2! px-4!"
             />
           </div>
         </div>
@@ -326,13 +312,13 @@ export default function ProgramDetailPage() {
               text="Cancel"
               onClick={() => setShowForfeitModal(false)}
               variant="outline"
-              className="py-3! px-8! rounded-xl! text-sm! font-medium!"
+              className="text-sm! py-2! px-4!"
             />
             <AppButton
               text="Forfeit"
               onClick={handleForfeit}
               variant="secondary"
-              className="py-3! px-8! rounded-xl! text-sm! font-medium!"
+              className="text-sm! py-2! px-4!"
             />
           </div>
         </div>

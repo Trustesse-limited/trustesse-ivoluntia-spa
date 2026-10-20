@@ -100,6 +100,8 @@ export interface ProgramApiResponse {
   foundationId?: string;
   creatorEmail?: string;
   bannerImage?: string;
+  causeId?: string;
+  cause?: { id: string; name: string; description: string | null } | null;
   skillIds?: string[];
   programGoals?: ProgramGoal[];
   requiresMeetup?: boolean;
@@ -145,12 +147,10 @@ export interface UpdateProgramRequest extends Record<string, unknown> {
   startDate: string;
   endDate: string;
   locationId: string;
+  causeId: string;
   donationTarget: number;
   bannerImage?: string;
-  requiresMeetup?: boolean;
-  meetupSchedules?: MeetupSchedule[];
-  requiresQualification?: boolean;
-  qualificationIds?: string[];
+  programGoals?: ProgramGoal[];
 }
 
 export interface UpdateProgramStatusRequest {

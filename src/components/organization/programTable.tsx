@@ -58,7 +58,7 @@ export default function ProgramTable({
 
   return (
     <>
-      <div className="max-md:w-[80vw] w-[calc(90vw-13rem)] overflow-x-auto">
+      <div className="max-md:w-[90vw] w-[calc(90vw-11rem)] overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 table-fixed">
           <thead className="bg-[#F7F7F7]">
             <tr>

@@ -37,24 +37,24 @@ export function AppButton({
         return 'custom';
       case 'danger':
         return disabled || isLoading
-          ? 'bg-gradient-to-b from-red-400 to-red-500 text-white'
-          : 'bg-gradient-to-b from-red-400 to-red-500 text-white';
+          ? 'bg-red-500 text-white'
+          : 'bg-red-500 text-white hover:bg-red-600';
       case 'outline':
         return disabled || isLoading
           ? 'bg-transparent border-2 border-[var(--buttonPrimary)] text-[var(--buttonPrimary)]'
           : 'bg-transparent border-2 border-[var(--buttonPrimary)] text-[var(--buttonPrimary)] hover:bg-[var(--buttonPrimary)] hover:text-white';
       case 'secondary':
         return disabled || isLoading
-          ? 'bg-gradient-to-b from-blue-300 to-blue-400 text-white'
-          : 'bg-gradient-to-b from-blue-300 to-blue-400 text-white';
+          ? 'bg-blue-400 text-white'
+          : 'bg-blue-400 text-white hover:bg-blue-500';
       case 'link':
         return disabled || isLoading
           ? 'bg-transparent text-[var(--buttonPrimary)] p-0'
           : 'bg-transparent text-[var(--buttonPrimary)] hover:underline p-0';
       default:
         return disabled || isLoading
-          ? 'bg-gradient-to-b from-[#0E68DC] to-[#0a55b0] text-white'
-          : 'bg-gradient-to-b from-[#0E68DC] to-[#0a55b0] text-white';
+          ? 'bg-[#0E68DC] text-white'
+          : 'bg-[#0E68DC] text-white hover:bg-[#0a55b0]';
     }
   };
 
@@ -63,17 +63,15 @@ export function AppButton({
       return {};
     }
 
-    const glowColor = variant === 'danger' ? '229, 62, 62' : variant === 'secondary' ? '59, 130, 246' : '14, 104, 220';
-
     if (isPressed) {
       return {
-        boxShadow: `inset 0 1px 0 rgba(0, 0, 0, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.08), 0 0 10px rgba(${glowColor}, 0.2)`,
+        boxShadow: `0 1px 2px rgba(0, 0, 0, 0.1)`,
         transform: 'scale(0.98)',
       };
     }
 
     return {
-      boxShadow: `inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.08), 0 0 20px rgba(${glowColor}, 0.25)`,
+      boxShadow: `0 2px 4px rgba(0, 0, 0, 0.1)`,
     };
   };
 
