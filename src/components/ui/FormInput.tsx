@@ -23,7 +23,26 @@ export function FormInput({
     <FormField label={label} required={required} error={error} className={className}>
       <input
         type={type}
-        className={`w-full rounded-xl border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200 ${error ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : ''}`}
+        className={`w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200 ${error ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : ''}`}
+        {...props}
+      />
+    </FormField>
+  );
+}
+
+export function NumberInput({
+  label,
+  required = false,
+  error,
+  className = '',
+  ...props
+}: Omit<FormInputProps, 'type'>) {
+  return (
+    <FormField label={label} required={required} error={error} className={className}>
+      <input
+        type="number"
+        className={`w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200 ${error ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : ''}`}
+        onWheel={(e) => e.currentTarget.blur()}
         {...props}
       />
     </FormField>

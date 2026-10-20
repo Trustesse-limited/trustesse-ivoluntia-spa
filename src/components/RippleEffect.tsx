@@ -31,7 +31,7 @@ interface RippleEffectProps {
   children: React.ReactNode;
   disabled?: boolean;
   className?: string;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent | React.TouchEvent) => void;
   onMouseDown?: () => void;
   onMouseUp?: () => void;
   onMouseLeave?: () => void;
@@ -75,7 +75,7 @@ export function RippleEffect({ children, disabled = false, className = '', onCli
   const handleClick = useCallback((event: React.MouseEvent | React.TouchEvent) => {
     addRipple(event);
     if (onClick) {
-      onClick();
+      onClick(event);
     }
   }, [addRipple, onClick]);
 

@@ -704,28 +704,73 @@ export async function createProgram(request: CreateProgramRequest): Promise<ApiR
 /**
  * Get Programs
  * GET /api/Programs/get-programs
+ *
+ * Query params mirror the swagger definition (PageNumber/PageSize are
+ * capitalized there; ASP.NET binding is case-insensitive but we match the
+ * documented names exactly). The response is returned untyped because the
+ * envelope is not documented: it may be a bare array or a paginated object.
+ * parseProgramsResponse in the server actions normalizes every shape.
  */
 export async function getPrograms(params?: {
+  PageNumber?: number;
+  PageSize?: number;
   foundationId?: string;
   status?: string;
   search?: string;
-}): Promise<ApiResponse<ProgramApiResponse[]>> {
+  dateRange?: string;
+}): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] GET', API_ENDPOINTS.programs.getAll);
     logger.log('[API] Params:', params);
 
-    const response = await serverAxiosInstance.get<ApiResponse<ProgramApiResponse[]>>(
+    const response = await serverAxiosInstance.get<ApiResponse<unknown>>(
       API_ENDPOINTS.programs.getAll,
       { params }
     );
 
     logger.log('[API] Response Status:', response.status);
-    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
     const apiError = error as AxiosError;
     logger.error('[API] Error in getPrograms:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get Organizations
+ * GET /api/Organization/get
+ *
+ * Used to fetch organization options for admin program management filters.
+ */
+export async function getOrganizations(params?: {
+  Page?: number;
+  PageSize?: number;
+  Status?: string;
+  All?: boolean;
+  SearchQuery?: string;
+  OrderByColumn?: string;
+  OrderBy?: string;
+}): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.organization.get);
+    logger.log('[API] Params:', params);
+
+    const response = await serverAxiosInstance.get<ApiResponse<unknown>>(
+      API_ENDPOINTS.organization.get,
+      { params }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getOrganizations:', {
       status: apiError.response?.status,
       message: apiError.response?.data || apiError.message,
     });
@@ -950,6 +995,115 @@ export async function leaveProgram(programId: string): Promise<ApiResponse<Recor
   } catch (error) {
     const apiError = error as AxiosError;
     logger.error('[API] Error in leaveProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Add Favorite Program
+ * POST /api/FavoritePrograms/add-favorite-program
+ */
+export async function addFavoriteProgram(programId: string): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.favoritePrograms.add);
+    logger.log('[API] Program ID:', programId);
+
+    const response = await serverAxiosInstance.post<ApiResponse<Record<string, unknown>>>(
+      API_ENDPOINTS.favoritePrograms.add,
+      { programId }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in addFavoriteProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get Favorite Programs (the current user's favourites)
+ * GET /api/FavoritePrograms/get-favorite-programs
+ */
+export async function getFavoritePrograms(): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.favoritePrograms.get);
+
+    const response = await serverAxiosInstance.get<ApiResponse<unknown>>(
+      API_ENDPOINTS.favoritePrograms.get
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getFavoritePrograms:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Remove Favorite Program
+ * DELETE /api/FavoritePrograms/remove-favorite-program?programId=...
+ */
+export async function removeFavoriteProgram(programId: string): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] DELETE', API_ENDPOINTS.favoritePrograms.remove);
+    logger.log('[API] Program ID:', programId);
+
+    const response = await serverAxiosInstance.delete<ApiResponse<Record<string, unknown>>>(
+      API_ENDPOINTS.favoritePrograms.remove,
+      { params: { programId } }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in removeFavoriteProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get All Favorite Programs (paginated)
+ * GET /api/FavoritePrograms/get-all-favorite-programs
+ */
+export async function getAllFavoritePrograms(params?: {
+  PageNumber?: number;
+  PageSize?: number;
+}): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.favoritePrograms.getAll);
+    logger.log('[API] Params:', params);
+
+    const response = await serverAxiosInstance.get<ApiResponse<unknown>>(
+      API_ENDPOINTS.favoritePrograms.getAll,
+      { params }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getAllFavoritePrograms:', {
       status: apiError.response?.status,
       message: apiError.response?.data || apiError.message,
     });

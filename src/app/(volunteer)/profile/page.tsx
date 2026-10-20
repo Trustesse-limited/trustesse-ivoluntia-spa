@@ -37,7 +37,7 @@ const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
 ];
 
 export default function VolunteerProfilePage() {
-  const { user } = useAuthStore();
+  const { user, setVolunteerProfile } = useAuthStore();
   const { getVolunteerProfile } = useAuthActions();
   // Active tab is persisted in the URL (?tab=...) so it survives refresh
   const [activeTab, setActiveTab] = useActiveTab<ProfileTab>('profile', PROFILE_TAB_IDS);
@@ -61,6 +61,16 @@ export default function VolunteerProfilePage() {
         const result = await getVolunteerProfile();
         if (result.success && result.data) {
           setProfileData(result.data);
+          // Store volunteer profile data in auth store for global access
+          setVolunteerProfile({
+            firstName: result.data.firstName || undefined,
+            lastName: result.data.lastName || undefined,
+            interests: result.data.interestNames || [],
+            skills: result.data.skillNames || [],
+            bio: result.data.bio || undefined,
+            userImage: result.data.userImage || undefined,
+            location: result.data.address || undefined,
+          });
         }
       } catch (error) {
         console.error('Failed to fetch volunteer profile:', error);
@@ -68,7 +78,7 @@ export default function VolunteerProfilePage() {
     };
 
     fetchProfile();
-  }, [getVolunteerProfile]);
+  }, [getVolunteerProfile, setVolunteerProfile]);
   
   // Use user data from auth store or fallback to mock data
   const profile = {

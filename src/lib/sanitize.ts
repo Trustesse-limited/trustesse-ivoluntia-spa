@@ -185,10 +185,12 @@ export function sanitizeZipCode(value: string): string {
 
 /**
  * Sanitizes an OTP / numeric code, allowing only alphanumeric characters.
+ * NOTE: Does NOT truncate - let validation handle length checking to avoid
+ * silently removing characters that users intended to enter.
  */
 export function sanitizeOtp(value: string): string {
   const noControl = stripControlCharacters(value);
-  return noControl.replace(/[^0-9a-zA-Z]/g, '').slice(0, OTP_MAX_LENGTH);
+  return noControl.replace(/[^0-9a-zA-Z]/g, '');
 }
 
 /**
@@ -282,7 +284,7 @@ export function sanitizeFormData<T extends Record<string, unknown>>(
   return result;
 }
 
-export default {
+const sanitize = {
   sanitizeEmail,
   sanitizeName,
   sanitizeText,
@@ -298,3 +300,5 @@ export default {
   isValidEmail,
   isSafeString,
 };
+
+export default sanitize;

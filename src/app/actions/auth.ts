@@ -35,6 +35,11 @@ import {
   joinProgram,
   leaveProgram,
   createLocation,
+  addFavoriteProgram,
+  getFavoritePrograms,
+  removeFavoriteProgram,
+  getAllFavoritePrograms,
+  getOrganizations,
 } from '@/lib/server-api';
 import { refreshToken } from '@/lib/server-api';
 import {
@@ -62,6 +67,7 @@ import {
   UpdateProgramRequest,
   UpdateProgramStatusRequest,
   CreateLocationRequest,
+  ProgramsPagination,
 } from '@/types/api';
 import { cookies } from 'next/headers';
 import {
@@ -136,6 +142,89 @@ function resolveTokenExpiration(
   }
 
   return null;
+}
+
+/**
+ * Normalize a get-programs response into items + pagination metadata.
+ *
+ * The swagger lists PageNumber/PageSize as query params but does not document
+ * the response envelope, and the endpoint has been observed returning a bare
+ * array. Handle every shape seen/likely:
+ * - `data: [...]` — bare array, no pagination metadata
+ * - `data: { items|data|results|programs: [...], pageNumber, pageSize,
+ *            totalCount, totalPages }`
+ * - pagination fields on the top-level response, next to `data`
+ *
+ * Field names are matched case-insensitively with common aliases so a backend
+ * naming difference (totalCount vs totalRecords vs total) does not break the
+ * UI. Pagination is only returned when the backend actually provides totals.
+ */
+function parseProgramsResponse(response: ApiResponse<unknown>): {
+  programs: ProgramApiResponse[];
+  pagination?: ProgramsPagination;
+} {
+  const pickNumber = (source: unknown, keys: string[]): number | undefined => {
+    if (!source || typeof source !== 'object') return undefined;
+    const record = source as Record<string, unknown>;
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+    }
+    return undefined;
+  };
+
+  const payload = response.data;
+  let programs: ProgramApiResponse[] = [];
+  let container: unknown = payload;
+
+  if (Array.isArray(payload)) {
+    programs = payload as ProgramApiResponse[];
+  } else if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    for (const key of ['items', 'data', 'results', 'programs', 'favoritePrograms', 'favorites']) {
+      if (Array.isArray(record[key])) {
+        programs = record[key] as ProgramApiResponse[];
+        container = record;
+        break;
+      }
+    }
+  }
+
+  // Metadata may live on the nested container or on the top-level response
+  const pageNumber =
+    pickNumber(container, ['pageNumber', 'page']) ??
+    pickNumber(response, ['pageNumber', 'page']) ??
+    1;
+  const pageSize =
+    pickNumber(container, ['pageSize', 'limit']) ??
+    pickNumber(response, ['pageSize', 'limit']) ??
+    programs.length;
+  const totalCount =
+    pickNumber(container, ['totalCount', 'totalRecords', 'total']) ??
+    pickNumber(response, ['totalCount', 'totalRecords', 'total']);
+  const totalPages =
+    pickNumber(container, ['totalPages']) ?? pickNumber(response, ['totalPages']);
+
+  if (totalCount === undefined && totalPages === undefined) {
+    // No metadata — bare array response; caller treats it as a single page
+    return { programs };
+  }
+
+  const resolvedTotalPages =
+    totalPages ??
+    (totalCount !== undefined && pageSize > 0
+      ? Math.ceil(totalCount / pageSize)
+      : 1);
+
+  return {
+    programs,
+    pagination: {
+      pageNumber,
+      pageSize,
+      totalCount: totalCount ?? programs.length,
+      totalPages: Math.max(resolvedTotalPages, 1),
+    },
+  };
 }
 
 
@@ -1935,14 +2024,23 @@ export async function createProgramAction(request: CreateProgramRequest): Promis
 /**
  * Server Action for Get Programs
  * GET /api/Programs/get-programs
+ *
+ * Supports the full query surface of the endpoint: search, dateRange,
+ * foundationId, status and PageNumber/PageSize pagination. Items are returned
+ * in `data` (unchanged — existing callers keep working) plus normalized
+ * `pagination` metadata when the backend provides it.
  */
 export async function getProgramsAction(params?: {
   foundationId?: string;
   status?: string;
   search?: string;
+  dateRange?: string;
+  pageNumber?: number;
+  pageSize?: number;
 }): Promise<{
   success: boolean;
   data?: ProgramApiResponse[];
+  pagination?: ProgramsPagination;
   message?: string;
   error?: string;
 }> {
@@ -1950,12 +2048,33 @@ export async function getProgramsAction(params?: {
     logger.log('[GET PROGRAMS ACTION] Starting programs fetch');
     logger.log('[GET PROGRAMS ACTION] Params:', params);
 
-    const response = await getPrograms(params);
+    // Map camelCase action params to the swagger query names
+    const query: {
+      PageNumber?: number;
+      PageSize?: number;
+      foundationId?: string;
+      status?: string;
+      search?: string;
+      dateRange?: string;
+    } = {};
+    if (params?.foundationId) query.foundationId = params.foundationId;
+    if (params?.status) query.status = params.status;
+    if (params?.search) query.search = params.search;
+    if (params?.dateRange) query.dateRange = params.dateRange;
+    if (params?.pageNumber) query.PageNumber = params.pageNumber;
+    if (params?.pageSize) query.PageSize = params.pageSize;
+
+    const response = await getPrograms(
+      Object.keys(query).length > 0 ? query : undefined
+    );
     logger.log('[GET PROGRAMS ACTION] API Response:', response);
+
+    const parsed = parseProgramsResponse(response);
 
     return {
       success: true,
-      data: response.data,
+      data: parsed.programs,
+      pagination: parsed.pagination,
       message: response.message,
     };
   } catch (error) {
@@ -1965,6 +2084,49 @@ export async function getProgramsAction(params?: {
     return {
       success: false,
       error: apiError.message || 'Failed to fetch programs',
+    };
+  }
+}
+
+/**
+ * Server Action for Get Organizations
+ * GET /api/Organization/get
+ *
+ * Fetches organizations for use as filter options in admin program management.
+ */
+export async function getOrganizationsAction(params?: {
+  Page?: number;
+  PageSize?: number;
+  Status?: string;
+  All?: boolean;
+  SearchQuery?: string;
+  OrderByColumn?: string;
+  OrderBy?: string;
+}): Promise<{
+  success: boolean;
+  data?: unknown;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[GET ORGANIZATIONS ACTION] Starting organizations fetch');
+    logger.log('[GET ORGANIZATIONS ACTION] Params:', params);
+
+    const response = await getOrganizations(params);
+    logger.log('[GET ORGANIZATIONS ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[GET ORGANIZATIONS ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch organizations',
     };
   }
 }
@@ -2220,6 +2382,163 @@ export async function leaveProgramAction(programId: string): Promise<{
       success: false,
       error: apiError.message || 'Failed to leave program',
     };
+  }
+}
+
+/**
+ * Normalize a FavoritePrograms payload into plain program objects.
+ *
+ * The response shape is undocumented; rows may be the program objects
+ * themselves or wrapper rows like `{ programId, program: {...} }`. Unwrap
+ * defensively so callers always receive items with a usable `id`.
+ */
+function normalizeFavoritePrograms(payload: unknown): ProgramApiResponse[] {
+  let list: unknown[] = [];
+  if (Array.isArray(payload)) {
+    list = payload;
+  } else if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    for (const key of ['items', 'data', 'results', 'programs', 'favoritePrograms', 'favorites']) {
+      if (Array.isArray(record[key])) {
+        list = record[key] as unknown[];
+        break;
+      }
+    }
+  }
+
+  const normalized: ProgramApiResponse[] = [];
+  for (const entry of list) {
+    if (!entry || typeof entry !== 'object') continue;
+    const row = entry as Record<string, unknown>;
+    // Wrapper row: the program lives on a nested `program` field
+    const nested =
+      row.program && typeof row.program === 'object'
+        ? (row.program as Record<string, unknown>)
+        : row;
+    const id =
+      (typeof nested.id === 'string' && nested.id) ||
+      (typeof nested.programId === 'string' && nested.programId) ||
+      (typeof row.programId === 'string' && row.programId) ||
+      '';
+    if (!id) continue;
+    normalized.push({ ...(nested as unknown as ProgramApiResponse), id });
+  }
+  return normalized;
+}
+
+/**
+ * Server Action for Add Favorite Program
+ * POST /api/FavoritePrograms/add-favorite-program
+ */
+export async function addFavoriteProgramAction(programId: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[ADD FAVORITE ACTION] Program ID:', programId);
+
+    const response = await addFavoriteProgram(programId);
+    logger.log('[ADD FAVORITE ACTION] API Response:', response);
+
+    return { success: true, message: response.message };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[ADD FAVORITE ACTION] API Error:', apiError);
+
+    return { success: false, error: apiError.message || 'Failed to add favourite' };
+  }
+}
+
+/**
+ * Server Action for Remove Favorite Program
+ * DELETE /api/FavoritePrograms/remove-favorite-program
+ */
+export async function removeFavoriteProgramAction(programId: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[REMOVE FAVORITE ACTION] Program ID:', programId);
+
+    const response = await removeFavoriteProgram(programId);
+    logger.log('[REMOVE FAVORITE ACTION] API Response:', response);
+
+    return { success: true, message: response.message };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[REMOVE FAVORITE ACTION] API Error:', apiError);
+
+    return { success: false, error: apiError.message || 'Failed to remove favourite' };
+  }
+}
+
+/**
+ * Server Action for Get Favorite Programs (current user's favourites)
+ * GET /api/FavoritePrograms/get-favorite-programs
+ */
+export async function getFavoriteProgramsAction(): Promise<{
+  success: boolean;
+  data?: ProgramApiResponse[];
+  message?: string;
+  error?: string;
+}> {
+  try {
+    const response = await getFavoritePrograms();
+    logger.log('[GET FAVORITES ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: normalizeFavoritePrograms(response.data),
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[GET FAVORITES ACTION] API Error:', apiError);
+
+    return { success: false, error: apiError.message || 'Failed to fetch favourites' };
+  }
+}
+
+/**
+ * Server Action for Get All Favorite Programs (paginated)
+ * GET /api/FavoritePrograms/get-all-favorite-programs
+ */
+export async function getAllFavoriteProgramsAction(params?: {
+  pageNumber?: number;
+  pageSize?: number;
+}): Promise<{
+  success: boolean;
+  data?: ProgramApiResponse[];
+  pagination?: ProgramsPagination;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    // Map camelCase action params to the swagger query names
+    const query: { PageNumber?: number; PageSize?: number } = {};
+    if (params?.pageNumber) query.PageNumber = params.pageNumber;
+    if (params?.pageSize) query.PageSize = params.pageSize;
+
+    const response = await getAllFavoritePrograms(
+      Object.keys(query).length > 0 ? query : undefined
+    );
+    logger.log('[GET ALL FAVORITES ACTION] API Response:', response);
+
+    const parsed = parseProgramsResponse(response);
+
+    return {
+      success: true,
+      data: normalizeFavoritePrograms(parsed.programs),
+      pagination: parsed.pagination,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[GET ALL FAVORITES ACTION] API Error:', apiError);
+
+    return { success: false, error: apiError.message || 'Failed to fetch favourites' };
   }
 }
 

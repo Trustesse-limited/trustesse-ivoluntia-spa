@@ -77,16 +77,46 @@ export function formatProgramLocation(location: unknown): string {
 }
 
 /**
+ * Parse a program date from the Programs API into a valid Date, or null.
+ *
+ * The API sometimes returns timestamps with more than 3 fractional seconds
+ * (e.g. `2026-07-30T13:46:05.9193372`). ECMAScript's ISO date parser only
+ * accepts exactly 3 digits (milliseconds), so `new Date()` on those strings
+ * yields an Invalid Date. We normalize the fractional seconds to 3 digits
+ * before parsing and return null when the value is missing or unparseable so
+ * callers never have to deal with Invalid Date.
+ */
+export function parseProgramDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  // Normalize fractional seconds to exactly 3 digits (milliseconds).
+  // Handles 1-7+ digit fractions safely: ".5" -> ".500", ".9193372" -> ".919"
+  const normalized = value.replace(/\.\d+/, (match) => {
+    const digits = match.slice(1);
+    const padded = (digits + "000").slice(0, 3);
+    return "." + padded;
+  });
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Format a Date as a local `YYYY-MM-DD` string (the format used by
+ * `<input type="date">` values), so date-range filtering can compare
+ * lexicographically.
+ */
+export function toDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Format a program start/end date range for display.
  *
- * Produces strings like "July 30 - Aug 20, 2026".
- *
- * The Programs API sometimes returns timestamps with more than 3 fractional
- * seconds (e.g. `2026-07-30T13:46:05.9193372`). ECMAScript's ISO date parser
- * only accepts exactly 3 digits (milliseconds), so `new Date()` on those
- * strings yields an Invalid Date. We normalize the fractional seconds to 3
- * digits before parsing, and return an empty string when the dates are
- * missing or unparseable so callers never render "Invalid Date".
+ * Produces strings like "July 30 - Aug 20, 2026". Returns an empty string
+ * when the dates are missing or unparseable so callers never render
+ * "Invalid Date".
  */
 export function formatProgramDateRange(
   startDate: string | null | undefined,
@@ -94,19 +124,10 @@ export function formatProgramDateRange(
 ): string {
   if (!startDate || !endDate) return "";
 
-  // Normalize fractional seconds to exactly 3 digits (milliseconds).
-  // Handles 1-7+ digit fractions safely: ".5" -> ".500", ".9193372" -> ".919"
-  const normalizeMs = (iso: string) =>
-    iso.replace(/\.\d+/, (match) => {
-      const digits = match.slice(1);
-      const padded = (digits + "000").slice(0, 3);
-      return "." + padded;
-    });
+  const start = parseProgramDate(startDate);
+  const end = parseProgramDate(endDate);
 
-  const start = new Date(normalizeMs(startDate));
-  const end = new Date(normalizeMs(endDate));
-
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+  if (!start || !end) {
     return "";
   }
 

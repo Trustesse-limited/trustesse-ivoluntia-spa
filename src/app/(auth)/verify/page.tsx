@@ -165,8 +165,10 @@ function VerifyContent() {
   }, [countdown]);
 
   const handleOtpChange = (otpValue: string) => {
-    // SECURITY: Sanitize OTP (digits only)
-    setOtp(sanitizeOtp(otpValue));
+    // SECURITY: Sanitize OTP (alphanumeric only)
+    const sanitized = sanitizeOtp(otpValue);
+    logger.log('[VERIFY PAGE] OTP change:', { original: otpValue, sanitized, length: sanitized.length });
+    setOtp(sanitized);
   };
 
   const handleVerify = async (otpValue?: string) => {
@@ -176,16 +178,19 @@ function VerifyContent() {
       return;
     }
 
-    const otpToVerify = otpValue || otp;
+    // Use otpValue only if it's a string (not an event object)
+    const otpToVerify = typeof otpValue === 'string' ? otpValue : otp;
     const emailToUse = emailRef.current || email;
     const purposeToUse = purposeRef.current || purpose;
 
     logger.log('[VERIFY PAGE] handleVerify called');
     logger.log('[VERIFY PAGE] OTP:', otpToVerify);
+    logger.log('[VERIFY PAGE] OTP length:', otpToVerify.length);
     logger.log('[VERIFY PAGE] Purpose:', purposeToUse);
     logger.log('[VERIFY PAGE] Email:', emailToUse);
 
     if (!otpToVerify || otpToVerify.length !== 6) {
+      logger.log('[VERIFY PAGE] OTP validation failed:', { hasOtp: !!otpToVerify, length: otpToVerify?.length });
       showToast.error('Please enter a valid 6-digit OTP');
       return;
     }
@@ -289,6 +294,7 @@ function VerifyContent() {
         <OtpInput
           length={6}
           onChangeOtp={handleOtpChange}
+          onComplete={handleVerify}
         />
            <div className='w-full flex flex-col justify-center mt-9'>
           <AppButton

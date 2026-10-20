@@ -2,14 +2,16 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProgramTable from "@/components/organization/programTable";
+import Pagination from "@/components/ui/Pagination";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse } from "@/types/api";
-import { getProgramsAction } from "@/app/actions/auth";
+import { getProgramsAction, getProgramStatsAction } from "@/app/actions/auth";
 import { useActiveTab } from "@/hooks/useActiveTab";
 import { useAuthStore } from "@/store";
 import { motion } from "framer-motion";
 import { AppButton } from "@/components/AppButton";
 import { formatProgramLocation, normalizeProgramStatus } from "@/lib/utils";
+import { FiSearch, FiX } from "react-icons/fi";
 
 type TabKey = "pending" | "active" | "history";
 
@@ -21,11 +23,42 @@ const PROGRAM_TABS: { key: TabKey; label: string }[] = [
   { key: "history", label: "History" },
 ];
 
-const getProgramStats = (programs: ProgramItem[]) => [
-  { title: "Total Programs", value: programs.length, color: "bg-blue-500" },
-  { title: "Active Programs", value: programs.filter(p => p.status?.toLowerCase() === 'active').length, color: "bg-green-500" },
-  { title: "Pending Programs", value: programs.filter(p => p.status?.toLowerCase() === 'pending').length, color: "bg-yellow-500" },
-];
+/** Programs per page in the table */
+const PAGE_SIZE = 10;
+
+/**
+ * The API's `status` query takes a single value, but History spans three
+ * statuses (completed/forfeited/cancelled). That tab fetches a broad slice
+ * without a status filter and pages it locally.
+ */
+const HISTORY_STATUSES = ["completed", "forfeited", "cancelled"];
+const HISTORY_FETCH_SIZE = 100;
+
+/**
+ * Read the stats counts from the get-program-stats payload. The response
+ * shape is undocumented, so common key spellings are tried.
+ */
+function parseProgramStats(data: Record<string, unknown>): {
+  total?: number;
+  active?: number;
+  pending?: number;
+} {
+  const pick = (keys: string[]): number | undefined => {
+    for (const key of keys) {
+      const found = Object.keys(data).find(
+        (k) => k.toLowerCase() === key.toLowerCase()
+      );
+      if (found && typeof data[found] === "number") return data[found];
+    }
+    return undefined;
+  };
+
+  return {
+    total: pick(["totalPrograms", "total", "totalCount", "programsCount"]),
+    active: pick(["activePrograms", "active", "activeCount"]),
+    pending: pick(["pendingPrograms", "pending", "pendingCount"]),
+  };
+}
 
 export default function ProgramsPage() {
   const router = useRouter();
@@ -34,8 +67,40 @@ export default function ProgramsPage() {
   // Active tab is persisted in the URL (?tab=...) so it survives refresh
   const [activeTab, setActiveTab] = useActiveTab<TabKey>("pending", PROGRAM_TAB_IDS);
   const [programs, setPrograms] = useState<ProgramItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<{
+    total?: number;
+    active?: number;
+    pending?: number;
+  }>({});
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
+  // Stats come from the dedicated get-program-stats endpoint — the old
+  // list-derived counts break once the list is paginated
+  useEffect(() => {
+    const id = foundationId;
+    if (!id) return;
+    let cancelled = false;
+
+    const fetchStats = async () => {
+      const response = await getProgramStatsAction(id);
+      if (!cancelled && response.success && response.data) {
+        setStats(parseProgramStats(response.data));
+      }
+    };
+
+    fetchStats();
+    return () => {
+      cancelled = true;
+    };
+  }, [foundationId]);
+
+  // Fetch the current tab's page — pending/active use the API's status param
+  // with server-side pagination; history is filtered client-side (the status
+  // param only accepts a single value but history spans three statuses)
   useEffect(() => {
     const fetchPrograms = async () => {
       try {
@@ -46,9 +111,13 @@ export default function ProgramsPage() {
         // Scope to this organization's programs when the foundation id is
         // known — without it the endpoint returns every organization's
         // programs (hundreds of rows), which is slow and leaks other orgs' data
-        const response = await getProgramsAction(
-          foundationId ? { foundationId } : undefined
-        );
+        const response = await getProgramsAction({
+          foundationId,
+          status: activeTab !== "history" ? activeTab : undefined,
+          search: searchQuery || undefined,
+          pageNumber: page,
+          pageSize: activeTab === "history" ? HISTORY_FETCH_SIZE : PAGE_SIZE,
+        });
 
         if (response.success && response.data) {
           // Map API response to ProgramItem interface
@@ -77,33 +146,58 @@ export default function ProgramsPage() {
           const visiblePrograms = foundationId
             ? mappedPrograms.filter(p => !p.foundationId || p.foundationId === foundationId)
             : mappedPrograms;
-          setPrograms(visiblePrograms);
+
+          if (activeTab === "history") {
+            // Narrow the broad fetch to the history statuses and page locally
+            const historyPrograms = visiblePrograms.filter(p =>
+              HISTORY_STATUSES.includes(p.status?.toLowerCase() || '')
+            );
+            setPrograms(historyPrograms);
+            setTotalPages(Math.max(1, Math.ceil(historyPrograms.length / PAGE_SIZE)));
+          } else {
+            setPrograms(visiblePrograms);
+            setTotalPages(response.pagination?.totalPages ?? 1);
+          }
         } else {
           setPrograms([]);
+          setTotalPages(1);
         }
       } catch (err) {
         console.error('Error fetching programs:', err);
         setPrograms([]);
+        setTotalPages(1);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchPrograms();
-  }, [foundationId]);
+  }, [activeTab, page, foundationId, searchQuery]);
 
-  const programData: Record<TabKey, ProgramItem[]> = {
-    pending: programs.filter(p => p.status?.toLowerCase() === 'pending'),
-    active: programs.filter(p => p.status?.toLowerCase() === 'active'),
-    history: programs.filter(p => ['completed', 'forfeited', 'cancelled'].includes(p.status?.toLowerCase() || '')),
-  };
+  // History rows are already limited to the HISTORY_FETCH_SIZE slice and
+  // paged locally; the other tabs page server-side
+  const pagedPrograms =
+    activeTab === "history"
+      ? programs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+      : programs;
 
   const tabs = PROGRAM_TABS;
+
+  const handleTabChange = (tab: TabKey) => {
+    setActiveTab(tab);
+    setPage(1);
+  };
 
   const getEmptyMessage = () =>
     activeTab === "history"
       ? "No history yet"
       : "You do not have any Programs. Create a program to start engaging volunteers and make an impact";
+
+  const statCards: { title: string; value: number | undefined }[] = [
+    { title: "Total Programs", value: stats.total },
+    { title: "Active Programs", value: stats.active },
+    { title: "Pending Programs", value: stats.pending },
+  ];
 
   return (
     <motion.section
@@ -130,16 +224,16 @@ export default function ProgramsPage() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — from the dedicated get-program-stats endpoint */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {getProgramStats(programs).map((stat) => (
+        {statCards.map((stat) => (
           <div
             key={stat.title}
             className="bg-white rounded-lg shadow p-6 flex flex-col justify-between w-full"
           >
             <h2 className="text-sm font-medium text-black">{stat.title}</h2>
             <p className="text-4xl font-bold text-gray-900 mt-4">
-              {stat.value}
+              {stat.value ?? "—"}
             </p>
           </div>
         ))}
@@ -154,7 +248,7 @@ export default function ProgramsPage() {
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => handleTabChange(tab.key)}
                   className={`pb-3 text-[14px] cursor-pointer font-medium transition border-b-2 w-fit ${
                     activeTab === tab.key
                       ? "text-[#0E68DC] border-[#42A5F5]"
@@ -169,24 +263,91 @@ export default function ProgramsPage() {
           </div>
         </div>
 
+        {/* Search Bar */}
+        <div className="mb-6 flex items-center gap-3 flex-wrap">
+          {/* Search field - responsive width */}
+          <div className="relative flex-1 min-w-50 max-w-md">
+            <FiSearch
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              type="text"
+              placeholder="Search programs…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  setSearchQuery(searchInput);
+                  setPage(1);
+                }
+              }}
+              className="w-full pl-11 pr-10 py-3 sm:py-3.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0E68DC]/50 focus:border-transparent transition-all cursor-text"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearchQuery("");
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Clear search text"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Search button */}
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery(searchInput);
+              setPage(1);
+            }}
+            className="shrink-0 flex items-center justify-center gap-2 px-5 py-3 sm:px-6 sm:py-3.5 bg-[#0E68DC] text-white rounded-xl text-sm font-medium shadow-md hover:bg-[#0a55b0] transition-all hover:shadow-lg cursor-pointer"
+          >
+            <FiSearch className="w-4 h-4" />
+            <span>Search</span>
+          </button>
+        </div>
+
         {/* Tab Content */}
         {isLoading ? (
           <ProgramTable
-            data={programData[activeTab]}
+            data={[]}
             isLoading
             showStatus={activeTab === "history"}
             showDeleteButton={activeTab === "history"}
           />
-        ) : programData[activeTab].length === 0 ? (
+        ) : pagedPrograms.length === 0 ? (
           <div className="text-center text-gray-400 italic py-12">
             {getEmptyMessage()}
           </div>
         ) : activeTab === "history" ? (
-          <ProgramTable data={programData.history} showDeleteButton showStatus/>
+          <>
+            <ProgramTable data={pagedPrograms} showDeleteButton showStatus/>
+            {/* Pagination */}
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              isLoading={isLoading}
+            />
+          </>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {<ProgramTable data={programData[activeTab]} />}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {<ProgramTable data={pagedPrograms} />}
+            </div>
+            {/* Pagination */}
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              isLoading={isLoading}
+            />
+          </>
         )}
       </div>
     </motion.section>

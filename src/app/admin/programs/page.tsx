@@ -4,13 +4,15 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse } from "@/types/api";
-import { getProgramsAction, updateProgramStatusAction } from "@/app/actions/auth";
+import { getProgramsAction, getOrganizationsAction, updateProgramStatusAction } from "@/app/actions/auth";
 import { useActiveTab } from "@/hooks/useActiveTab";
 import toast from "react-hot-toast";
 import Modal from "@/components/Modal";
 import { AppButton } from "@/components/AppButton";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { formatProgramLocation, normalizeProgramStatus } from "@/lib/utils";
+import { FiSearch, FiX } from "react-icons/fi";
+import Pagination from "@/components/ui/Pagination";
 
 type TabKey = "pending" | "active" | "history";
 
@@ -20,12 +22,6 @@ const PROGRAM_TABS: { key: TabKey; label: string }[] = [
   { key: "pending", label: "Pending Programs" },
   { key: "active", label: "Active Programs" },
   { key: "history", label: "History" },
-];
-
-const getProgramStats = (programs: ProgramItem[]) => [
-  { title: "Total Programs", value: programs.length, color: "bg-blue-500" },
-  { title: "Active Programs", value: programs.filter(p => p.status?.toLowerCase() === 'active').length, color: "bg-green-500" },
-  { title: "Pending Programs", value: programs.filter(p => p.status?.toLowerCase() === 'pending').length, color: "bg-yellow-500" },
 ];
 
 export default function AdminProgramsPage() {
@@ -38,6 +34,18 @@ export default function AdminProgramsPage() {
   const [newStatus, setNewStatus] = useState('');
   const [comment, setComment] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  // Pagination state
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  // Filter state
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [organizationFilter, setOrganizationFilter] = useState("");
+  // Organizations dropdown options
+  const [organizations, setOrganizations] = useState<{ id: string; name: string }[]>([]);
+  const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(false);
 
   useEffect(() => {
     const fetchPrograms = async () => {
@@ -46,7 +54,12 @@ export default function AdminProgramsPage() {
         // Programs endpoints must go through server actions: calling the API
         // directly from the browser fails CORS (backend returns a wildcard
         // Access-Control-Allow-Origin, which is invalid with credentials)
-        const response = await getProgramsAction();
+        const response = await getProgramsAction({
+          foundationId: organizationFilter || undefined,
+          search: searchQuery || undefined,
+          pageNumber,
+          pageSize,
+        });
         
         if (response.success && response.data) {
           const mappedPrograms = (response.data as ProgramApiResponse[]).map((program: ProgramApiResponse): ProgramItem => ({
@@ -69,8 +82,15 @@ export default function AdminProgramsPage() {
             targetVolunteers: program.targetVolunteers || 0,
           }));
           setPrograms(mappedPrograms);
+          if (response.pagination) {
+            setTotalCount(response.pagination.totalCount);
+            setTotalPages(response.pagination.totalPages);
+            setPageNumber(response.pagination.pageNumber);
+          }
         } else {
           setPrograms([]);
+          setTotalCount(0);
+          setTotalPages(0);
         }
       } catch (err) {
         console.error('Error fetching programs:', err);
@@ -81,12 +101,48 @@ export default function AdminProgramsPage() {
     };
 
     fetchPrograms();
+  }, [pageNumber, pageSize, searchQuery, organizationFilter]);
+
+  // Fetch organizations for the filter dropdown
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      try {
+        setIsLoadingOrganizations(true);
+        const response = await getOrganizationsAction({
+          Page: 1,
+          PageSize: 100,
+          All: true,
+        });
+        if (response.success && response.data) {
+          const raw = response.data as Record<string, unknown>;
+          const items = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
+          setOrganizations(
+            items
+              .filter((item: Record<string, unknown>) => item?.id && item?.name)
+              .map((item: Record<string, unknown>) => ({
+                id: String(item.id),
+                name: String(item.name),
+              }))
+          );
+        }
+      } catch (err) {
+        console.error('Error fetching organizations:', err);
+      } finally {
+        setIsLoadingOrganizations(false);
+      }
+    };
+
+    fetchOrganizations();
   }, []);
 
+  const filteredByOrg = organizationFilter
+    ? programs.filter(p => p.organization === organizationFilter)
+    : programs;
+
   const programData: Record<TabKey, ProgramItem[]> = {
-    pending: programs.filter(p => p.status?.toLowerCase() === 'pending'),
-    active: programs.filter(p => p.status?.toLowerCase() === 'active'),
-    history: programs.filter(p => ['completed', 'forfeited', 'cancelled'].includes(p.status?.toLowerCase() || '')),
+    pending: filteredByOrg.filter(p => p.status?.toLowerCase() === 'pending'),
+    active: filteredByOrg.filter(p => p.status?.toLowerCase() === 'active'),
+    history: filteredByOrg.filter(p => ['completed', 'forfeited', 'cancelled'].includes(p.status?.toLowerCase() || '')),
   };
 
   const tabs = PROGRAM_TABS;
@@ -154,7 +210,11 @@ export default function AdminProgramsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {getProgramStats(programs).map((stat) => (
+        {[
+          { title: "Total Programs", value: totalCount, color: "bg-blue-500" },
+          { title: "Active Programs", value: programs.filter(p => p.status?.toLowerCase() === 'active').length, color: "bg-green-500" },
+          { title: "Pending Programs", value: programs.filter(p => p.status?.toLowerCase() === 'pending').length, color: "bg-yellow-500" },
+        ].map((stat) => (
           <div
             key={stat.title}
             className="bg-white rounded-lg shadow p-6 flex flex-col justify-between w-full"
@@ -191,6 +251,79 @@ export default function AdminProgramsPage() {
           </div>
         </div>
 
+        {/* Filters - Search and Organization */}
+        <div className="mb-6 flex items-center gap-3 flex-wrap">
+          {/* Search field - responsive width */}
+          <div className="relative flex-1 min-w-50 max-w-md">
+            <FiSearch
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              type="text"
+              placeholder="Search programs…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  setSearchQuery(searchInput);
+                  setPageNumber(1);
+                }
+              }}
+              className="w-full pl-11 pr-10 py-3 sm:py-3.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0E68DC]/50 focus:border-transparent transition-all cursor-text"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearchQuery("");
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Clear search text"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Search button */}
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery(searchInput);
+              setPageNumber(1);
+            }}
+            className="shrink-0 flex items-center justify-center gap-2 px-5 py-3 sm:px-6 sm:py-3.5 bg-[#0E68DC] text-white rounded-xl text-sm font-medium shadow-md hover:bg-[#0a55b0] transition-all hover:shadow-lg cursor-pointer"
+          >
+            <FiSearch className="w-4 h-4" />
+            <span>Search</span>
+          </button>
+
+          {/* Organization filter - responsive width */}
+          <div className="flex-1 min-w-37.5 max-w-xs">
+            <select
+              value={organizationFilter}
+              onChange={(e) => {
+                setOrganizationFilter(e.target.value);
+                setPageNumber(1);
+              }}
+              disabled={isLoadingOrganizations}
+              className="w-full px-4 py-3.5 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0E68DC]/50 focus:border-transparent transition-all cursor-pointer appearance-none bg-white"
+            >
+              <option value="">All Organizations</option>
+              {isLoadingOrganizations ? (
+                <option disabled>Loading organizations...</option>
+              ) : (
+                organizations.map((org) => (
+                  <option key={org.id} value={org.name}>
+                    {org.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+        </div>
+
         {/* Tab Content */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -201,6 +334,7 @@ export default function AdminProgramsPage() {
             {getEmptyMessage()}
           </div>
         ) : (
+            <>
           <div className="max-md:w-[80vw] w-[calc(90vw-13rem)] overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 table-fixed">
               <thead className="bg-[#F7F7F7]">
@@ -282,6 +416,15 @@ export default function AdminProgramsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={pageNumber}
+            totalPages={totalPages}
+            onPageChange={setPageNumber}
+            isLoading={isLoading}
+          />
+            </>
         )}
       </div>
 

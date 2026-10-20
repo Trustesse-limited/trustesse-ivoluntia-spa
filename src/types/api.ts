@@ -54,6 +54,17 @@ export interface PaginatedResponse<T> {
   };
 }
 
+/**
+ * Pagination metadata for get-programs results. Field casing varies by
+ * response shape and is normalized in parseProgramsResponse (server actions).
+ */
+export interface ProgramsPagination {
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 // Programs API types
 export interface ProgramApiResponse {
   id: string;

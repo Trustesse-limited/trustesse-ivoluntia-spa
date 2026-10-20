@@ -23,7 +23,7 @@ export function FormTextarea({
     <FormField label={label} required={required} error={error} className={className}>
       <textarea
         rows={rows}
-        className={`w-full rounded-xl border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200 resize-none ${error ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : ''}`}
+        className={`w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200 resize-none ${error ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : ''}`}
         {...props}
       />
     </FormField>

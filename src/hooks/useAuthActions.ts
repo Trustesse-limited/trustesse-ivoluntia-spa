@@ -379,6 +379,12 @@ export function useAuthActions() {
       const result = await refreshTokenAction();
 
       if (result.success) {
+        // The server action rotated the tokens and refreshed the
+        // token_expiration / refresh_token_expiration cookies. Close the
+        // session-expired modal — previously it stayed open over the app
+        // because nothing cleared sessionExpired after a successful refresh.
+        useAuthStore.getState().setSessionExpired(false);
+
         // Display the backend success message if available, otherwise fallback
         showToast.success(result.message || 'Token refreshed successfully!', {
           duration: 3000,
@@ -1281,12 +1287,12 @@ export function useAuthActions() {
         setIsLoading(false);
       }
     },
-    getPrograms: async (params?: { foundationId?: string; status?: string; search?: string }) => {
+    getPrograms: async (params?: { foundationId?: string; status?: string; search?: string; dateRange?: string; pageNumber?: number; pageSize?: number }) => {
       setIsLoading(true);
       try {
         const result = await getProgramsAction(params);
         if (result.success) {
-          return { success: true, data: result.data, message: result.message };
+          return { success: true, data: result.data, pagination: result.pagination, message: result.message };
         } else {
           showToast.error(result.error || 'Failed to fetch programs', {
             duration: 4000,

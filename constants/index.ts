@@ -1,1 +1,178 @@
 export const BRAND_NAME = "Ivoluntia";
+
+// Country to Currency Code Mapping
+export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
+  // North America
+  "United States": "USD",
+  "Canada": "CAD",
+  "Mexico": "MXN",
+
+  // Europe
+  "United Kingdom": "GBP",
+  "Germany": "EUR",
+  "France": "EUR",
+  "Italy": "EUR",
+  "Spain": "EUR",
+  "Netherlands": "EUR",
+  "Belgium": "EUR",
+  "Austria": "EUR",
+  "Switzerland": "CHF",
+  "Sweden": "SEK",
+  "Norway": "NOK",
+  "Denmark": "DKK",
+  "Poland": "PLN",
+  "Czech Republic": "CZK",
+  "Hungary": "HUF",
+  "Romania": "RON",
+  "Bulgaria": "BGN",
+  "Greece": "EUR",
+  "Portugal": "EUR",
+  "Ireland": "EUR",
+  "Finland": "EUR",
+
+  // Asia
+  "China": "CNY",
+  "Japan": "JPY",
+  "South Korea": "KRW",
+  "India": "INR",
+  "Singapore": "SGD",
+  "Malaysia": "MYR",
+  "Thailand": "THB",
+  "Indonesia": "IDR",
+  "Philippines": "PHP",
+  "Vietnam": "VND",
+  "Hong Kong": "HKD",
+  "Taiwan": "TWD",
+  "Pakistan": "PKR",
+  "Bangladesh": "BDT",
+  "Sri Lanka": "LKR",
+  "Nepal": "NPR",
+
+  // Middle East
+  "United Arab Emirates": "AED",
+  "Saudi Arabia": "SAR",
+  "Qatar": "QAR",
+  "Kuwait": "KWD",
+  "Bahrain": "BHD",
+  "Oman": "OMR",
+  "Israel": "ILS",
+  "Turkey": "TRY",
+
+  // Africa
+  "South Africa": "ZAR",
+  "Nigeria": "NGN",
+  "Kenya": "KES",
+  "Egypt": "EGP",
+  "Morocco": "MAD",
+  "Tunisia": "TND",
+  "Ghana": "GHS",
+  "Ethiopia": "ETB",
+
+  // South America
+  "Brazil": "BRL",
+  "Argentina": "ARS",
+  "Chile": "CLP",
+  "Colombia": "COP",
+  "Peru": "PEN",
+  "Venezuela": "VES",
+  "Ecuador": "USD",
+  "Bolivia": "BOB",
+  "Uruguay": "UYU",
+  "Paraguay": "PYG",
+
+  // Oceania
+  "Australia": "AUD",
+  "New Zealand": "NZD",
+  "Fiji": "FJD",
+  "Papua New Guinea": "PGK",
+
+  // Central America & Caribbean
+  "Costa Rica": "CRC",
+  "Panama": "USD",
+  "Jamaica": "JMD",
+  "Trinidad and Tobago": "TTD",
+  "Barbados": "BBD",
+  "Bahamas": "BSD",
+  "Cuba": "CUP",
+  "Dominican Republic": "DOP",
+};
+
+// Currency Symbol Mapping
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  "USD": "$",
+  "CAD": "$",
+  "MXN": "$",
+  "GBP": "£",
+  "EUR": "€",
+  "CHF": "Fr",
+  "SEK": "kr",
+  "NOK": "kr",
+  "DKK": "kr",
+  "PLN": "zł",
+  "CZK": "Kč",
+  "HUF": "Ft",
+  "RON": "lei",
+  "BGN": "лв",
+  "CNY": "¥",
+  "JPY": "¥",
+  "KRW": "₩",
+  "INR": "₹",
+  "SGD": "$",
+  "MYR": "RM",
+  "THB": "฿",
+  "IDR": "Rp",
+  "PHP": "₱",
+  "VND": "₫",
+  "HKD": "$",
+  "TWD": "$",
+  "PKR": "₨",
+  "BDT": "৳",
+  "LKR": "Rs",
+  "NPR": "₨",
+  "AED": "د.إ",
+  "SAR": "﷼",
+  "QAR": "﷼",
+  "KWD": "د.ك",
+  "BHD": "د.ب",
+  "OMR": "﷼",
+  "ILS": "₪",
+  "TRY": "₺",
+  "EGP": "£",
+  "ZAR": "R",
+  "NGN": "₦",
+  "KES": "KSh",
+  "MAD": "DH",
+  "TND": "DT",
+  "GHS": "₵",
+  "ETB": "Br",
+  "BRL": "R$",
+  "ARS": "$",
+  "CLP": "$",
+  "COP": "$",
+  "PEN": "S/",
+  "VES": "Bs",
+  "BOB": "Bs",
+  "UYU": "$",
+  "PYG": "₲",
+  "AUD": "$",
+  "NZD": "$",
+  "FJD": "$",
+  "PGK": "K",
+  "CRC": "₡",
+  "JMD": "$",
+  "TTD": "$",
+  "BBD": "$",
+  "BSD": "$",
+  "CUP": "$",
+  "DOP": "$",
+};
+
+// Helper function to get currency code from country name
+export const getCurrencyFromCountry = (countryName: string): string => {
+  return COUNTRY_CURRENCY_MAP[countryName] || "USD";
+};
+
+// Helper function to get currency symbol from currency code
+export const getCurrencySymbol = (currencyCode: string): string => {
+  return CURRENCY_SYMBOLS[currencyCode] || "$";
+};

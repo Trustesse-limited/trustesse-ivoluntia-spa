@@ -40,28 +40,28 @@ export function TagInput({
 
   return (
     <FormField label={label} required={required} className={className}>
-      <div className="flex gap-3 mb-4">
+      <div className="flex gap-3 mb-3">
         <input
           type="text"
           placeholder={placeholder}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="flex-1 rounded-xl border border-input bg-background px-4 py-3 placeholder:text-muted-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200"
+          className="flex-1 rounded-xl border border-input bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200"
         />
         <button
           type="button"
           onClick={handleAdd}
-          className="px-5 py-3 rounded-xl bg-[#42A5F5] text-white font-medium hover:bg-[#42A5F5]/90 transition-colors duration-200"
+          className="px-4 py-2.5 rounded-xl bg-[#42A5F5] text-white text-sm font-medium hover:bg-[#42A5F5]/90 transition-colors duration-200"
         >
           Add
         </button>
       </div>
-      
+
       {values.length > 0 && (
         <div className="space-y-2">
           {values.map((value, index) => (
-            <div key={index} className="flex items-center justify-between bg-muted/50 p-3 rounded-xl">
+            <div key={index} className="flex items-center justify-between bg-muted/50 p-2.5 rounded-xl">
               <span className="text-sm text-foreground">{value}</span>
               <button
                 type="button"

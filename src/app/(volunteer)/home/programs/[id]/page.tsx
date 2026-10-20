@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { FiCalendar, FiMapPin, FiUsers, FiHeart } from "react-icons/fi";
 import BackButton from "@/components/BackButton";
-import { getProgramByIdAction, joinProgramAction, leaveProgramAction } from "@/app/actions/auth";
+import { getProgramByIdAction, joinProgramAction, leaveProgramAction, getFavoriteProgramsAction, addFavoriteProgramAction, removeFavoriteProgramAction } from "@/app/actions/auth";
 import { ProgramItem } from "@/types";
 import { ProgramApiResponse, ProgramGoal } from "@/types/api";
 import toast from "react-hot-toast";
@@ -21,6 +21,7 @@ export default function ProgramDetailPage() {
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isFavourited, setIsFavourited] = useState(false);
+  const [isFavouriteUpdating, setIsFavouriteUpdating] = useState(false);
 
   useEffect(() => {
     const fetchProgram = async () => {
@@ -67,6 +68,22 @@ export default function ProgramDetailPage() {
     };
 
     fetchProgram();
+  }, [id]);
+
+  // Reflect the real favourite state from the favorites API
+  useEffect(() => {
+    const checkFavourite = async () => {
+      const programId = Array.isArray(id) ? id[0] : id;
+      if (!programId) return;
+      const response = await getFavoriteProgramsAction();
+      if (response.success && response.data) {
+        setIsFavourited(
+          response.data.some((favorite) => favorite.id === programId)
+        );
+      }
+    };
+
+    checkFavourite();
   }, [id]);
 
   if (isLoading) {
@@ -139,9 +156,28 @@ export default function ProgramDetailPage() {
     }
   };
 
-  const handleFavourite = () => {
-    setIsFavourited(!isFavourited);
-    toast.success(isFavourited ? 'Removed from favourites' : 'Added to favourites');
+  const handleFavourite = async () => {
+    if (isFavouriteUpdating || !program) return;
+    const next = !isFavourited;
+
+    try {
+      setIsFavouriteUpdating(true);
+      const response = next
+        ? await addFavoriteProgramAction(program.id)
+        : await removeFavoriteProgramAction(program.id);
+
+      if (response.success) {
+        setIsFavourited(next);
+        toast.success(next ? 'Added to favourites' : 'Removed from favourites');
+      } else {
+        toast.error(response.error || 'Failed to update favourites');
+      }
+    } catch (error) {
+      console.error('Error updating favourite:', error);
+      toast.error('Failed to update favourites');
+    } finally {
+      setIsFavouriteUpdating(false);
+    }
   };
 
   return (
@@ -173,8 +209,9 @@ export default function ProgramDetailPage() {
         </div>
         <button
           onClick={handleFavourite}
-          className="shrink-0 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Add to favourites"
+          disabled={isFavouriteUpdating}
+          className="shrink-0 p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50"
+          aria-label={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
         >
           <FiHeart 
             className={`w-6 h-6 ${isFavourited ? 'fill-blue-500 text-blue-500' : 'text-blue-500'}`}

@@ -81,6 +81,8 @@ interface AuthState {
   checkAuth: () => boolean; // Check if user is authenticated
   validateToken: () => Promise<boolean>; // Validate token with server and set isAuthenticated
   setOrganizationProfile: (profile: User['organizationProfile']) => void;
+  setVolunteerProfile: (profile: Partial<User>) => void;
+  setFoundationId: (foundationId: string) => void;
   setSessionExpired: (expired: boolean) => void;
 }
 
@@ -138,6 +140,10 @@ export const useAuthStore = create<AuthState>()(
           token: null,
           isAuthenticated: false,
           isLoading: false,
+          // Clear the session-expired modal flag on every logout path —
+          // SessionProvider is mounted in the root layout, so a stale true
+          // here keeps the modal open even after redirecting to /login
+          sessionExpired: false,
         });
         
         // Remove cookies (server-side token management)
@@ -183,6 +189,30 @@ export const useAuthStore = create<AuthState>()(
             user: {
               ...user,
               organizationProfile: profile,
+            },
+          });
+        }
+      },
+
+      setVolunteerProfile: (profile) => {
+        const { user } = get();
+        if (user) {
+          set({
+            user: {
+              ...user,
+              ...profile,
+            },
+          });
+        }
+      },
+
+      setFoundationId: (foundationId) => {
+        const { user } = get();
+        if (user) {
+          set({
+            user: {
+              ...user,
+              foundationId,
             },
           });
         }

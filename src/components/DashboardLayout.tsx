@@ -590,43 +590,43 @@ export default function DashboardLayout({
       <div className="flex flex-col flex-1 md:ml-52 h-full">
         {isAdmin ? (
           // Admin Header with search bar
-          <header className="sticky top-0 z-30 bg-white h-19.5 flex items-center justify-between gap-4 px-4 md:px-6 border-[#A9A7A7]">
-            <div className="flex items-center gap-4">
+          <header className="sticky top-0 z-30 bg-white h-14 md:h-20 flex items-center justify-between gap-4 px-4 md:px-6 border-[#A9A7A7]">
+            <div className="flex items-center gap-3">
               <button
                 title="Open Menu"
                 onClick={() => setIsMobileNavOpen(true)}
-                className="md:hidden cursor-pointer"
+                className="md:hidden cursor-pointer p-1"
               >
-                <FiMenu className="text-2xl text-gray-700" />
+                <FiMenu className="text-xl md:text-2xl text-gray-700" />
               </button>
-              <h1 className="text-lg md:hidden font-bold text-black w-fit">
+              <h1 className="text-base md:hidden font-bold text-black">
                 {BRAND_NAME}
               </h1>
             </div>
-            
-            <div className="flex w-full justify-between items-center gap-4">
+
+            <div className="flex w-full justify-between items-center gap-3 md:gap-4">
               {/* Search Bar */}
               {searchBar}
-              
+
               {/* Notification and Profile */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 {/* Notification Bell */}
                 {showNotification && (
-                  <button className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
-                    <FiBell className="text-xl text-gray-600" />
+                  <button className="relative p-1.5 md:p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <FiBell className="text-lg md:text-xl text-gray-600" />
                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                   </button>
                 )}
-                
+
                 {/* Admin Profile */}
                 <div className="flex items-center px-2 py-1 rounded-xl bg-[#ECF6FE] gap-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600">
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600 shrink-0">
                     {organizationLogo ? (
                       <SmartImage
                         src={organizationLogo}
                         alt="Admin Avatar"
-                        width={32}
-                        height={32}
+                        width={28}
+                        height={28}
                         className="object-cover"
                         objectFit="cover"
                         fallbackSrc="/images/Ellipse 1.png"
@@ -644,32 +644,34 @@ export default function DashboardLayout({
           </header>
         ) : (
           // Standard Header
-          <header className="sticky top-0 z-30 bg-white h-20 flex items-center justify-between gap-4 px-4 md:px-6 border-b sm:border-b-2 border-[#A9A7A7]">
-            <h1 className="text-lg md:hidden font-bold text-black w-fit">
-              {BRAND_NAME}
-            </h1>
-            <h2 className="hidden md:block text-xl font-bold text-[#000000]">
-              {headerTitle}
-            </h2>
-            <div className="flex items-center space-x-4">
+          <header className="sticky top-0 z-30 bg-white h-14 md:h-20 flex items-center justify-between gap-4 px-4 md:px-6 border-b sm:border-b-2 border-[#A9A7A7]">
+            <div className="flex items-center gap-3">
+              <h1 className="text-base md:hidden font-bold text-black">
+                {BRAND_NAME}
+              </h1>
+              <h2 className="hidden md:block text-xl font-bold text-[#000000]">
+                {headerTitle}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 md:gap-4">
               {showDonateButton && (
                 <button className="hidden md:block bg-[var(--buttonPrimary)] text-white text-sm font-semibold px-6 py-2 rounded-xl transition-class cursor-pointer hover:opacity-90">
                   Donate
                 </button>
               )}
               {showNotification && (
-                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#ECF6FE]">
-                  <FiBell className="text-gray-600 text-xl cursor-pointer" />
+                <div className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-[#ECF6FE]">
+                  <FiBell className="text-lg md:text-xl text-gray-600 cursor-pointer" />
                 </div>
               )}
-              <div className="flex items-center px-2 py-1 rounded-xl gap-2 bg-[#ECF6FE] ">
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600">
+              <div className="flex items-center px-2 py-1 rounded-xl gap-2 bg-[#ECF6FE]">
+                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600 shrink-0">
                   {organizationLogo ? (
                     <SmartImage
                       src={organizationLogo}
                       alt={`${displayUserType} Avatar`}
-                      width={32}
-                      height={32}
+                      width={28}
+                      height={28}
                       className="object-cover"
                       objectFit="cover"
                       fallbackSrc="/images/Ellipse 1.png"
@@ -685,9 +687,9 @@ export default function DashboardLayout({
               <button
                 title="Open Menu"
                 onClick={() => setIsMobileNavOpen(true)}
-                className="md:hidden cursor-pointer"
+                className="md:hidden cursor-pointer p-1"
               >
-                <FiMenu className="text-2xl text-gray-700" />
+                <FiMenu className="text-xl md:text-2xl text-gray-700" />
               </button>
             </div>
           </header>
