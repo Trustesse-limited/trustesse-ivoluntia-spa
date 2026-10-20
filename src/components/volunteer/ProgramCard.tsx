@@ -4,22 +4,62 @@ import { useRouter } from "next/navigation";
 import { ProgramItem } from "@/types";
 import { FiHeart, FiMapPin, FiClock, FiUsers, FiDollarSign } from "react-icons/fi";
 import { RippleEffect } from "@/components/RippleEffect";
+import { formatProgramDateRange } from "@/lib/utils";
 
 type ProgramCardProps = {
   program: ProgramItem;
+  /**
+   * Controlled favourite state. When provided the parent owns it (e.g. the
+   * favorites API); otherwise the card falls back to local state.
+   */
+  isFavourited?: boolean;
+  /** Called when the heart is clicked; `next` is the desired new state. */
+  onToggleFavorite?: (program: ProgramItem, next: boolean) => void;
 };
 
-export default function ProgramCard({ program }: ProgramCardProps) {
+export default function ProgramCard({
+  program,
+  isFavourited: isFavouritedProp,
+  onToggleFavorite,
+}: ProgramCardProps) {
   const router = useRouter();
-  const [isFavourited, setIsFavourited] = useState(false);
+  const [internalFavourited, setInternalFavourited] = useState(
+    program.isFavourited ?? false
+  );
+  const isFavourited = isFavouritedProp ?? internalFavourited;
 
   const handleFavourite = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsFavourited(!isFavourited);
+    e.preventDefault();
+    if (onToggleFavorite) {
+      onToggleFavorite(program, !isFavourited);
+    } else {
+      setInternalFavourited(!isFavourited);
+    }
   };
 
-  const handleLearnMore = () => {
-    router.push(`/programs/${program.id}`);
+  const handleFavouriteMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleFavouriteTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleCardClick = (e?: React.MouseEvent | React.TouchEvent) => {
+    // Don't navigate if clicking on the favorite button or learn more button
+    if (e) {
+      const target = e.target as HTMLElement;
+      if (target.closest('button')) {
+        return;
+      }
+    }
+    router.push(`/home/programs/${program.id}`);
+  };
+
+  const handleLearnMore = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/home/programs/${program.id}`);
   };
 
   const getProgressPercentage = () => {
@@ -37,7 +77,7 @@ export default function ProgramCard({ program }: ProgramCardProps) {
   };
 
   return (
-    <RippleEffect onClick={handleLearnMore} className="bg-white border border-black rounded-[16px] p-4 hover:shadow-lg transition-shadow duration-300 cursor-pointer">
+    <RippleEffect onClick={handleCardClick} className="bg-white border border-black rounded-2xl p-4 hover:shadow-lg transition-shadow duration-300 cursor-pointer">
       {/* Header with favourite button */}
       <div className="flex justify-between items-start mb-3">
         <h3 className="text-lg font-semibold text-black flex-1 mr-2">
@@ -45,8 +85,10 @@ export default function ProgramCard({ program }: ProgramCardProps) {
         </h3>
         <button
           onClick={handleFavourite}
-          className="flex-shrink-0 p-1 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Add to favourites"
+          onMouseDown={handleFavouriteMouseDown}
+          onTouchStart={handleFavouriteTouchStart}
+          className="shrink-0 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+          aria-label={isFavourited ? "Remove from favourites" : "Add to favourites"}
         >
           <FiHeart 
             className={`w-5 h-5 ${isFavourited ? 'fill-blue-500 text-blue-500' : 'text-blue-500'}`}
@@ -69,7 +111,7 @@ export default function ProgramCard({ program }: ProgramCardProps) {
         </div>
         <div className="flex items-center gap-1 text-xs text-black bg-gray-100 px-2 py-1 rounded-full">
           <FiClock className="w-3 h-3" />
-          <span>{program.startDate} - {program.endDate}</span>
+          <span>{formatProgramDateRange(program.startDate, program.endDate)}</span>
         </div>
         <div className="flex items-center gap-1 text-xs text-black bg-gray-100 px-2 py-1 rounded-full">
           <FiUsers className="w-3 h-3" />

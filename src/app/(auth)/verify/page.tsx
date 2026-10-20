@@ -8,6 +8,7 @@ import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthActions } from '@/hooks/useAuthActions'
 import { toast } from 'react-hot-toast'
+import logger from '@/lib/logger'
 
 // Helper function to prevent duplicate toasts
 const showToast: {
@@ -51,9 +52,9 @@ function VerifyContent() {
       return;
     }
 
-    console.log('[VERIFY PAGE] handleResendOtp called');
-    console.log('[VERIFY PAGE] Email:', emailToUse);
-    console.log('[VERIFY PAGE] Purpose:', purposeToUse);
+    logger.log('[VERIFY PAGE] handleResendOtp called');
+    logger.log('[VERIFY PAGE] Email:', emailToUse);
+    logger.log('[VERIFY PAGE] Purpose:', purposeToUse);
 
     setIsResending(true);
 
@@ -78,8 +79,8 @@ function VerifyContent() {
       notificationType = 'EmailConfirmationOtp';
     }
 
-    console.log('[VERIFY PAGE] OTP Purpose:', otpPurpose);
-    console.log('[VERIFY PAGE] Notification Type:', notificationType);
+    logger.log('[VERIFY PAGE] OTP Purpose:', otpPurpose);
+    logger.log('[VERIFY PAGE] Notification Type:', notificationType);
 
     const result = await resendOtp({
       email: emailToUse,
@@ -89,7 +90,7 @@ function VerifyContent() {
     });
     setIsResending(false);
 
-    console.log('[VERIFY PAGE] Resend result:', result);
+    logger.log('[VERIFY PAGE] Resend result:', result);
 
     if (result.success) {
       // Only show toast if it's a manual resend (not auto-resend on mount)
@@ -108,7 +109,7 @@ function VerifyContent() {
   useEffect(() => {
     // Only process params once
     if (paramsProcessed) {
-      console.log('[VERIFY PAGE] Params already processed, skipping');
+      logger.log('[VERIFY PAGE] Params already processed, skipping');
       return;
     }
 
@@ -116,11 +117,11 @@ function VerifyContent() {
     const purposeParam = searchParams.get('purpose');
     const resendParam = searchParams.get('resend');
 
-    console.log('[VERIFY PAGE] Processing params:', { emailParam, purposeParam, resendParam });
+    logger.log('[VERIFY PAGE] Processing params:', { emailParam, purposeParam, resendParam });
 
     // Redirect to login if email parameter is missing
     if (!emailParam) {
-      console.log('[VERIFY PAGE] No email param, redirecting to login');
+      logger.log('[VERIFY PAGE] No email param, redirecting to login');
       router.push('/login');
       return;
     }
@@ -134,7 +135,7 @@ function VerifyContent() {
     purposeRef.current = purposeValue;
     setPurpose(purposeValue);
 
-    console.log('[VERIFY PAGE] Stored params:', { email: sanitizedEmail, purpose: purposeValue });
+    logger.log('[VERIFY PAGE] Stored params:', { email: sanitizedEmail, purpose: purposeValue });
 
     // Mark params as processed
     setParamsProcessed(true);
@@ -142,14 +143,14 @@ function VerifyContent() {
     // Auto-resend OTP if resend param is present and hasn't been done yet
     // Only auto-resend for Signup purpose, not for TwoFactorAuthenticationLogin (2FA code is already sent by login API)
     if (resendParam === 'true' && !hasAutoResendedRef.current && purposeValue !== 'TwoFactorAuthenticationLogin') {
-      console.log('[VERIFY PAGE] Auto-resending OTP');
+      logger.log('[VERIFY PAGE] Auto-resending OTP');
       hasAutoResendedRef.current = true;
       isAutoResendRef.current = true;
       handleResendOtp();
     }
 
     // Clean URL by removing query parameters after reading them
-    console.log('[VERIFY PAGE] Cleaning URL');
+    logger.log('[VERIFY PAGE] Cleaning URL');
     router.replace('/verify');
   }, [searchParams, router, handleResendOtp, paramsProcessed]);
 
@@ -164,27 +165,32 @@ function VerifyContent() {
   }, [countdown]);
 
   const handleOtpChange = (otpValue: string) => {
-    // SECURITY: Sanitize OTP (digits only)
-    setOtp(sanitizeOtp(otpValue));
+    // SECURITY: Sanitize OTP (alphanumeric only)
+    const sanitized = sanitizeOtp(otpValue);
+    logger.log('[VERIFY PAGE] OTP change:', { original: otpValue, sanitized, length: sanitized.length });
+    setOtp(sanitized);
   };
 
   const handleVerify = async (otpValue?: string) => {
     // Prevent multiple simultaneous calls
     if (isVerifying) {
-      console.log('[VERIFY PAGE] Already verifying, ignoring duplicate call');
+      logger.log('[VERIFY PAGE] Already verifying, ignoring duplicate call');
       return;
     }
 
-    const otpToVerify = otpValue || otp;
+    // Use otpValue only if it's a string (not an event object)
+    const otpToVerify = typeof otpValue === 'string' ? otpValue : otp;
     const emailToUse = emailRef.current || email;
     const purposeToUse = purposeRef.current || purpose;
 
-    console.log('[VERIFY PAGE] handleVerify called');
-    console.log('[VERIFY PAGE] OTP:', otpToVerify);
-    console.log('[VERIFY PAGE] Purpose:', purposeToUse);
-    console.log('[VERIFY PAGE] Email:', emailToUse);
+    logger.log('[VERIFY PAGE] handleVerify called');
+    logger.log('[VERIFY PAGE] OTP:', otpToVerify);
+    logger.log('[VERIFY PAGE] OTP length:', otpToVerify.length);
+    logger.log('[VERIFY PAGE] Purpose:', purposeToUse);
+    logger.log('[VERIFY PAGE] Email:', emailToUse);
 
     if (!otpToVerify || otpToVerify.length !== 6) {
+      logger.log('[VERIFY PAGE] OTP validation failed:', { hasOtp: !!otpToVerify, length: otpToVerify?.length });
       showToast.error('Please enter a valid 6-digit OTP');
       return;
     }
@@ -205,9 +211,9 @@ function VerifyContent() {
       });
     } else if (purposeToUse === 'ForgotPassword') {
       // Use forgot password OTP verify endpoint
-      console.log('[VERIFY PAGE] Calling verifyForgotPasswordOtp');
+      logger.log('[VERIFY PAGE] Calling verifyForgotPasswordOtp');
       result = await verifyForgotPasswordOtp(otpToVerify);
-      console.log('[VERIFY PAGE] verifyForgotPasswordOtp result:', result);
+      logger.log('[VERIFY PAGE] verifyForgotPasswordOtp result:', result);
       if (result.success && result.token) {
         // Pass token as URL parameter to reset password page
         toast.dismiss();
@@ -224,9 +230,9 @@ function VerifyContent() {
       }
     } else if (purposeToUse === 'PasswordReset') {
       // Use reset password OTP verify endpoint
-      console.log('[VERIFY PAGE] Calling verifyResetPasswordOtp');
+      logger.log('[VERIFY PAGE] Calling verifyResetPasswordOtp');
       result = await verifyResetPasswordOtp(otpToVerify);
-      console.log('[VERIFY PAGE] verifyResetPasswordOtp result:', result);
+      logger.log('[VERIFY PAGE] verifyResetPasswordOtp result:', result);
       if (result.success && result.token) {
         // Pass token as URL parameter to reset password page
         toast.dismiss();
@@ -288,6 +294,7 @@ function VerifyContent() {
         <OtpInput
           length={6}
           onChangeOtp={handleOtpChange}
+          onComplete={handleVerify}
         />
            <div className='w-full flex flex-col justify-center mt-9'>
           <AppButton

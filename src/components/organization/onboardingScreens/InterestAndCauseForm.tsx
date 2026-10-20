@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { AppButton } from "@/components/AppButton";
+import { ErrorState } from "@/components/ErrorState";
 import { OrganizationFormProps } from "@/types";
 import { getCausesAction } from "@/app/actions/auth";
 import { Cause } from "@/types/api";
 import { motion } from "framer-motion";
+import { FiAlertCircle } from "react-icons/fi";
 
 const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFormData }) => {
   const [selected, setSelected] = useState<string[]>(formData.causes || []);
@@ -14,22 +16,24 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCauses = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getCausesAction();
-        if (result.success && result.data) {
-          setCauses(result.data);
-        } else {
-          setError(result.error || 'Failed to fetch causes');
-        }
-      } catch (err) {
-        setError('Failed to fetch causes');
-      } finally {
-        setIsLoading(false);
+  const fetchCauses = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await getCausesAction();
+      if (result.success && result.data) {
+        setCauses(result.data);
+      } else {
+        setError(result.error || 'Failed to fetch causes');
       }
-    };
+    } catch {
+      setError('Failed to fetch causes');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCauses();
   }, []);
 
@@ -80,9 +84,11 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
           <h2 className="text-2xl font-normal text-[#161616]">
             Causes you support
           </h2>
-          <p className="text-sm font-normal mt-1 text-red-500">
-            {error}
-          </p>
+          <ErrorState
+            message={error}
+            onRetry={fetchCauses}
+            icon={<FiAlertCircle className="text-4xl" />}
+          />
         </div>
       </form>
     );

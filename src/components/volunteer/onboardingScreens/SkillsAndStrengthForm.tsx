@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { AppButton } from "@/components/AppButton";
+import { ErrorState } from "@/components/ErrorState";
 import { getSkillsAction } from "@/app/actions/auth";
 import { Skill } from "@/types/api";
 import { VolunteerFormData } from "@/types";
 import { motion } from "framer-motion";
+import { FiAlertCircle } from "react-icons/fi";
 
 interface SkillsAndStrengthFormProps {
   formData: VolunteerFormData;
@@ -19,22 +21,24 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSkills = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getSkillsAction();
-        if (result.success && result.data) {
-          setSkills(result.data);
-        } else {
-          setError(result.error || 'Failed to fetch skills');
-        }
-      } catch (err) {
-        setError('Failed to fetch skills');
-      } finally {
-        setIsLoading(false);
+  const fetchSkills = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await getSkillsAction();
+      if (result.success && result.data) {
+        setSkills(result.data);
+      } else {
+        setError(result.error || 'Failed to fetch skills');
       }
-    };
+    } catch {
+      setError('Failed to fetch skills');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchSkills();
   }, []);
 
@@ -85,9 +89,11 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
           <h2 className="text-2xl font-normal text-[#161616]">
             Skills and Strength
           </h2>
-          <p className="text-sm font-normal mt-1 text-red-500">
-            {error}
-          </p>
+          <ErrorState
+            message={error}
+            onRetry={fetchSkills}
+            icon={<FiAlertCircle className="text-4xl" />}
+          />
         </div>
       </form>
     );

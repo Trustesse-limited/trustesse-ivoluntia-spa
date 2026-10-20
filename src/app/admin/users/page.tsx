@@ -1,13 +1,23 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { FiFilter, FiEye, FiEdit, FiTrash2, FiMoreVertical } from "react-icons/fi";
 import { SmartImage } from "@/components/SmartImage";
+import { useActiveTab } from "@/hooks/useActiveTab";
+
+const USER_TAB_IDS = ["users", "blocked"] as const;
+type UserTab = (typeof USER_TAB_IDS)[number];
+
+const USER_TABS: { key: UserTab; label: string }[] = [
+  { key: "users", label: "Users" },
+  { key: "blocked", label: "Blocked Users" },
+];
 
 export default function UsersPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("users");
+  // Active tab is persisted in the URL (?tab=...) so it survives refresh
+  const [activeTab, setActiveTab] = useActiveTab<UserTab>("users", USER_TAB_IDS);
 
   const users = [
     {
@@ -113,10 +123,7 @@ export default function UsersPage() {
     }
   };
 
-  const tabs = [
-    { key: "users", label: "Users" },
-    { key: "blocked", label: "Blocked Users" },
-  ];
+  const tabs = USER_TABS;
 
   return (
     <motion.div

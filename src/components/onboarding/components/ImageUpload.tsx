@@ -13,6 +13,11 @@ interface ImageUploadProps {
   label?: string;
   onChange: (url: string | null) => void;
   initialUrl?: string;
+  containerClassName?: string;
+  previewHeight?: string;
+  previewWidth?: string;
+  padding?: string;
+  showLabel?: boolean;
 }
 
 /** Format a file size in bytes to a human readable string. */
@@ -28,6 +33,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   label = "Upload Image",
   onChange,
   initialUrl,
+  containerClassName = "",
+  previewHeight = "h-40",
+  previewWidth = "max-w-[200px]",
+  padding = "p-6",
+  showLabel = true,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialUrl || null);
@@ -136,22 +146,24 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   return (
     <div className="space-y-3">
-      <Label htmlFor="photo" className="text-[#424242] font-semibold text-sm">
-        {label}
-      </Label>
+      {showLabel && (
+        <Label htmlFor="photo" className="text-[#424242] font-semibold text-sm">
+          {label}
+        </Label>
+      )}
 
       <div
         onClick={handleClick}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative w-full border-2 border-dashed border-[#818181] rounded-md p-6 flex flex-col items-center justify-center cursor-pointer transition hover:border-[#2C6EA3] ${
+        className={`relative w-full border-2 border-dashed border-[#818181] rounded-md ${padding} flex flex-col items-center justify-center cursor-pointer transition hover:border-[#2C6EA3] ${
           isDragging || isUploading ? styles.imageupload : ''
-        } ${previewUrl ? 'cursor-not-allowed' : ''}`}
+        } ${previewUrl ? 'cursor-not-allowed' : ''} ${containerClassName}`}
       >
         <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
           {/* Image preview (or uploading spinner) - always centered in the box */}
-          <div className="relative flex h-40 w-full max-w-[200px] shrink-0 items-center justify-center">
+          <div className={`relative flex ${previewHeight} w-full ${previewWidth} shrink-0 items-center justify-center`}>
           {isUploading ? (
             <LoadingSpinner size="lg" opacity={0.8} />
           ) : previewUrl ? (
@@ -160,7 +172,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                 src={previewUrl}
                 alt={pendingFile?.name || "Selected image"}
                 fill
-                sizes="200px"
+                sizes="120px"
                 objectFit="contain"
                 fallbackSrc="/placeholder.svg"
               />
@@ -192,17 +204,17 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             <Image
               src="/placeholder.svg"
               alt="Placeholder"
-              width={100}
-              height={100}
-              className="w-24 h-24 object-contain"
+              width={60}
+              height={60}
+              className="w-16 h-16 object-contain"
             />
           )}
         </div>
         {/* Image name + size (shown while uploading and after success) */}
         {pendingFile && (
-          <div className="min-h-[22px] flex items-center justify-center gap-2 text-sm">
+          <div className="min-h-[22px] flex items-center justify-center gap-2 text-xs">
             <span
-              className="text-[#424242] truncate max-w-[180px]"
+              className="text-[#424242] truncate max-w-[120px]"
               title={pendingFile.name}
             >
               {pendingFile.name}
@@ -212,17 +224,17 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         )}
 
         {/* Error message */}
-        {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+        {error && <p className="text-xs text-red-500 text-center">{error}</p>}
 
         {/* Action hint - only in the empty state (no preview) */}
         {!previewUrl && !isUploading && (
-          <p className="text-sm text-center text-[#424242]">
+          <p className="text-xs text-center text-[#424242]">
             Click to upload or drag and drop
           </p>
         )}
 
         {/* Max file size note - always at the bottom */}
-        <p className="text-sm font-medium text-[#AEA9B1] text-center">
+        <p className="text-xs font-medium text-[#AEA9B1] text-center">
           Max 10MB file size. PNG, JPEG, WebP, and HEIC files.
         </p>
         </div>

@@ -62,6 +62,22 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+/**
+ * Session expiry handler registered by the app's SessionProvider.
+ * When a 401 is detected, the handler is invoked so the app can show
+ * the non-dismissable session expiry modal.
+ */
+export type SessionExpiredHandler = () => void;
+let onSessionExpired: SessionExpiredHandler | null = null;
+
+/**
+ * Register a handler to be invoked when a 401 (session expired) response
+ * is detected by the axios response interceptor.
+ */
+export function registerSessionExpiredHandler(handler: SessionExpiredHandler) {
+  onSessionExpired = handler;
+}
+
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -81,6 +97,8 @@ axiosInstance.interceptors.response.use(
       switch (status) {
         case 401:
           error.message = 'Authentication failed. Please log in again.';
+          // Notify the app so it can show the session expiry modal
+          if (onSessionExpired) onSessionExpired();
           break;
         case 403:
           error.message = 'You do not have permission to access this resource.';

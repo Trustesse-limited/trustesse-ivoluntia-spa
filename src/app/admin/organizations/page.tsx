@@ -2,11 +2,23 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FiSearch, FiFilter, FiEye, FiEdit, FiTrash2, FiMoreVertical } from "react-icons/fi";
+import { useActiveTab } from "@/hooks/useActiveTab";
+
+const ORG_TAB_IDS = ["all", "active", "pending", "blocked"] as const;
+type OrgTab = (typeof ORG_TAB_IDS)[number];
+
+const ORG_TABS: { key: OrgTab; label: string }[] = [
+  { key: "all", label: "All Organizations" },
+  { key: "active", label: "Active" },
+  { key: "pending", label: "Pending" },
+  { key: "blocked", label: "Blocked" },
+];
 
 export default function OrganizationsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState("all");
+  // Active tab is persisted in the URL (?tab=...) so it survives refresh
+  const [activeTab, setActiveTab] = useActiveTab<OrgTab>("all", ORG_TAB_IDS);
 
   const organizations = [
     { id: 1, name: "Rise & Shine Foundation", status: "active", email: "info@riseshine.org", phone: "+234-800-000-0001", registered: "2024-01-15" },
@@ -40,12 +52,7 @@ export default function OrganizationsPage() {
     }
   };
 
-  const tabs = [
-    { key: "all", label: "All Organizations" },
-    { key: "active", label: "Active" },
-    { key: "pending", label: "Pending" },
-    { key: "blocked", label: "Blocked" },
-  ];
+  const tabs = ORG_TABS;
 
   return (
     <motion.div

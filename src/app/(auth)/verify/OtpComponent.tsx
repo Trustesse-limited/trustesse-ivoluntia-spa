@@ -26,10 +26,11 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp, onComplete
     if (value && index < length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
-    
+
     const otpString = newOtp.join("");
+    console.log('[OTP COMPONENT] handleChange:', { index, value, otpString, length: otpString.length });
     onChangeOtp(otpString);
-    
+
     // Trigger onComplete when all digits are filled
     if (otpString.length === length && onComplete) {
       onComplete(otpString);
@@ -45,21 +46,24 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp, onComplete
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text/plain').trim();
-    
+
+    console.log('[OTP COMPONENT] handlePaste:', { pastedData, length: pastedData.length });
+
     // Only accept alphanumeric paste
     if (!/^[0-9a-zA-Z]+$/.test(pastedData)) return;
-    
+
     const characters = pastedData.slice(0, length).split('');
     const newOtp = [...otp];
-    
+
     characters.forEach((char, i) => {
       newOtp[i] = char;
     });
-    
+
     setOtp(newOtp);
     const otpString = newOtp.join('');
+    console.log('[OTP COMPONENT] Pasted OTP:', otpString, 'Length:', otpString.length);
     onChangeOtp(otpString);
-    
+
     // Focus the next empty input or the last input
     const nextEmptyIndex = characters.length;
     if (nextEmptyIndex < length) {
@@ -67,7 +71,7 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp, onComplete
     } else {
       inputRefs.current[length - 1]?.focus();
     }
-    
+
     // Trigger onComplete when all digits are filled
     if (otpString.length === length && onComplete) {
       onComplete(otpString);

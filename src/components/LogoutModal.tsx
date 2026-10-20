@@ -26,13 +26,15 @@ export default function LogoutModal({ isOpen, onClose, onConfirm, isLoading }: L
             text="Cancel"
             onClick={onClose}
             disabled={isLoading}
-            className="bg-gray-200! hover:bg-gray-300! text-gray-800! py-2! sm:py-3! px-6! sm:px-8! rounded-xl! text-sm! sm:text-base! font-medium!"
+            variant="custom"
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2! sm:py-3! px-6! sm:px-8! rounded-xl! text-sm! sm:text-base! font-medium! transition-colors duration-200"
           />
           <AppButton
             text="Logout"
             isLoading={isLoading}
             onClick={handleLogout}
-            className="bg-red-600! hover:bg-red-700! py-2! sm:py-3! px-6! sm:px-8! rounded-xl! text-sm! sm:text-base! font-medium!"
+            variant="custom"
+            className="bg-red-500 hover:bg-red-600 text-white py-2! sm:py-3! px-6! sm:px-8! rounded-xl! text-sm! sm:text-base! font-medium! transition-colors duration-200"
           />
         </div>
       </div>

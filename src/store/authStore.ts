@@ -28,6 +28,7 @@ export interface User {
   lastName?: string;
   otherName?: string;
   organizationName?: string;
+  foundationId?: string;
   role?: UserRole;
   accountType?: 'Volunteer' | 'Organization' | 'Foundation' | 'Admin';
   createdAt?: string;
@@ -39,6 +40,28 @@ export interface User {
   bio?: string | null;
   skills?: string[];
   interests?: string[];
+  // Organization profile data
+  organizationProfile?: {
+    name?: string;
+    email?: string;
+    foundationCategory?: string;
+    website?: string;
+    mission?: string;
+    address?: string;
+    city?: string;
+    zipcode?: string;
+    foundationCountry?: string;
+    foundationState?: string;
+    causes?: string[] | null;
+    logoUrl?: string | null;
+    locations?: Array<{
+      address: string;
+      city: string;
+      state: string;
+      country: string;
+      zipcode: string;
+    }>;
+  };
 }
 
 interface AuthState {
@@ -46,7 +69,8 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   token: string | null; // In-memory only, NOT persisted to localStorage
-  
+  sessionExpired: boolean;
+
   // Actions
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void; // Only for server cookie management
@@ -56,6 +80,10 @@ interface AuthState {
   getUserRole: () => UserRole | null;
   checkAuth: () => boolean; // Check if user is authenticated
   validateToken: () => Promise<boolean>; // Validate token with server and set isAuthenticated
+  setOrganizationProfile: (profile: User['organizationProfile']) => void;
+  setVolunteerProfile: (profile: Partial<User>) => void;
+  setFoundationId: (foundationId: string) => void;
+  setSessionExpired: (expired: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -65,6 +93,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       token: null,
+      sessionExpired: false,
       
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       
@@ -111,6 +140,10 @@ export const useAuthStore = create<AuthState>()(
           token: null,
           isAuthenticated: false,
           isLoading: false,
+          // Clear the session-expired modal flag on every logout path —
+          // SessionProvider is mounted in the root layout, so a stale true
+          // here keeps the modal open even after redirecting to /login
+          sessionExpired: false,
         });
         
         // Remove cookies (server-side token management)
@@ -148,6 +181,44 @@ export const useAuthStore = create<AuthState>()(
         }
         return false;
       },
+
+      setOrganizationProfile: (profile) => {
+        const { user } = get();
+        if (user) {
+          set({
+            user: {
+              ...user,
+              organizationProfile: profile,
+            },
+          });
+        }
+      },
+
+      setVolunteerProfile: (profile) => {
+        const { user } = get();
+        if (user) {
+          set({
+            user: {
+              ...user,
+              ...profile,
+            },
+          });
+        }
+      },
+
+      setFoundationId: (foundationId) => {
+        const { user } = get();
+        if (user) {
+          set({
+            user: {
+              ...user,
+              foundationId,
+            },
+          });
+        }
+      },
+
+      setSessionExpired: (expired) => set({ sessionExpired: expired }),
     }),
     {
       name: 'auth-storage',

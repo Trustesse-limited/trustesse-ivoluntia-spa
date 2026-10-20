@@ -12,6 +12,7 @@ type ProgramTableProps = {
   onDelete?: (program: ProgramItem, index: number) => void;
   showDeleteButton?: boolean;
   showStatus?: boolean;
+  isLoading?: boolean;
 };
 
 export default function ProgramTable({
@@ -20,6 +21,7 @@ export default function ProgramTable({
   onDelete,
   showDeleteButton = false,
   showStatus = false,
+  isLoading = false,
 }: ProgramTableProps) {
   const router = useRouter();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -44,6 +46,14 @@ export default function ProgramTable({
   const handleCloseModal = () => {
     setShowDeleteModal(false);
     setSelectedProgramIndex(null);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
   return (
@@ -78,66 +88,125 @@ export default function ProgramTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((program, index) => (
-              <tr key={index}>
-                <td className="w-[180px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap overflow-hidden">
-                  <span className="block truncate text-left w-50">
-                    {program.title}
-                  </span>
-                </td>
-                <td className="w-[120px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
-                  {program.startDate}
-                </td>
-                <td className="w-[120px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
-                  {program.endDate}
-                </td>
-                <td className="w-[160px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
-                  {program.location}
-                </td>
-                <td className="w-[140px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
-                  {formatNumberWithCommas(program.donationTarget)}
-                </td>
-                {showStatus && (
-                  <td className="w-[120px] px-4 py-2 text-sm text-center font-semibold whitespace-nowrap">
-                    <span
-                      className={
-                        program.status === "completed"
-                          ? "text-[#66BB6A]"
-                          : program.status === "forfeited"
-                          ? "text-[#000000]"
-                          : "text-[#F7BA32]"
-                      }
-                    >
-                      {program.status === "completed"
-                        ? "Completed"
-                        : program.status === "forfeited"
-                        ? "Forfeited"
-                        : "Pending"}
+            {isLoading ? (
+              [1, 2, 3].map((row) => (
+                <tr key={row} className="bg-white">
+                  <td className="w-[180px] px-4 py-2 whitespace-nowrap overflow-hidden">
+                    <div
+                      aria-hidden="true"
+                      className="h-4 w-full max-w-[140px] bg-shimmer animate-shimmer rounded-sm"
+                    />
+                  </td>
+                  <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                    <div
+                      aria-hidden="true"
+                      className="h-4 w-[72px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                    />
+                  </td>
+                  <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                    <div
+                      aria-hidden="true"
+                      className="h-4 w-[72px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                    />
+                  </td>
+                  <td className="w-[160px] px-4 py-2 whitespace-nowrap text-center">
+                    <div
+                      aria-hidden="true"
+                      className="h-4 w-[112px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                    />
+                  </td>
+                  <td className="w-[140px] px-4 py-2 whitespace-nowrap text-center">
+                    <div
+                      aria-hidden="true"
+                      className="h-4 w-[84px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                    />
+                  </td>
+                  {showStatus && (
+                    <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                      <div
+                        aria-hidden="true"
+                        className="h-4 w-[60px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                      />
+                    </td>
+                  )}
+                  <td className="w-[160px] px-4 py-2 whitespace-nowrap text-center">
+                    <div aria-hidden="true" className="flex justify-center gap-2">
+                      <div
+                        aria-hidden="true"
+                        className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-lg"
+                      />
+                      {showDeleteButton && (
+                        <div
+                          aria-hidden="true"
+                          className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-lg"
+                        />
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              data.map((program, index) => (
+                <tr key={index}>
+                  <td className="w-[180px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap overflow-hidden">
+                    <span className="block truncate text-left w-50">
+                      {program.title}
                     </span>
                   </td>
-                )}
-                <td className="w-[160px] px-4 py-2 whitespace-nowrap text-center space-x-10">
-                  <button
-                    onClick={() =>
-                      onViewDetails
-                        ? onViewDetails(program, index)
-                        : router.push(`/org/programs/${index}`)
-                    }
-                    className="px-4 py-2 text-sm bg-[#0E68DC] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer"
-                  >
-                    View Details
-                  </button>
-                  {showDeleteButton && (
-                    <button
-                      onClick={() => handleDeleteClick(index)}
-                      className="px-4 py-2 text-sm bg-[#EF5350] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer"
-                    >
-                      Delete
-                    </button>
+                  <td className="w-[120px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
+                    {formatDate(program.startDate)}
+                  </td>
+                  <td className="w-[120px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
+                    {formatDate(program.endDate)}
+                  </td>
+                  <td className="w-[160px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
+                    {program.location}
+                  </td>
+                  <td className="w-[140px] px-4 py-2 text-sm text-[#000000] whitespace-nowrap text-center">
+                    {formatNumberWithCommas(program.donationTarget)}
+                  </td>
+                  {showStatus && (
+                    <td className="w-[120px] px-4 py-2 text-sm text-center font-semibold whitespace-nowrap">
+                      <span
+                        className={
+                          program.status === "completed"
+                            ? "text-[#66BB6A]"
+                            : program.status === "forfeited"
+                            ? "text-[#000000]"
+                            : "text-[#F7BA32]"
+                        }
+                      >
+                        {program.status === "completed"
+                          ? "Completed"
+                          : program.status === "forfeited"
+                          ? "Forfeited"
+                          : "Pending"}
+                      </span>
+                    </td>
                   )}
-                </td>
-              </tr>
-            ))}
+                  <td className="w-[160px] px-4 py-2 whitespace-nowrap text-center space-x-10">
+                    <button
+                      onClick={() =>
+                        onViewDetails
+                          ? onViewDetails(program, index)
+                          : router.push(`/org/programs/${index}`)
+                      }
+                      className="px-4 py-2 text-sm bg-[#0E68DC] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer"
+                    >
+                      View Details
+                    </button>
+                    {showDeleteButton && (
+                      <button
+                        onClick={() => handleDeleteClick(index)}
+                        className="px-4 py-2 text-sm bg-[#EF5350] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

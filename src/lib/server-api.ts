@@ -35,6 +35,14 @@ import {
   CategoryApiResponse,
   TwoFactorVerificationRequest,
   TokenRefreshRequest,
+  ProgramApiResponse,
+  CreateProgramRequest,
+  UpdateProgramRequest,
+  UpdateProgramStatusRequest,
+  JoinProgramRequest,
+  LeaveProgramRequest,
+  DeleteProgramGoalRequest,
+  CreateLocationRequest,
 } from '@/types/api';
 import {
   getServerAccessToken,
@@ -87,7 +95,8 @@ serverAxiosInstance.interceptors.request.use(
         // logger.log('[API] No token found for authenticated endpoint:', config.url);
       }
     } catch (error) {
-      logger.error('Error adding auth header:', error);
+      const err = error as Error;
+      logger.error('Error adding auth header:', err.message);
     }
 
     return config;
@@ -257,7 +266,6 @@ export async function refreshToken(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.refreshToken);
-    logger.log('[API] Request Payload:', { accessToken: data.accessToken ? 'present' : 'missing', accessTokenLength: data.accessToken?.length, refreshToken: data.refreshToken ? 'present' : 'missing', refreshTokenLength: data.refreshToken?.length });
 
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.refreshToken,
@@ -346,7 +354,6 @@ export async function forgotPassword(
 ): Promise<ApiResponse<unknown>> {
   try {
     logger.log('[API] POST', API_ENDPOINTS.auth.forgotPassword);
-    logger.log('[API] Request Payload:', { email, newPassword: '[REDACTED]', confirmPassword: '[REDACTED]', token: token ? 'present' : 'missing', tokenLength: token.length });
 
     const response = await serverAxiosInstance.post<ApiResponse<unknown>>(
       API_ENDPOINTS.auth.forgotPassword,
@@ -621,11 +628,6 @@ export async function organizationOnboarding(
 export async function getVolunteerProfile(): Promise<ApiResponse<VolunteerProfile>> {
   try {
     logger.log('[API] GET', API_ENDPOINTS.userProfile.volunteerProfile);
-    logger.log('[API] Checking auth token availability');
-
-    const token = await getServerAccessToken();
-    logger.log('[API] Token present:', !!token);
-    logger.log('[API] Token length:', token?.length);
 
     const response = await serverAxiosInstance.get<ApiResponse<VolunteerProfile>>(
       API_ENDPOINTS.userProfile.volunteerProfile
@@ -636,7 +638,11 @@ export async function getVolunteerProfile(): Promise<ApiResponse<VolunteerProfil
 
     return response.data;
   } catch (error) {
-    logger.error('[API] Error in getVolunteerProfile:', error);
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getVolunteerProfile:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
     throw handleServerError(error);
   }
 }
@@ -648,11 +654,6 @@ export async function getVolunteerProfile(): Promise<ApiResponse<VolunteerProfil
 export async function getFoundationProfile(): Promise<ApiResponse<FoundationProfile>> {
   try {
     logger.log('[API] GET', API_ENDPOINTS.userProfile.foundationProfile);
-    logger.log('[API] Checking auth token availability');
-
-    const token = await getServerAccessToken();
-    logger.log('[API] Token present:', !!token);
-    logger.log('[API] Token length:', token?.length);
 
     const response = await serverAxiosInstance.get<ApiResponse<FoundationProfile>>(
       API_ENDPOINTS.userProfile.foundationProfile
@@ -663,7 +664,477 @@ export async function getFoundationProfile(): Promise<ApiResponse<FoundationProf
 
     return response.data;
   } catch (error) {
-    logger.error('[API] Error in getFoundationProfile:', error);
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getFoundationProfile:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Create Program
+ * POST /api/Programs/create
+ */
+export async function createProgram(request: CreateProgramRequest): Promise<ApiResponse<ProgramApiResponse>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.programs.create);
+    logger.log('[API] Request:', request);
+
+    const response = await serverAxiosInstance.post<ApiResponse<ProgramApiResponse>>(
+      API_ENDPOINTS.programs.create,
+      request
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in createProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get Programs
+ * GET /api/Programs/get-programs
+ *
+ * Query params mirror the swagger definition (PageNumber/PageSize are
+ * capitalized there; ASP.NET binding is case-insensitive but we match the
+ * documented names exactly). The response is returned untyped because the
+ * envelope is not documented: it may be a bare array or a paginated object.
+ * parseProgramsResponse in the server actions normalizes every shape.
+ */
+export async function getPrograms(params?: {
+  PageNumber?: number;
+  PageSize?: number;
+  foundationId?: string;
+  status?: string;
+  search?: string;
+  dateRange?: string;
+}): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.programs.getAll);
+    logger.log('[API] Params:', params);
+
+    const response = await serverAxiosInstance.get<ApiResponse<unknown>>(
+      API_ENDPOINTS.programs.getAll,
+      { params }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getPrograms:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get Organizations
+ * GET /api/Organization/get
+ *
+ * Used to fetch organization options for admin program management filters.
+ */
+export async function getOrganizations(params?: {
+  Page?: number;
+  PageSize?: number;
+  Status?: string;
+  All?: boolean;
+  SearchQuery?: string;
+  OrderByColumn?: string;
+  OrderBy?: string;
+}): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.organization.get);
+    logger.log('[API] Params:', params);
+
+    const response = await serverAxiosInstance.get<ApiResponse<unknown>>(
+      API_ENDPOINTS.organization.get,
+      { params }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getOrganizations:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get Program Stats
+ * GET /api/Programs/get-program-stats
+ */
+export async function getProgramStats(foundationId: string): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.programs.getAll, 'stats');
+    logger.log('[API] Foundation ID:', foundationId);
+
+    const response = await serverAxiosInstance.get<ApiResponse<Record<string, unknown>>>(
+      '/api/Programs/get-program-stats',
+      { params: { foundationId } }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getProgramStats:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get Program By ID
+ * GET /api/Programs/get-program-by-id
+ */
+export async function getProgramById(id: string): Promise<ApiResponse<ProgramApiResponse>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.programs.getById(id));
+
+    const response = await serverAxiosInstance.get<ApiResponse<ProgramApiResponse>>(
+      API_ENDPOINTS.programs.getById(id)
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getProgramById:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Update Program
+ * PUT /api/Programs/update
+ */
+export async function updateProgram(request: UpdateProgramRequest): Promise<ApiResponse<ProgramApiResponse>> {
+  try {
+    logger.log('[API] PUT', API_ENDPOINTS.programs.update);
+    logger.log('[API] Request:', request);
+
+    const response = await serverAxiosInstance.put<ApiResponse<ProgramApiResponse>>(
+      API_ENDPOINTS.programs.update,
+      request
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in updateProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Delete Program Goal
+ * DELETE /api/Programs/delete-program-goal
+ */
+export async function deleteProgramGoal(programGoalId: string): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] DELETE', API_ENDPOINTS.programs.deleteGoal);
+    logger.log('[API] Program Goal ID:', programGoalId);
+
+    const response = await serverAxiosInstance.delete<ApiResponse<Record<string, unknown>>>(
+      API_ENDPOINTS.programs.deleteGoal,
+      { params: { programGoalId } }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in deleteProgramGoal:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Delete Program
+ * DELETE /api/Programs/delete-program
+ */
+export async function deleteProgram(programId: string): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] DELETE', '/api/Programs/delete-program');
+    logger.log('[API] Program ID:', programId);
+
+    const response = await serverAxiosInstance.delete<ApiResponse<Record<string, unknown>>>(
+      '/api/Programs/delete-program',
+      { params: { programId } }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in deleteProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Update Program Status
+ * PUT /api/Programs/updateprogramstatus
+ */
+export async function updateProgramStatus(request: UpdateProgramStatusRequest): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] PUT', API_ENDPOINTS.programs.updateStatus);
+    logger.log('[API] Request:', request);
+
+    const response = await serverAxiosInstance.put<ApiResponse<Record<string, unknown>>>(
+      API_ENDPOINTS.programs.updateStatus,
+      request
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in updateProgramStatus:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Join Program
+ * POST /api/Programs/join-program
+ */
+export async function joinProgram(programId: string): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.programs.join);
+    logger.log('[API] Program ID:', programId);
+
+    const response = await serverAxiosInstance.post<ApiResponse<Record<string, unknown>>>(
+      API_ENDPOINTS.programs.join,
+      {},
+      { params: { programId } }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in joinProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Leave Program
+ * POST /api/Programs/leave-program
+ */
+export async function leaveProgram(programId: string): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.programs.leave);
+    logger.log('[API] Program ID:', programId);
+
+    const response = await serverAxiosInstance.post<ApiResponse<Record<string, unknown>>>(
+      API_ENDPOINTS.programs.leave,
+      {},
+      { params: { programId } }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in leaveProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Add Favorite Program
+ * POST /api/FavoritePrograms/add-favorite-program
+ */
+export async function addFavoriteProgram(programId: string): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.favoritePrograms.add);
+    logger.log('[API] Program ID:', programId);
+
+    const response = await serverAxiosInstance.post<ApiResponse<Record<string, unknown>>>(
+      API_ENDPOINTS.favoritePrograms.add,
+      { programId }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in addFavoriteProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get Favorite Programs (the current user's favourites)
+ * GET /api/FavoritePrograms/get-favorite-programs
+ */
+export async function getFavoritePrograms(): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.favoritePrograms.get);
+
+    const response = await serverAxiosInstance.get<ApiResponse<unknown>>(
+      API_ENDPOINTS.favoritePrograms.get
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getFavoritePrograms:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Remove Favorite Program
+ * DELETE /api/FavoritePrograms/remove-favorite-program?programId=...
+ */
+export async function removeFavoriteProgram(programId: string): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] DELETE', API_ENDPOINTS.favoritePrograms.remove);
+    logger.log('[API] Program ID:', programId);
+
+    const response = await serverAxiosInstance.delete<ApiResponse<Record<string, unknown>>>(
+      API_ENDPOINTS.favoritePrograms.remove,
+      { params: { programId } }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in removeFavoriteProgram:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get All Favorite Programs (paginated)
+ * GET /api/FavoritePrograms/get-all-favorite-programs
+ */
+export async function getAllFavoritePrograms(params?: {
+  PageNumber?: number;
+  PageSize?: number;
+}): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.favoritePrograms.getAll);
+    logger.log('[API] Params:', params);
+
+    const response = await serverAxiosInstance.get<ApiResponse<unknown>>(
+      API_ENDPOINTS.favoritePrograms.getAll,
+      { params }
+    );
+
+    logger.log('[API] Response Status:', response.status);
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in getAllFavoritePrograms:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Create Location
+ * POST /api/Location/create-location
+ */
+export async function createLocation(request: CreateLocationRequest): Promise<ApiResponse<Record<string, unknown>>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.location.create);
+    logger.log('[API] Request:', request);
+
+    const response = await serverAxiosInstance.post<ApiResponse<Record<string, unknown>>>(
+      API_ENDPOINTS.location.create,
+      request
+    );
+
+    logger.log('[API] Response Status:', response.status);
+    logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
+
+    return response.data;
+  } catch (error) {
+    const apiError = error as AxiosError;
+    logger.error('[API] Error in createLocation:', {
+      status: apiError.response?.status,
+      message: apiError.response?.data || apiError.message,
+    });
     throw handleServerError(error);
   }
 }
@@ -672,10 +1143,36 @@ export async function getFoundationProfile(): Promise<ApiResponse<FoundationProf
  * Handle server-side API errors
  */
 function handleServerError(error: unknown): ApiError {
+  // The response interceptor converts 401/403 (and `success: false` bodies)
+  // into a plain ApiError before this runs — preserve its status and message
+  // instead of flattening it into a generic 500, otherwise callers can never
+  // tell an expired session (401) apart from a real server fault.
+  if (
+    !axios.isAxiosError(error) &&
+    error !== null &&
+    typeof error === 'object' &&
+    'status' in error &&
+    'message' in error
+  ) {
+    return error as ApiError;
+  }
+
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError;
+    // Support camelCase response bodies and ASP.NET-style bodies
+    // ({ StatusCode, Message, Details }) — e.g. Data Protection key-ring
+    // failures only surface their explanation in `Details`.
+    const data = axiosError.response?.data as
+      | { message?: string; detail?: string; Details?: string; Message?: string }
+      | undefined;
     const apiError: ApiError = {
-      message: (axiosError.response?.data as { message?: string })?.message || axiosError.message || 'An error occurred',
+      message:
+        data?.message ||
+        data?.detail ||
+        data?.Details ||
+        data?.Message ||
+        axiosError.message ||
+        'An error occurred',
       status: axiosError.response?.status || 500,
       errors: (axiosError.response?.data as { errors?: Record<string, string[]> })?.errors,
     };

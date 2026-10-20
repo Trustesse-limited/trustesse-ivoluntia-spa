@@ -31,10 +31,14 @@ interface RippleEffectProps {
   children: React.ReactNode;
   disabled?: boolean;
   className?: string;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent | React.TouchEvent) => void;
+  onMouseDown?: () => void;
+  onMouseUp?: () => void;
+  onMouseLeave?: () => void;
+  style?: React.CSSProperties;
 }
 
-export function RippleEffect({ children, disabled = false, className = '', onClick }: RippleEffectProps) {
+export function RippleEffect({ children, disabled = false, className = '', onClick, onMouseDown, onMouseUp, onMouseLeave, style }: RippleEffectProps) {
   const [ripples, setRipples] = useState<RippleProps[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -71,7 +75,7 @@ export function RippleEffect({ children, disabled = false, className = '', onCli
   const handleClick = useCallback((event: React.MouseEvent | React.TouchEvent) => {
     addRipple(event);
     if (onClick) {
-      onClick();
+      onClick(event);
     }
   }, [addRipple, onClick]);
 
@@ -79,7 +83,13 @@ export function RippleEffect({ children, disabled = false, className = '', onCli
     <div
       ref={containerRef}
       className={`relative overflow-hidden ${className}`}
-      onMouseDown={handleClick}
+      style={style}
+      onMouseDown={(e) => {
+        handleClick(e);
+        onMouseDown?.();
+      }}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseLeave}
       onTouchStart={handleClick}
     >
       <AnimatePresence mode="popLayout">

@@ -54,7 +54,13 @@ export default function SessionExpiredModal({ isOpen, onClose, canRefresh = true
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
+      // logout() clears the auth store (including sessionExpired — see
+      // authStore.logout) and all cookies before the server call
       await logout();
+      // Close the modal before navigating: SessionProvider lives in the
+      // root layout, so an open modal would otherwise follow the user to
+      // the login screen
+      onClose();
       router.push("/login");
     } catch (error) {
       console.error("Failed to logout:", error);
@@ -74,7 +80,7 @@ export default function SessionExpiredModal({ isOpen, onClose, canRefresh = true
         <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
           {canRefresh 
             ? "Your session has expired. You can refresh your session to continue or log out."
-            : "Your session has expired and your refresh token is also expired. Please log in again."
+            : "Your session has expired. Please log in again."
           }
         </p>
         <div className="flex flex-col gap-3 sm:gap-4">

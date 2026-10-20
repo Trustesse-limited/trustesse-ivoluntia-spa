@@ -24,6 +24,22 @@ import {
   uploadFile as uploadFileServer,
   getVolunteerProfile,
   getFoundationProfile,
+  createProgram,
+  getPrograms,
+  getProgramStats,
+  getProgramById,
+  updateProgram,
+  deleteProgramGoal,
+  deleteProgram,
+  updateProgramStatus,
+  joinProgram,
+  leaveProgram,
+  createLocation,
+  addFavoriteProgram,
+  getFavoritePrograms,
+  removeFavoriteProgram,
+  getAllFavoritePrograms,
+  getOrganizations,
 } from '@/lib/server-api';
 import { refreshToken } from '@/lib/server-api';
 import {
@@ -46,6 +62,12 @@ import {
   TokenRefreshRequest,
   Skill,
   CategoryApiResponse,
+  ProgramApiResponse,
+  CreateProgramRequest,
+  UpdateProgramRequest,
+  UpdateProgramStatusRequest,
+  CreateLocationRequest,
+  ProgramsPagination,
 } from '@/types/api';
 import { cookies } from 'next/headers';
 import {
@@ -55,6 +77,156 @@ import {
   isValidEmail,
 } from '@/lib/sanitize';
 // import logger from '@/lib/logger';
+
+/**
+ * Resolve an absolute token expiry timestamp (epoch ms) from an API response.
+ *
+ * The API is inconsistent about expiry fields:
+ * - some arrive as ISO date strings even when the field name says otherwise
+ *   (e.g. accessTokenExpireMinutes: '2026-10-18T19:52:05.9181223Z')
+ * - some arrive as numeric strings meaning relative minutes/seconds
+ * - the refresh token's absolute field is named `refreshTokenExpireDays`
+ *
+ * Parsing an ISO date with parseInt() yields the year (e.g. 2026), which
+ * previously produced an expiry of "now + 2026 minutes" (~33h46m) instead of
+ * the real access-token lifetime, so the session-expired modal never fired at
+ * the actual expiry. This helper handles every shape the API has been seen to
+ * return.
+ */
+function resolveTokenExpiration(
+  data: Record<string, unknown>,
+  tokenType: 'accessToken' | 'refreshToken'
+): number | null {
+  const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}/;
+
+  // Absolute expiry: an ISO date string (e.g. '2026-10-18T19:52:05.9181223Z')
+  const parseAbsolute = (value: unknown): number | null => {
+    if (typeof value !== 'string' || !ISO_DATE_PATTERN.test(value)) return null;
+    const timestamp = Date.parse(value);
+    return Number.isNaN(timestamp) ? null : timestamp;
+  };
+
+  // Relative expiry: a count of minutes/seconds from now — but tolerate an
+  // ISO date leaking into these fields and treat it as an absolute expiry
+  const parseRelative = (value: unknown, unitMs: number): number | null => {
+    if (value === undefined || value === null) return null;
+    const raw = String(value);
+    if (ISO_DATE_PATTERN.test(raw)) return parseAbsolute(raw);
+    const amount = Number(raw);
+    return Number.isFinite(amount) ? Date.now() + amount * unitMs : null;
+  };
+
+  // Absolute expiry field names per token type
+  const absoluteFields =
+    tokenType === 'accessToken'
+      ? ['accessTokenExpiresAt']
+      : ['refreshTokenExpiresAt', 'refreshTokenExpireDays'];
+  for (const field of absoluteFields) {
+    const timestamp = parseAbsolute(data[field]);
+    if (timestamp !== null) return timestamp;
+  }
+
+  // Relative fields (names are unreliable — see note above)
+  const minutes = parseRelative(data[`${tokenType}ExpireMinutes`], 60 * 1000);
+  if (minutes !== null) return minutes;
+
+  const seconds = parseRelative(data[`${tokenType}ExpireSeconds`], 1000);
+  if (seconds !== null) return seconds;
+
+  // refreshTokenExpireDays is an absolute-field name but holds a relative
+  // number of days from now. Handle it here so refresh-token expiration is
+  // actually stored (parseAbsolute above only matches ISO date strings).
+  if (tokenType === 'refreshToken') {
+    const days = parseRelative(data['refreshTokenExpireDays'], 24 * 60 * 60 * 1000);
+    if (days !== null) return days;
+  }
+
+  return null;
+}
+
+/**
+ * Normalize a get-programs response into items + pagination metadata.
+ *
+ * The swagger lists PageNumber/PageSize as query params but does not document
+ * the response envelope, and the endpoint has been observed returning a bare
+ * array. Handle every shape seen/likely:
+ * - `data: [...]` — bare array, no pagination metadata
+ * - `data: { items|data|results|programs: [...], pageNumber, pageSize,
+ *            totalCount, totalPages }`
+ * - pagination fields on the top-level response, next to `data`
+ *
+ * Field names are matched case-insensitively with common aliases so a backend
+ * naming difference (totalCount vs totalRecords vs total) does not break the
+ * UI. Pagination is only returned when the backend actually provides totals.
+ */
+function parseProgramsResponse(response: ApiResponse<unknown>): {
+  programs: ProgramApiResponse[];
+  pagination?: ProgramsPagination;
+} {
+  const pickNumber = (source: unknown, keys: string[]): number | undefined => {
+    if (!source || typeof source !== 'object') return undefined;
+    const record = source as Record<string, unknown>;
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+    }
+    return undefined;
+  };
+
+  const payload = response.data;
+  let programs: ProgramApiResponse[] = [];
+  let container: unknown = payload;
+
+  if (Array.isArray(payload)) {
+    programs = payload as ProgramApiResponse[];
+  } else if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    for (const key of ['items', 'data', 'results', 'programs', 'favoritePrograms', 'favorites']) {
+      if (Array.isArray(record[key])) {
+        programs = record[key] as ProgramApiResponse[];
+        container = record;
+        break;
+      }
+    }
+  }
+
+  // Metadata may live on the nested container or on the top-level response
+  const pageNumber =
+    pickNumber(container, ['pageNumber', 'page']) ??
+    pickNumber(response, ['pageNumber', 'page']) ??
+    1;
+  const pageSize =
+    pickNumber(container, ['pageSize', 'limit']) ??
+    pickNumber(response, ['pageSize', 'limit']) ??
+    programs.length;
+  const totalCount =
+    pickNumber(container, ['totalCount', 'totalRecords', 'total']) ??
+    pickNumber(response, ['totalCount', 'totalRecords', 'total']);
+  const totalPages =
+    pickNumber(container, ['totalPages']) ?? pickNumber(response, ['totalPages']);
+
+  if (totalCount === undefined && totalPages === undefined) {
+    // No metadata — bare array response; caller treats it as a single page
+    return { programs };
+  }
+
+  const resolvedTotalPages =
+    totalPages ??
+    (totalCount !== undefined && pageSize > 0
+      ? Math.ceil(totalCount / pageSize)
+      : 1);
+
+  return {
+    programs,
+    pagination: {
+      pageNumber,
+      pageSize,
+      totalCount: totalCount ?? programs.length,
+      totalPages: Math.max(resolvedTotalPages, 1),
+    },
+  };
+}
+
 
 /**
  * Server Action for Volunteer Sign Up (initial auth info)
@@ -285,14 +457,7 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
         // logger.log('[Server Action] Access token stored in cookie as auth_token');
 
         // Store token expiration time from API response for client-side validation
-        let tokenExpiration: number | null = null;
-        if ('accessTokenExpiresAt' in loginData && typeof loginData.accessTokenExpiresAt === 'string') {
-          tokenExpiration = new Date(loginData.accessTokenExpiresAt).getTime();
-        } else if ('accessTokenExpireMinutes' in loginData && typeof loginData.accessTokenExpireMinutes === 'string') {
-          tokenExpiration = Date.now() + (parseInt(loginData.accessTokenExpireMinutes) * 60 * 1000);
-        } else if ('accessTokenExpireSeconds' in loginData && typeof loginData.accessTokenExpireSeconds === 'string') {
-          tokenExpiration = Date.now() + (parseInt(loginData.accessTokenExpireSeconds) * 1000);
-        }
+        const tokenExpiration = resolveTokenExpiration(loginData, 'accessToken');
 
         if (tokenExpiration) {
           cookieStore.set('token_expiration', String(tokenExpiration), {
@@ -315,14 +480,7 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
         });
 
         // Store refresh token expiration time
-        let refreshTokenExpiration: number | null = null;
-        if ('refreshTokenExpiresAt' in loginData && typeof loginData.refreshTokenExpiresAt === 'string') {
-          refreshTokenExpiration = new Date(loginData.refreshTokenExpiresAt).getTime();
-        } else if ('refreshTokenExpireMinutes' in loginData && typeof loginData.refreshTokenExpireMinutes === 'string') {
-          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireMinutes) * 60 * 1000);
-        } else if ('refreshTokenExpireSeconds' in loginData && typeof loginData.refreshTokenExpireSeconds === 'string') {
-          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireSeconds) * 1000);
-        }
+        const refreshTokenExpiration = resolveTokenExpiration(loginData, 'refreshToken');
 
         if (refreshTokenExpiration) {
           cookieStore.set('refresh_token_expiration', String(refreshTokenExpiration), {
@@ -412,14 +570,7 @@ export async function verifyTwoFactorAction(data: TwoFactorVerificationRequest):
         });
 
         // Store refresh token expiration time
-        let refreshTokenExpiration: number | null = null;
-        if ('refreshTokenExpiresAt' in loginData && typeof loginData.refreshTokenExpiresAt === 'string') {
-          refreshTokenExpiration = new Date(loginData.refreshTokenExpiresAt).getTime();
-        } else if ('refreshTokenExpireMinutes' in loginData && typeof loginData.refreshTokenExpireMinutes === 'string') {
-          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireMinutes) * 60 * 1000);
-        } else if ('refreshTokenExpireSeconds' in loginData && typeof loginData.refreshTokenExpireSeconds === 'string') {
-          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireSeconds) * 1000);
-        }
+        const refreshTokenExpiration = resolveTokenExpiration(loginData, 'refreshToken');
 
         if (refreshTokenExpiration) {
           cookieStore.set('refresh_token_expiration', String(refreshTokenExpiration), {
@@ -617,14 +768,7 @@ export async function refreshTokenAction(): Promise<{
         // logger.log('[Server Action] New access token stored in cookie as auth_token');
 
         // Store new token expiration time from API response for client-side validation
-        let tokenExpiration: number | null = null;
-        if ('accessTokenExpiresAt' in tokenData && typeof tokenData.accessTokenExpiresAt === 'string') {
-          tokenExpiration = new Date(tokenData.accessTokenExpiresAt).getTime();
-        } else if ('accessTokenExpireMinutes' in tokenData && typeof tokenData.accessTokenExpireMinutes === 'string') {
-          tokenExpiration = Date.now() + (parseInt(tokenData.accessTokenExpireMinutes) * 60 * 1000);
-        } else if ('accessTokenExpireSeconds' in tokenData && typeof tokenData.accessTokenExpireSeconds === 'string') {
-          tokenExpiration = Date.now() + (parseInt(tokenData.accessTokenExpireSeconds) * 1000);
-        }
+        const tokenExpiration = resolveTokenExpiration(tokenData, 'accessToken');
 
         if (tokenExpiration) {
           cookieStore.set('token_expiration', String(tokenExpiration), {
@@ -647,14 +791,7 @@ export async function refreshTokenAction(): Promise<{
         });
 
         // Store refresh token expiration time
-        let refreshTokenExpiration: number | null = null;
-        if ('refreshTokenExpiresAt' in tokenData && typeof tokenData.refreshTokenExpiresAt === 'string') {
-          refreshTokenExpiration = new Date(tokenData.refreshTokenExpiresAt).getTime();
-        } else if ('refreshTokenExpireMinutes' in tokenData && typeof tokenData.refreshTokenExpireMinutes === 'string') {
-          refreshTokenExpiration = Date.now() + (parseInt(tokenData.refreshTokenExpireMinutes) * 60 * 1000);
-        } else if ('refreshTokenExpireSeconds' in tokenData && typeof tokenData.refreshTokenExpireSeconds === 'string') {
-          refreshTokenExpiration = Date.now() + (parseInt(tokenData.refreshTokenExpireSeconds) * 1000);
-        }
+        const refreshTokenExpiration = resolveTokenExpiration(tokenData, 'refreshToken');
 
         if (refreshTokenExpiration) {
           cookieStore.set('refresh_token_expiration', String(refreshTokenExpiration), {
@@ -859,14 +996,7 @@ export async function loginAction(data: LoginRequestModel): Promise<{
 
         // Store token expiration time from API response for client-side validation
         // Backend provides: accessTokenExpiresAt, accessTokenExpireMinutes, or accessTokenExpireSeconds
-        let tokenExpiration: number | null = null;
-        if ('accessTokenExpiresAt' in loginData && typeof loginData.accessTokenExpiresAt === 'string') {
-          tokenExpiration = new Date(loginData.accessTokenExpiresAt).getTime();
-        } else if ('accessTokenExpireMinutes' in loginData && typeof loginData.accessTokenExpireMinutes === 'string') {
-          tokenExpiration = Date.now() + (parseInt(loginData.accessTokenExpireMinutes) * 60 * 1000);
-        } else if ('accessTokenExpireSeconds' in loginData && typeof loginData.accessTokenExpireSeconds === 'string') {
-          tokenExpiration = Date.now() + (parseInt(loginData.accessTokenExpireSeconds) * 1000);
-        }
+        const tokenExpiration = resolveTokenExpiration(loginData, 'accessToken');
 
         if (tokenExpiration) {
           cookieStore.set('token_expiration', String(tokenExpiration), {
@@ -889,14 +1019,7 @@ export async function loginAction(data: LoginRequestModel): Promise<{
         });
 
         // Store refresh token expiration time
-        let refreshTokenExpiration: number | null = null;
-        if ('refreshTokenExpiresAt' in loginData && typeof loginData.refreshTokenExpiresAt === 'string') {
-          refreshTokenExpiration = new Date(loginData.refreshTokenExpiresAt).getTime();
-        } else if ('refreshTokenExpireMinutes' in loginData && typeof loginData.refreshTokenExpireMinutes === 'string') {
-          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireMinutes) * 60 * 1000);
-        } else if ('refreshTokenExpireSeconds' in loginData && typeof loginData.refreshTokenExpireSeconds === 'string') {
-          refreshTokenExpiration = Date.now() + (parseInt(loginData.refreshTokenExpireSeconds) * 1000);
-        }
+        const refreshTokenExpiration = resolveTokenExpiration(loginData, 'refreshToken');
 
         if (refreshTokenExpiration) {
           cookieStore.set('refresh_token_expiration', String(refreshTokenExpiration), {
@@ -1370,6 +1493,7 @@ export async function logoutAction(): Promise<{
       'lastCompletedPage',
       'userEmail',
       'token_expiration',
+      'refresh_token_expiration',
     ];
 
     cookiesToDelete.forEach(cookieName => {
@@ -1410,8 +1534,12 @@ export async function logoutAction(): Promise<{
 
 /**
  * Server Action for Token Validation
- * Validates if the current token is still valid by calling a lightweight API endpoint
- * This is called from client-side to check authentication status on page refresh
+ * Validates whether the current session is still valid by combining:
+ * 1. a local clock check against the token_expiration cookie, and
+ * 2. a lightweight authenticated backend probe, so that server-side
+ *    invalidation (backend restarts / Data Protection key-ring rotation,
+ *    token revocation, early expiry) also triggers the session-expired modal
+ * This is called from client-side on page load and periodically
  */
 export async function validateTokenAction(): Promise<{
   success: boolean;
@@ -1430,23 +1558,59 @@ export async function validateTokenAction(): Promise<{
       };
     }
 
-    // Check token expiration using stored expiration time from API response
+    // 1) Local clock check (fast path) using the expiry recorded at login,
+    //    with a 1-minute buffer
     if (tokenExpiration) {
       const expirationTime = parseInt(tokenExpiration, 10);
-      const currentTime = Date.now();
       const bufferTime = 60 * 1000; // 1 minute buffer
 
-      // Token is valid if current time < expiration time - buffer
-      const isValid = currentTime < (expirationTime - bufferTime);
-
-      return {
-        success: true,
-        isValid,
-      };
+      if (!Number.isNaN(expirationTime) && Date.now() >= expirationTime - bufferTime) {
+        return {
+          success: true,
+          isValid: false,
+        };
+      }
     }
 
-    // If no expiration stored, assume token is valid if it exists
-    // This shouldn't happen with the new implementation, but it's a safe fallback
+    // 2) Real backend probe — the cookie clock cannot see server-side
+    //    invalidation, which is exactly when the session dies "early"
+    const role = (cookieStore.get('user_role')?.value || '').toLowerCase();
+    let probe: Promise<unknown> | null = null;
+    if (role === 'organization' || role === 'foundation') {
+      probe = getFoundationProfile();
+    } else if (role === 'volunteer') {
+      probe = getVolunteerProfile();
+    }
+
+    if (probe) {
+      try {
+        await probe;
+      } catch (probeError) {
+        const apiError = probeError as ApiError;
+        const message = apiError.message || '';
+        const isAuthFailure =
+          apiError.status === 401 ||
+          message.includes('Authentication failed') ||
+          // ASP.NET Data Protection key-ring failure: the token can no longer
+          // be decrypted by the backend — only a fresh login fixes this
+          message.includes('key ring') ||
+          message.includes('DataProtection') ||
+          message.includes('was not found in the key');
+
+        if (isAuthFailure) {
+          return {
+            success: true,
+            isValid: false,
+          };
+        }
+        // 404 (authenticated but no record), 5xx and network/timeouts are NOT
+        // session failures — never log the user out over a backend blip;
+        // the next scheduled check will retry.
+      }
+    }
+
+    // Token exists, is within its expiry window, and the backend still
+    // accepts it (or is unreachable right now — benefit of the doubt)
     return {
       success: true,
       isValid: true,
@@ -1820,6 +1984,591 @@ export async function getCategoriesAction(): Promise<{
     return {
       success: false,
       error: apiError.message || 'Failed to fetch categories',
+    };
+  }
+}
+
+/**
+ * Server Action for Create Program
+ * POST /api/Programs/create
+ */
+export async function createProgramAction(request: CreateProgramRequest): Promise<{
+  success: boolean;
+  data?: ProgramApiResponse;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[CREATE PROGRAM ACTION] Starting program creation');
+    logger.log('[CREATE PROGRAM ACTION] Request:', request);
+
+    const response = await createProgram(request);
+    logger.log('[CREATE PROGRAM ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[CREATE PROGRAM ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to create program',
+    };
+  }
+}
+
+/**
+ * Server Action for Get Programs
+ * GET /api/Programs/get-programs
+ *
+ * Supports the full query surface of the endpoint: search, dateRange,
+ * foundationId, status and PageNumber/PageSize pagination. Items are returned
+ * in `data` (unchanged — existing callers keep working) plus normalized
+ * `pagination` metadata when the backend provides it.
+ */
+export async function getProgramsAction(params?: {
+  foundationId?: string;
+  status?: string;
+  search?: string;
+  dateRange?: string;
+  pageNumber?: number;
+  pageSize?: number;
+}): Promise<{
+  success: boolean;
+  data?: ProgramApiResponse[];
+  pagination?: ProgramsPagination;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[GET PROGRAMS ACTION] Starting programs fetch');
+    logger.log('[GET PROGRAMS ACTION] Params:', params);
+
+    // Map camelCase action params to the swagger query names
+    const query: {
+      PageNumber?: number;
+      PageSize?: number;
+      foundationId?: string;
+      status?: string;
+      search?: string;
+      dateRange?: string;
+    } = {};
+    if (params?.foundationId) query.foundationId = params.foundationId;
+    if (params?.status) query.status = params.status;
+    if (params?.search) query.search = params.search;
+    if (params?.dateRange) query.dateRange = params.dateRange;
+    if (params?.pageNumber) query.PageNumber = params.pageNumber;
+    if (params?.pageSize) query.PageSize = params.pageSize;
+
+    const response = await getPrograms(
+      Object.keys(query).length > 0 ? query : undefined
+    );
+    logger.log('[GET PROGRAMS ACTION] API Response:', response);
+
+    const parsed = parseProgramsResponse(response);
+
+    return {
+      success: true,
+      data: parsed.programs,
+      pagination: parsed.pagination,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[GET PROGRAMS ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch programs',
+    };
+  }
+}
+
+/**
+ * Server Action for Get Organizations
+ * GET /api/Organization/get
+ *
+ * Fetches organizations for use as filter options in admin program management.
+ */
+export async function getOrganizationsAction(params?: {
+  Page?: number;
+  PageSize?: number;
+  Status?: string;
+  All?: boolean;
+  SearchQuery?: string;
+  OrderByColumn?: string;
+  OrderBy?: string;
+}): Promise<{
+  success: boolean;
+  data?: unknown;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[GET ORGANIZATIONS ACTION] Starting organizations fetch');
+    logger.log('[GET ORGANIZATIONS ACTION] Params:', params);
+
+    const response = await getOrganizations(params);
+    logger.log('[GET ORGANIZATIONS ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[GET ORGANIZATIONS ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch organizations',
+    };
+  }
+}
+
+/**
+ * Server Action for Get Program Stats
+ * GET /api/Programs/get-program-stats
+ */
+export async function getProgramStatsAction(foundationId: string): Promise<{
+  success: boolean;
+  data?: Record<string, unknown>;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[GET PROGRAM STATS ACTION] Starting stats fetch');
+    logger.log('[GET PROGRAM STATS ACTION] Foundation ID:', foundationId);
+
+    const response = await getProgramStats(foundationId);
+    logger.log('[GET PROGRAM STATS ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[GET PROGRAM STATS ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch program stats',
+    };
+  }
+}
+
+/**
+ * Server Action for Get Program By ID
+ * GET /api/Programs/get-program-by-id
+ */
+export async function getProgramByIdAction(id: string): Promise<{
+  success: boolean;
+  data?: ProgramApiResponse;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[GET PROGRAM BY ID ACTION] Starting program fetch');
+    logger.log('[GET PROGRAM BY ID ACTION] Program ID:', id);
+
+    const response = await getProgramById(id);
+    logger.log('[GET PROGRAM BY ID ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[GET PROGRAM BY ID ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch program',
+    };
+  }
+}
+
+/**
+ * Server Action for Update Program
+ * PUT /api/Programs/update
+ */
+export async function updateProgramAction(request: UpdateProgramRequest): Promise<{
+  success: boolean;
+  data?: ProgramApiResponse;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[UPDATE PROGRAM ACTION] Starting program update');
+    logger.log('[UPDATE PROGRAM ACTION] Request:', request);
+
+    const response = await updateProgram(request);
+    logger.log('[UPDATE PROGRAM ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: response.data,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[UPDATE PROGRAM ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to update program',
+    };
+  }
+}
+
+/**
+ * Server Action for Delete Program Goal
+ * DELETE /api/Programs/delete-program-goal
+ */
+export async function deleteProgramGoalAction(programGoalId: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[DELETE PROGRAM GOAL ACTION] Starting goal deletion');
+    logger.log('[DELETE PROGRAM GOAL ACTION] Program Goal ID:', programGoalId);
+
+    const response = await deleteProgramGoal(programGoalId);
+    logger.log('[DELETE PROGRAM GOAL ACTION] API Response:', response);
+
+    return {
+      success: true,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[DELETE PROGRAM GOAL ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to delete program goal',
+    };
+  }
+}
+
+/**
+ * Server Action for Delete Program
+ * DELETE /api/Programs/delete-program
+ */
+export async function deleteProgramAction(programId: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[DELETE PROGRAM ACTION] Starting program deletion');
+    logger.log('[DELETE PROGRAM ACTION] Program ID:', programId);
+
+    const response = await deleteProgram(programId);
+    logger.log('[DELETE PROGRAM ACTION] API Response:', response);
+
+    return {
+      success: true,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[DELETE PROGRAM ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to delete program',
+    };
+  }
+}
+
+/**
+ * Server Action for Update Program Status
+ * PUT /api/Programs/updateprogramstatus
+ */
+export async function updateProgramStatusAction(request: UpdateProgramStatusRequest): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[UPDATE PROGRAM STATUS ACTION] Starting status update');
+    logger.log('[UPDATE PROGRAM STATUS ACTION] Request:', request);
+
+    const response = await updateProgramStatus(request);
+    logger.log('[UPDATE PROGRAM STATUS ACTION] API Response:', response);
+
+    return {
+      success: true,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[UPDATE PROGRAM STATUS ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to update program status',
+    };
+  }
+}
+
+/**
+ * Server Action for Join Program
+ * POST /api/Programs/join-program
+ */
+export async function joinProgramAction(programId: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[JOIN PROGRAM ACTION] Starting program join');
+    logger.log('[JOIN PROGRAM ACTION] Program ID:', programId);
+
+    const response = await joinProgram(programId);
+    logger.log('[JOIN PROGRAM ACTION] API Response:', response);
+
+    return {
+      success: true,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[JOIN PROGRAM ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to join program',
+    };
+  }
+}
+
+/**
+ * Server Action for Leave Program
+ * POST /api/Programs/leave-program
+ */
+export async function leaveProgramAction(programId: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[LEAVE PROGRAM ACTION] Starting program leave');
+    logger.log('[LEAVE PROGRAM ACTION] Program ID:', programId);
+
+    const response = await leaveProgram(programId);
+    logger.log('[LEAVE PROGRAM ACTION] API Response:', response);
+
+    return {
+      success: true,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[LEAVE PROGRAM ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to leave program',
+    };
+  }
+}
+
+/**
+ * Normalize a FavoritePrograms payload into plain program objects.
+ *
+ * The response shape is undocumented; rows may be the program objects
+ * themselves or wrapper rows like `{ programId, program: {...} }`. Unwrap
+ * defensively so callers always receive items with a usable `id`.
+ */
+function normalizeFavoritePrograms(payload: unknown): ProgramApiResponse[] {
+  let list: unknown[] = [];
+  if (Array.isArray(payload)) {
+    list = payload;
+  } else if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    for (const key of ['items', 'data', 'results', 'programs', 'favoritePrograms', 'favorites']) {
+      if (Array.isArray(record[key])) {
+        list = record[key] as unknown[];
+        break;
+      }
+    }
+  }
+
+  const normalized: ProgramApiResponse[] = [];
+  for (const entry of list) {
+    if (!entry || typeof entry !== 'object') continue;
+    const row = entry as Record<string, unknown>;
+    // Wrapper row: the program lives on a nested `program` field
+    const nested =
+      row.program && typeof row.program === 'object'
+        ? (row.program as Record<string, unknown>)
+        : row;
+    const id =
+      (typeof nested.id === 'string' && nested.id) ||
+      (typeof nested.programId === 'string' && nested.programId) ||
+      (typeof row.programId === 'string' && row.programId) ||
+      '';
+    if (!id) continue;
+    normalized.push({ ...(nested as unknown as ProgramApiResponse), id });
+  }
+  return normalized;
+}
+
+/**
+ * Server Action for Add Favorite Program
+ * POST /api/FavoritePrograms/add-favorite-program
+ */
+export async function addFavoriteProgramAction(programId: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[ADD FAVORITE ACTION] Program ID:', programId);
+
+    const response = await addFavoriteProgram(programId);
+    logger.log('[ADD FAVORITE ACTION] API Response:', response);
+
+    return { success: true, message: response.message };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[ADD FAVORITE ACTION] API Error:', apiError);
+
+    return { success: false, error: apiError.message || 'Failed to add favourite' };
+  }
+}
+
+/**
+ * Server Action for Remove Favorite Program
+ * DELETE /api/FavoritePrograms/remove-favorite-program
+ */
+export async function removeFavoriteProgramAction(programId: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[REMOVE FAVORITE ACTION] Program ID:', programId);
+
+    const response = await removeFavoriteProgram(programId);
+    logger.log('[REMOVE FAVORITE ACTION] API Response:', response);
+
+    return { success: true, message: response.message };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[REMOVE FAVORITE ACTION] API Error:', apiError);
+
+    return { success: false, error: apiError.message || 'Failed to remove favourite' };
+  }
+}
+
+/**
+ * Server Action for Get Favorite Programs (current user's favourites)
+ * GET /api/FavoritePrograms/get-favorite-programs
+ */
+export async function getFavoriteProgramsAction(): Promise<{
+  success: boolean;
+  data?: ProgramApiResponse[];
+  message?: string;
+  error?: string;
+}> {
+  try {
+    const response = await getFavoritePrograms();
+    logger.log('[GET FAVORITES ACTION] API Response:', response);
+
+    return {
+      success: true,
+      data: normalizeFavoritePrograms(response.data),
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[GET FAVORITES ACTION] API Error:', apiError);
+
+    return { success: false, error: apiError.message || 'Failed to fetch favourites' };
+  }
+}
+
+/**
+ * Server Action for Get All Favorite Programs (paginated)
+ * GET /api/FavoritePrograms/get-all-favorite-programs
+ */
+export async function getAllFavoriteProgramsAction(params?: {
+  pageNumber?: number;
+  pageSize?: number;
+}): Promise<{
+  success: boolean;
+  data?: ProgramApiResponse[];
+  pagination?: ProgramsPagination;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    // Map camelCase action params to the swagger query names
+    const query: { PageNumber?: number; PageSize?: number } = {};
+    if (params?.pageNumber) query.PageNumber = params.pageNumber;
+    if (params?.pageSize) query.PageSize = params.pageSize;
+
+    const response = await getAllFavoritePrograms(
+      Object.keys(query).length > 0 ? query : undefined
+    );
+    logger.log('[GET ALL FAVORITES ACTION] API Response:', response);
+
+    const parsed = parseProgramsResponse(response);
+
+    return {
+      success: true,
+      data: normalizeFavoritePrograms(parsed.programs),
+      pagination: parsed.pagination,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[GET ALL FAVORITES ACTION] API Error:', apiError);
+
+    return { success: false, error: apiError.message || 'Failed to fetch favourites' };
+  }
+}
+
+/**
+ * Server Action for Create Location
+ * POST /api/Location/create-location
+ */
+export async function createLocationAction(request: CreateLocationRequest): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    logger.log('[CREATE LOCATION ACTION] Starting location creation');
+    logger.log('[CREATE LOCATION ACTION] Request:', request);
+
+    const response = await createLocation(request);
+    logger.log('[CREATE LOCATION ACTION] API Response:', response);
+
+    return {
+      success: true,
+      message: response.message,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    logger.log('[CREATE LOCATION ACTION] API Error:', apiError);
+
+    return {
+      success: false,
+      error: apiError.message || 'Failed to create location',
     };
   }
 }

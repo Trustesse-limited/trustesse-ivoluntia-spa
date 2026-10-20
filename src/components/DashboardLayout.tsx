@@ -11,7 +11,7 @@ import { useAuthStore } from "@/store";
 import { useRouter } from "next/navigation";
 import { BRAND_NAME } from "../../constants";
 import LogoutModal from "./LogoutModal";
-import SessionExpiredModal from "./SessionExpiredModal";
+import logger from "@/lib/logger";
 
 type NavLink = {
   label: string;
@@ -37,9 +37,9 @@ type DashboardLayoutProps = {
 const getIsActiveLink = (pathname: string, linkHref: string, dashboardType: DashboardType): boolean => {
   switch (dashboardType) {
     case 'volunteer':
-      // Special case for volunteer: exact match for /home, startsWith for others
+      // Special case for volunteer: /home and /home/* should keep Home tab active
       return linkHref === "/home"
-        ? pathname === linkHref
+        ? pathname === linkHref || pathname.startsWith(linkHref + '/')
         : pathname.startsWith(linkHref);
     case 'organization':
       return pathname.startsWith(linkHref);
@@ -96,61 +96,114 @@ export default function DashboardLayout({
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isSessionExpiredModalOpen, setIsSessionExpiredModalOpen] = useState(false);
   const [canRefreshSession, setCanRefreshSession] = useState(true);
   const pathname = usePathname();
-  const { validateToken } = useAuthActions();
+  const { validateToken, getFoundationProfile } = useAuthActions();
+  const { user, setOrganizationProfile, setSessionExpired } = useAuthStore();
   const validationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAttemptedProfileFetch = useRef(false);
+
+  // useAuthActions() returns a fresh validateToken reference on every render.
+  // The validation effect below must NOT depend on it: otherwise every
+  // re-render re-runs the effect and fires an immediate check, and when that
+  // check updates state (setSessionExpired/setCanRefreshSession) the
+  // re-render re-runs the effect again — an infinite validateTokenAction
+  // POST loop. Refs give the effect a stable, always-current handle.
+  const validateTokenRef = useRef(validateToken);
+  const isLoggingOutRef = useRef(isLoggingOut);
+  useEffect(() => {
+    validateTokenRef.current = validateToken;
+    isLoggingOutRef.current = isLoggingOut;
+  }, [validateToken, isLoggingOut]);
 
   // Check token expiration periodically
   useEffect(() => {
+    const readCookie = (name: string): string | undefined =>
+      document.cookie.split('; ').find(row => row.startsWith(`${name}=`))?.split('=')[1];
+
     const checkTokenExpiration = async () => {
       // Skip validation if user is currently logging out
-      if (isLoggingOut) {
+      if (isLoggingOutRef.current) {
         return;
       }
 
       try {
-        const result = await validateToken();
+        // Local clock check first: token_expiration is a client-readable
+        // cookie, so we can detect expiry at the exact moment it happens
+        // (validateTokenAction performs the same check server-side with a
+        // 1-minute safety buffer)
+        const expirationTime = readCookie('token_expiration');
+        const isLocallyExpired =
+          expirationTime !== undefined &&
+          expirationTime !== '' &&
+          !Number.isNaN(parseInt(expirationTime, 10)) &&
+          Date.now() >= parseInt(expirationTime, 10);
+
+        const result = isLocallyExpired ? { isValid: false } : await validateTokenRef.current();
         if (!result.isValid) {
+          // The session-expired modal is already open — don't touch state
+          // again. Zustand's set() always notifies subscribers (new state
+          // object), which would re-render this component on every check.
+          if (useAuthStore.getState().sessionExpired) {
+            return;
+          }
           // Check if refresh token is still valid
-          const refreshExpiration = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('refresh_token_expiration='))
-            ?.split('=')[1];
+          const refreshExpiration = readCookie('refresh_token_expiration');
 
           if (refreshExpiration) {
-            const expirationTime = parseInt(refreshExpiration);
-            const currentTime = Date.now();
-            const isRefreshTokenValid = currentTime < expirationTime;
+            const refreshExpiryTime = parseInt(refreshExpiration, 10);
+            const isRefreshTokenValid = !Number.isNaN(refreshExpiryTime) && Date.now() < refreshExpiryTime;
             setCanRefreshSession(isRefreshTokenValid);
           } else {
-            // No refresh token expiry stored, assume it's valid
-            setCanRefreshSession(true);
+            // No refresh token expiry stored — we cannot verify the refresh
+            // token is still valid, so hide the refresh button and only offer
+            // logout. A working refresh requires a re-login.
+            setCanRefreshSession(false);
           }
 
-          setIsSessionExpiredModalOpen(true);
+          setSessionExpired(true);
         }
       } catch (error) {
         console.error("Failed to validate token:", error);
         // If validation fails, show session expired modal but allow refresh
-        setCanRefreshSession(true);
-        setIsSessionExpiredModalOpen(true);
+        // (skip if already shown — see note in the invalid-result branch)
+        if (!useAuthStore.getState().sessionExpired) {
+          setCanRefreshSession(true);
+          setSessionExpired(true);
+        }
       }
     };
 
     // Check immediately on mount
     checkTokenExpiration();
 
-    // Check every 5 minutes
+    // Check every 5 minutes (covers server-side revocation / clock drift)
     validationIntervalRef.current = setInterval(checkTokenExpiration, 5 * 60 * 1000);
+
+    // Also fire the moment the access token actually expires so the modal
+    // doesn't appear up to 5 minutes late
+    let expiryTimeout: NodeJS.Timeout | null = null;
+    const expirationTime = readCookie('token_expiration');
+    if (expirationTime) {
+      const remainingMs = parseInt(expirationTime, 10) - Date.now();
+      if (!Number.isNaN(remainingMs) && remainingMs > 0) {
+        expiryTimeout = setTimeout(checkTokenExpiration, remainingMs);
+      }
+    }
 
     return () => {
       if (validationIntervalRef.current) {
         clearInterval(validationIntervalRef.current);
       }
+      if (expiryTimeout) {
+        clearTimeout(expiryTimeout);
+      }
     };
-  }, [validateToken, isLoggingOut]);
+    // Run once on mount. Volatile values (validateToken, isLoggingOut) are
+    // read through refs — see the note above the refs declaration. Depending
+    // on them here is what caused the infinite validateTokenAction loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Clear validation interval when logout starts to prevent race condition
   useEffect(() => {
@@ -159,8 +212,59 @@ export default function DashboardLayout({
       validationIntervalRef.current = null;
     }
   }, [isLoggingOut]);
+
+  // Reset profile fetch attempt flag when user or dashboard type changes
+  useEffect(() => {
+    hasAttemptedProfileFetch.current = false;
+  }, [user?.id, dashboardType]);
+
+  // Fetch organization profile once for organization users
+  useEffect(() => {
+    const fetchOrganizationProfile = async () => {
+      // Check for both 'Foundation' (from backend) and 'Organization' (normalized in auth store)
+      const isOrganizationUser = user?.accountType === 'Foundation' || user?.accountType === 'Organization';
+
+      if (dashboardType === 'organization' && !user?.organizationProfile && isOrganizationUser && !hasAttemptedProfileFetch.current) {
+        hasAttemptedProfileFetch.current = true;
+        try {
+          const result = await getFoundationProfile();
+          if (result.success && result.data) {
+            // Create default location from profile address data
+            const defaultLocation = {
+              address: result.data.address || '',
+              city: result.data.city || '',
+              state: result.data.foundationState || '',
+              country: result.data.foundationCountry || '',
+              zipcode: result.data.zipCode || '',
+            };
+
+            const profileData = {
+              name: result.data.name,
+              email: result.data.email,
+              foundationCategory: result.data.foundationCategory,
+              website: result.data.website,
+              mission: result.data.mission,
+              address: result.data.address,
+              city: result.data.city,
+              zipcode: result.data.zipCode,
+              foundationCountry: result.data.foundationCountry,
+              foundationState: result.data.foundationState,
+              causes: result.data.causes || undefined,
+              logoUrl: result.data.logoUrl,
+              locations: [defaultLocation],
+            };
+
+            setOrganizationProfile(profileData);
+          }
+        } catch (error) {
+          logger.error('Failed to fetch organization profile:', error);
+        }
+      }
+    };
+    fetchOrganizationProfile();
+  }, [dashboardType, user?.organizationProfile, user?.accountType, getFoundationProfile, setOrganizationProfile]);
+
   const { logout } = useAuthActions();
-  const { user } = useAuthStore();
   const router = useRouter();
 
   // Get organization logo with priority:
@@ -290,7 +394,7 @@ export default function DashboardLayout({
   const handleLogoutConfirm = async () => {
     setIsLoggingOut(true);
     // Close session expired modal if it's open to prevent confusion
-    setIsSessionExpiredModalOpen(false);
+    setSessionExpired(false);
     const result = await logout();
     if (result.success) {
       setIsLogoutModalOpen(false);
@@ -486,43 +590,43 @@ export default function DashboardLayout({
       <div className="flex flex-col flex-1 md:ml-52 h-full">
         {isAdmin ? (
           // Admin Header with search bar
-          <header className="sticky top-0 z-30 bg-white h-19.5 flex items-center justify-between gap-4 px-4 md:px-6 border-[#A9A7A7]">
-            <div className="flex items-center gap-4">
+          <header className="sticky top-0 z-30 bg-white h-14 md:h-20 flex items-center justify-between gap-4 px-4 md:px-6 border-[#A9A7A7]">
+            <div className="flex items-center gap-3">
               <button
                 title="Open Menu"
                 onClick={() => setIsMobileNavOpen(true)}
-                className="md:hidden cursor-pointer"
+                className="md:hidden cursor-pointer p-1"
               >
-                <FiMenu className="text-2xl text-gray-700" />
+                <FiMenu className="text-xl md:text-2xl text-gray-700" />
               </button>
-              <h1 className="text-lg md:hidden font-bold text-black w-fit">
+              <h1 className="text-base md:hidden font-bold text-black">
                 {BRAND_NAME}
               </h1>
             </div>
-            
-            <div className="flex w-full justify-between items-center gap-4">
+
+            <div className="flex w-full justify-between items-center gap-3 md:gap-4">
               {/* Search Bar */}
               {searchBar}
-              
+
               {/* Notification and Profile */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 {/* Notification Bell */}
                 {showNotification && (
-                  <button className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
-                    <FiBell className="text-xl text-gray-600" />
+                  <button className="relative p-1.5 md:p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <FiBell className="text-lg md:text-xl text-gray-600" />
                     <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                   </button>
                 )}
-                
+
                 {/* Admin Profile */}
                 <div className="flex items-center px-2 py-1 rounded-xl bg-[#ECF6FE] gap-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600">
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600 shrink-0">
                     {organizationLogo ? (
                       <SmartImage
                         src={organizationLogo}
                         alt="Admin Avatar"
-                        width={32}
-                        height={32}
+                        width={28}
+                        height={28}
                         className="object-cover"
                         objectFit="cover"
                         fallbackSrc="/images/Ellipse 1.png"
@@ -540,32 +644,34 @@ export default function DashboardLayout({
           </header>
         ) : (
           // Standard Header
-          <header className="sticky top-0 z-30 bg-white h-20 flex items-center justify-between gap-4 px-4 md:px-6 border-b sm:border-b-2 border-[#A9A7A7]">
-            <h1 className="text-lg md:hidden font-bold text-black w-fit">
-              {BRAND_NAME}
-            </h1>
-            <h2 className="hidden md:block text-xl font-bold text-[#000000]">
-              {headerTitle}
-            </h2>
-            <div className="flex items-center space-x-4">
+          <header className="sticky top-0 z-30 bg-white h-14 md:h-20 flex items-center justify-between gap-4 px-4 md:px-6 border-b sm:border-b-2 border-[#A9A7A7]">
+            <div className="flex items-center gap-3">
+              <h1 className="text-base md:hidden font-bold text-black">
+                {BRAND_NAME}
+              </h1>
+              <h2 className="hidden md:block text-xl font-bold text-[#000000]">
+                {headerTitle}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 md:gap-4">
               {showDonateButton && (
                 <button className="hidden md:block bg-[var(--buttonPrimary)] text-white text-sm font-semibold px-6 py-2 rounded-xl transition-class cursor-pointer hover:opacity-90">
                   Donate
                 </button>
               )}
               {showNotification && (
-                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#ECF6FE]">
-                  <FiBell className="text-gray-600 text-xl cursor-pointer" />
+                <div className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-[#ECF6FE]">
+                  <FiBell className="text-lg md:text-xl text-gray-600 cursor-pointer" />
                 </div>
               )}
-              <div className="flex items-center px-2 py-1 rounded-xl gap-2 bg-[#ECF6FE] ">
-                <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600">
+              <div className="flex items-center px-2 py-1 rounded-xl gap-2 bg-[#ECF6FE]">
+                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center bg-linear-to-br from-blue-500 to-blue-600 shrink-0">
                   {organizationLogo ? (
                     <SmartImage
                       src={organizationLogo}
                       alt={`${displayUserType} Avatar`}
-                      width={32}
-                      height={32}
+                      width={28}
+                      height={28}
                       className="object-cover"
                       objectFit="cover"
                       fallbackSrc="/images/Ellipse 1.png"
@@ -581,9 +687,9 @@ export default function DashboardLayout({
               <button
                 title="Open Menu"
                 onClick={() => setIsMobileNavOpen(true)}
-                className="md:hidden cursor-pointer"
+                className="md:hidden cursor-pointer p-1"
               >
-                <FiMenu className="text-2xl text-gray-700" />
+                <FiMenu className="text-xl md:text-2xl text-gray-700" />
               </button>
             </div>
           </header>
@@ -602,12 +708,7 @@ export default function DashboardLayout({
         isLoading={isLoggingOut}
       />
 
-      {/* Session Expired Modal */}
-      <SessionExpiredModal
-        isOpen={isSessionExpiredModalOpen}
-        onClose={() => setIsSessionExpiredModalOpen(false)}
-        canRefresh={canRefreshSession}
-      />
+
     </div>
   );
 }

@@ -1,8 +1,17 @@
+import { requireRoleOrRedirect } from '@/lib/auth.server';
+
+async function VolunteerAuthWrapper({ children }: { children: React.ReactNode }) {
+  await requireRoleOrRedirect('volunteer');
+  return <>{children}</>;
+}
+
 export default function LegalSupportPage() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Legal & Support</h1>
-      <p className="text-gray-600 mt-2">Legal & Support page - UI to be built</p>
-    </div>
+    <VolunteerAuthWrapper>
+      <div className="p-6">
+        <h1 className="text-2xl font-bold">Legal & Support</h1>
+        <p className="text-gray-600 mt-2">Legal & Support page - UI to be built</p>
+      </div>
+    </VolunteerAuthWrapper>
   );
 }

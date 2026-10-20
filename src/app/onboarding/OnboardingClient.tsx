@@ -328,9 +328,11 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
       }
     } else if (accountType === "organization") {
       const orgData = (accountSpecificData.formData as OrganizationOnboardingData).orgData || {};
-      // Only populate if orgData has actual values (from successful API)
-      if (orgData.name) {
-        setFormData({
+      console.log('[OnboardingClient] Organization data:', orgData);
+      console.log('[OnboardingClient] Location data:', accountSpecificData.formData?.locationDto);
+      // Only populate if orgData has actual values (from successful API or login response)
+      if (orgData.name || accountSpecificData.formData?.locationDto?.countryName) {
+        const newFormData = {
           name: orgData.name || "",
           category: orgData.category || "",
           website: orgData.website || "",
@@ -345,7 +347,9 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           causes: orgData.causes || [],
           logo: orgData.logo || null,
           disclaimerAgreed: orgData.disclaimerAgreed || false,
-        });
+        };
+        console.log('[OnboardingClient] Setting organization form data:', newFormData);
+        setFormData(newFormData);
       }
     }
   }, [accountType, switchAccountType, volunteerData, organizationData]);

@@ -1,44 +1,15 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
-import { api } from "@/lib/api";
-import { ProgramApiResponse } from "@/types/api";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 // Sample data - will be replaced with API data
 
 export default function AdminDashboard() {
-  const [donationsFilter, setDonationsFilter] = useState("thisWeek");
   const [organizationsFilter, setOrganizationsFilter] = useState("thisWeek");
   const [volunteersFilter, setVolunteersFilter] = useState("thisWeek");
-  const [donationsDropdownOpen, setDonationsDropdownOpen] = useState(false);
   const [organizationsDropdownOpen, setOrganizationsDropdownOpen] = useState(false);
   const [volunteersDropdownOpen, setVolunteersDropdownOpen] = useState(false);
-  const [programs, setPrograms] = useState<ProgramApiResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchPrograms = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.programs.getAll();
-        
-        if (response.success && response.data) {
-          setPrograms(response.data as ProgramApiResponse[]);
-        } else {
-          setPrograms([]);
-        }
-      } catch (err) {
-        console.error('Error fetching programs:', err);
-        setPrograms([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPrograms();
-  }, []);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -108,14 +79,7 @@ export default function AdminDashboard() {
     { title: "Total Donations", value: "₦2,450,000", subtitle: "+12% from last month" },
     { title: "Active Volunteers", value: "1,234", subtitle: "+8% from last month" },
     { title: "Organizations", value: "89", subtitle: "+3 new this month" },
-    { title: "Programs", value: isLoading ? "..." : programs.length.toString(), subtitle: isLoading ? "..." : `Total programs` },
   ];
-
-  const donationsData = programs.slice(0, 5).map(program => ({
-    program: program.title || program.name || 'Unknown Program',
-    date: program.startDate ? new Date(program.startDate).toLocaleDateString() : 'N/A',
-    amount: program.donationTarget ? `₦${program.donationTarget.toLocaleString()}` : '₦0',
-  }));
 
   const topOrganizations = [
     "Green Earth Foundation",
@@ -167,25 +131,13 @@ export default function AdminDashboard() {
             {stat.subtitle && (
               <div className="text-xs sm:text-sm text-gray-500">{stat.subtitle}</div>
             )}
-            {/* Filter Button for Total Donations */}
-            {stat.title === "Total Donations" && (
-              <div className="mt-3 sm:mt-4">
-                <FilterDropdown
-                  value={donationsFilter}
-                  onChange={setDonationsFilter}
-                  isOpen={donationsDropdownOpen}
-                  setIsOpen={setDonationsDropdownOpen}
-                  options={filterOptions}
-                />
-              </div>
-            )}
           </motion.div>
         ))}
       </div>
 
       {/* Two Column Layout */}
       <div className="grid px-4  grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6 w-full">
-        {/* Recent Donations Table - Takes 2 columns on XL screens */}
+        {/* Recent Donations Placeholder */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -195,38 +147,8 @@ export default function AdminDashboard() {
           <div className="px-3 sm:px-4 lg:px-6 py-2 sm:py-4 border-b border-gray-200">
             <h3 className="text-sm sm:text-base lg:text-lg font-bold text-[#073B78] text-center truncate w-full">Recent Donations</h3>
           </div>
-          <div className="overflow-x-auto overflow-y-auto max-h-96 max-sm:max-w-[90vw]">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <LoadingSpinner size="xl" opacity={0.8} />
-              </div>
-            ) : donationsData.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 text-lg">No recent donations</div>
-              </div>
-            ) : (
-              <table className="w-full min-w-[500px] sm:min-w-[600px]">
-                <thead className="bg-[#0E68DC] border-b border-gray-200 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-sm font-semibold text-[#FFFFFF]   whitespace-nowrap">Program</th>
-                    <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-sm font-semibold text-[#FFFFFF]   whitespace-nowrap">Date</th>
-                    <th className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 text-left text-sm font-semibold text-[#FFFFFF]   whitespace-nowrap">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {donationsData.map((donation, index) => (
-                    <tr
-                      key={index}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm text-[#161616] whitespace-nowrap min-w-[120px] sm:min-w-[150px] max-w-[200px] sm:max-w-[250px]">{donation.program}</td>
-                      <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm text-[#161616] whitespace-nowrap min-w-[80px] sm:min-w-[100px]">{donation.date}</td>
-                      <td className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 text-xs sm:text-sm font-medium text-[#161616] whitespace-nowrap min-w-[80px] sm:min-w-[100px]">{donation.amount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-400 text-lg">Donations data coming soon</div>
           </div>
         </motion.div>
 

@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { AppButton } from "@/components/AppButton";
+import { ErrorState } from "@/components/ErrorState";
 import { getInterestsAction } from "@/app/actions/auth";
 import { Interest } from "@/types/api";
 import { VolunteerFormData } from "@/types";
 import { motion } from "framer-motion";
+import { FiAlertCircle } from "react-icons/fi";
 
 interface InterestAndCauseFormProps {
   formData: VolunteerFormData;
@@ -19,22 +21,24 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchInterests = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getInterestsAction();
-        if (result.success && result.data) {
-          setInterests(result.data);
-        } else {
-          setError(result.error || 'Failed to fetch interests');
-        }
-      } catch (err) {
-        setError('Failed to fetch interests');
-      } finally {
-        setIsLoading(false);
+  const fetchInterests = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await getInterestsAction();
+      if (result.success && result.data) {
+        setInterests(result.data);
+      } else {
+        setError(result.error || 'Failed to fetch interests');
       }
-    };
+    } catch {
+      setError('Failed to fetch interests');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchInterests();
   }, []);
 
@@ -81,9 +85,11 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
           <h2 className="text-2xl font-normal text-[#161616]">
             Interests and Causes
           </h2>
-          <p className="text-sm font-normal mt-1 text-red-500">
-            {error}
-          </p>
+          <ErrorState
+            message={error}
+            onRetry={fetchInterests}
+            icon={<FiAlertCircle className="text-4xl" />}
+          />
         </div>
       </form>
     );
