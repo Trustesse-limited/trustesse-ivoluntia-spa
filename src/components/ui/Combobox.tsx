@@ -17,6 +17,7 @@ interface ComboboxProps {
   className?: string;
   label?: string;
   required?: boolean;
+  disabled?: boolean;
 }
 
 export function Combobox({
@@ -27,6 +28,7 @@ export function Combobox({
   className = "",
   label,
   required = false,
+  disabled = false,
 }: ComboboxProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(value);
@@ -88,14 +90,16 @@ export function Combobox({
           type="text"
           value={inputValue}
           onChange={handleInputChange}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => !disabled && setIsOpen(true)}
           placeholder={placeholder}
-          className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200 pr-10"
+          disabled={disabled}
+          className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:border-[#42A5F5] focus:ring-2 focus:ring-[#42A5F5]/20 transition-all duration-200 pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <button
           type="button"
           onClick={handleToggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          disabled={disabled}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronsUpDown className="h-4 w-4" />
         </button>

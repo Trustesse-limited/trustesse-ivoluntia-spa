@@ -8,6 +8,7 @@ import { Interest } from "@/types/api";
 import { VolunteerFormData } from "@/types";
 import { motion } from "framer-motion";
 import { FiAlertCircle } from "react-icons/fi";
+import { useOnboardingStore } from "@/store";
 
 interface InterestAndCauseFormProps {
   formData: VolunteerFormData;
@@ -20,6 +21,7 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
   const [interests, setInterests] = useState<Interest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { updateFormData } = useOnboardingStore();
 
   const fetchInterests = async () => {
     setIsLoading(true);
@@ -42,15 +44,22 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
     fetchInterests();
   }, []);
 
+  // Sync selected state with formData.interests when formData changes
+  useEffect(() => {
+    setSelected(formData.interests || []);
+  }, [formData.interests]);
+
   const toggleInterest = (interest: string) => {
     const updated = selected.includes(interest)
       ? selected.filter((item) => item !== interest)
       : [...selected, interest];
     setSelected(updated);
     setFormData({ ...formData, interests: updated });
+    // Also update the store to persist the selection
+    updateFormData({ interest: { names: updated } } as any);
   };
 
-  const displayedInterests = showMore ? interests : interests.slice(0, 24);
+  const displayedInterests = showMore ? interests : interests.slice(0, 20);
 
   if (isLoading) {
     return (
@@ -108,12 +117,12 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
       </div>
 
       <div className="max-w-2xl mx-auto space-y-4">
-        <fieldset>
-          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181]">
+        <fieldset className="border-none p-0 m-0">
+          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181] block mb-2">
             (Select all that apply)
           </legend>
 
-          <div className="flex flex-wrap gap-3 justify-center mt-2">
+          <div className="flex flex-wrap gap-3 justify-center">
             {displayedInterests.map((interest) => {
               const isSelected = selected.includes(interest.name);
 
@@ -124,7 +133,7 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
                   variant="custom"
                   onClick={() => toggleInterest(interest.name)}
                   isLoading={false}
-                  className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px]  transition-colors duration-200 ${
+                  className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] h-9 transition-colors duration-200 ${
                     isSelected
                       ? "bg-blue-100 text-blue-700"
                       : "bg-[#F3F3F3] text-[#161616]"
@@ -159,17 +168,16 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
           </div>
         </fieldset>
 
-        {interests.length > 24 && (
+        {interests.length > 20 && (
           <div className="flex justify-center">
-            <AppButton
+            <button
               type="button"
               onClick={() => setShowMore((prev) => !prev)}
-              isLoading={false}
-              className="text-sm text-[#21537B] bg-transparent shadow-none font-medium hover:underline"
+              className="text-[14px] text-[#21537B] font-semibold hover:underline cursor-pointer bg-transparent border-none p-0"
               aria-expanded={showMore ? true : false}
             >
               {showMore ? "Show less" : "Show more"}
-            </AppButton>
+            </button>
           </div>
         )}
       </div>

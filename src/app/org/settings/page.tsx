@@ -13,8 +13,8 @@ import { FormField } from "@/components/ui/FormField";
 import { useAuthStore } from "@/store";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useActiveTab } from "@/hooks/useActiveTab";
-import { createLocationAction, getCountriesAction, getStatesAction } from "@/app/actions/auth";
-import type { FoundationProfile, CreateLocationRequest, Country, State } from "@/types/api";
+import { createLocationAction, getCountriesAction, getStatesAction, getQualificationsAction, createQualificationAction, updateQualificationAction, deleteQualificationAction } from "@/app/actions/auth";
+import type { FoundationProfile, CreateLocationRequest, Country, State, Qualification, CreateQualificationRequest } from "@/types/api";
 import {
   FiBriefcase,
   FiUsers,
@@ -26,13 +26,14 @@ import {
   FiAlertCircle
 } from "react-icons/fi";
 
-const SETTINGS_TAB_IDS = ['profile', 'causes', 'locations', 'settings'] as const;
+const SETTINGS_TAB_IDS = ['profile', 'causes', 'locations', 'qualifications', 'settings'] as const;
 type SettingsTab = (typeof SETTINGS_TAB_IDS)[number];
 
 const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'profile', label: 'Profile Information' },
   { id: 'causes', label: 'Causes' },
   { id: 'locations', label: 'Locations' },
+  { id: 'qualifications', label: 'Qualifications' },
   { id: 'settings', label: 'Account Settings' },
 ];
 
@@ -68,6 +69,19 @@ export default function OrganizationSettings() {
   const [states, setStates] = useState<State[]>([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(false);
   const [isLoadingStates, setIsLoadingStates] = useState(false);
+
+  // Qualifications state
+  const [qualifications, setQualifications] = useState<Qualification[]>([]);
+  const [isLoadingQualifications, setIsLoadingQualifications] = useState(false);
+  const [showAddQualification, setShowAddQualification] = useState(false);
+  const [isAddingQualification, setIsAddingQualification] = useState(false);
+  const [editingQualification, setEditingQualification] = useState<Qualification | null>(null);
+  const [newQualification, setNewQualification] = useState<CreateQualificationRequest>({
+    title: '',
+    supportingDocumentFormat: '',
+    supportingDocumentMaxSize: 0,
+    supportingDocumentFileSizeUnit: '',
+  });
 
   // Fetch countries on component mount
   useEffect(() => {
@@ -114,6 +128,24 @@ export default function OrganizationSettings() {
     };
     fetchStates();
   }, [selectedCountryId]);
+
+  // Fetch qualifications on component mount
+  useEffect(() => {
+    const fetchQualifications = async () => {
+      setIsLoadingQualifications(true);
+      try {
+        const result = await getQualificationsAction();
+        if (result.success && result.data) {
+          setQualifications(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch qualifications:', error);
+      } finally {
+        setIsLoadingQualifications(false);
+      }
+    };
+    fetchQualifications();
+  }, []);
 
   // Initialize default location from profile data
   useEffect(() => {
@@ -185,6 +217,94 @@ export default function OrganizationSettings() {
       ...user?.organizationProfile,
       locations: updatedLocations,
     });
+  };
+
+  const handleAddQualification = async () => {
+    if (!newQualification.title || !newQualification.supportingDocumentFormat) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setIsAddingQualification(true);
+    try {
+      const result = await createQualificationAction(newQualification);
+      if (result.success && result.data) {
+        setQualifications([...qualifications, result.data]);
+        setNewQualification({
+          title: '',
+          supportingDocumentFormat: '',
+          supportingDocumentMaxSize: 0,
+          supportingDocumentFileSizeUnit: '',
+        });
+        setShowAddQualification(false);
+      } else {
+        alert(result.error || 'Failed to add qualification');
+      }
+    } catch (error) {
+      console.error('Error adding qualification:', error);
+      alert('Failed to add qualification');
+    } finally {
+      setIsAddingQualification(false);
+    }
+  };
+
+  const handleUpdateQualification = async () => {
+    if (!editingQualification || !newQualification.title || !newQualification.supportingDocumentFormat) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setIsAddingQualification(true);
+    try {
+      const result = await updateQualificationAction(editingQualification.id, newQualification);
+      if (result.success && result.data) {
+        setQualifications(qualifications.map(q => q.id === editingQualification.id ? result.data! : q));
+        setEditingQualification(null);
+        setNewQualification({
+          title: '',
+          supportingDocumentFormat: '',
+          supportingDocumentMaxSize: 0,
+          supportingDocumentFileSizeUnit: '',
+        });
+        setShowAddQualification(false);
+      } else {
+        alert(result.error || 'Failed to update qualification');
+      }
+    } catch (error) {
+      console.error('Error updating qualification:', error);
+      alert('Failed to update qualification');
+    } finally {
+      setIsAddingQualification(false);
+    }
+  };
+
+  const handleDeleteQualification = async (qualificationId: string) => {
+    if (!confirm('Are you sure you want to delete this qualification?')) {
+      return;
+    }
+
+    try {
+      const result = await deleteQualificationAction(qualificationId);
+      if (result.success) {
+        setQualifications(qualifications.filter(q => q.id !== qualificationId));
+      } else {
+        alert(result.error || 'Failed to delete qualification');
+      }
+    } catch (error) {
+      console.error('Error deleting qualification:', error);
+      alert('Failed to delete qualification');
+    }
+  };
+
+  const handleEditQualification = (qualification: Qualification) => {
+    setEditingQualification(qualification);
+    setNewQualification({
+      title: qualification.title,
+      supportingDocumentFormat: qualification.supportingDocumentFormat,
+      supportingDocumentMaxSize: qualification.supportingDocumentMaxSize,
+      supportingDocumentFileSizeUnit: qualification.supportingDocumentFileSizeUnit,
+    });
+    setShowAddQualification(true);
   };
 
   useEffect(() => {
@@ -300,7 +420,7 @@ export default function OrganizationSettings() {
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-[var(--buttonPrimary)] rounded-2xl p-6 sm:p-8 text-white"
+        className="bg-(--buttonPrimary) rounded-2xl p-6 sm:p-8 text-white"
       >
         <div className="flex flex-col lg:flex-row items-center lg:items-center gap-6">
           {/* Profile Image */}
@@ -497,7 +617,7 @@ export default function OrganizationSettings() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 border border-blue-100 shadow-sm"
+                  className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 border border-blue-100 shadow-sm"
                 >
                   <h4 className="text-lg font-semibold text-gray-900 mb-6">Add New Location</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -626,6 +746,138 @@ export default function OrganizationSettings() {
             </motion.div>
           )}
 
+          {/* Qualifications Tab */}
+          {activeTab === 'qualifications' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Qualification Types</h3>
+                <AppButton
+                  text="Add Qualification"
+                  onClick={() => {
+                    setEditingQualification(null);
+                    setNewQualification({
+                      title: '',
+                      supportingDocumentFormat: '',
+                      supportingDocumentMaxSize: 0,
+                      supportingDocumentFileSizeUnit: '',
+                    });
+                    setShowAddQualification(true);
+                  }}
+                  className="py-2! px-4! text-sm!"
+                />
+              </div>
+
+              {showAddQualification && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 sm:p-8 border border-blue-100 shadow-sm"
+                >
+                  <h4 className="text-lg font-semibold text-gray-900 mb-6">
+                    {editingQualification ? 'Edit Qualification' : 'Add New Qualification'}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <FormInput
+                      label="Title"
+                      value={newQualification.title}
+                      onChange={(e) => setNewQualification(prev => ({...prev, title: e.target.value}))}
+                      placeholder="Enter qualification title"
+                    />
+                    <FormInput
+                      label="Document Format"
+                      value={newQualification.supportingDocumentFormat}
+                      onChange={(e) => setNewQualification(prev => ({...prev, supportingDocumentFormat: e.target.value}))}
+                      placeholder="e.g., PDF, JPG, PNG"
+                    />
+                    <FormInput
+                      label="Max File Size"
+                      type="number"
+                      value={newQualification.supportingDocumentMaxSize || ''}
+                      onChange={(e) => setNewQualification(prev => ({...prev, supportingDocumentMaxSize: Number(e.target.value)}))}
+                      placeholder="Enter max file size"
+                    />
+                    <FormInput
+                      label="File Size Unit"
+                      value={newQualification.supportingDocumentFileSizeUnit}
+                      onChange={(e) => setNewQualification(prev => ({...prev, supportingDocumentFileSizeUnit: e.target.value}))}
+                      placeholder="e.g., MB, KB"
+                    />
+                  </div>
+                  <div className="flex gap-3 justify-end pt-6">
+                    <AppButton
+                      text="Cancel"
+                      onClick={() => {
+                        setShowAddQualification(false);
+                        setEditingQualification(null);
+                        setNewQualification({
+                          title: '',
+                          supportingDocumentFormat: '',
+                          supportingDocumentMaxSize: 0,
+                          supportingDocumentFileSizeUnit: '',
+                        });
+                      }}
+                      variant="custom"
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2! px-6! text-sm! rounded-2xl!"
+                    />
+                    <AppButton
+                      text={isAddingQualification ? (editingQualification ? 'Updating...' : 'Adding...') : (editingQualification ? 'Update' : 'Add Qualification')}
+                      onClick={editingQualification ? handleUpdateQualification : handleAddQualification}
+                      isLoading={isAddingQualification}
+                      className="py-2! px-6! text-sm!"
+                    />
+                  </div>
+                </motion.div>
+              )}
+
+              <div className="space-y-4">
+                {isLoadingQualifications ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-2xl">
+                    <LoadingSpinner size="md" />
+                  </div>
+                ) : qualifications.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                    <div className="text-gray-400 text-lg mb-2">No qualifications added yet</div>
+                    <div className="text-gray-500 text-sm">Click Add Qualification to create one</div>
+                  </div>
+                ) : (
+                  qualifications.map((qualification) => (
+                    <motion.div
+                      key={qualification.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center justify-between p-4 sm:p-5 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900 mb-1">{qualification.title}</div>
+                        <div className="text-sm text-gray-600">
+                          Format: {qualification.supportingDocumentFormat} | Max Size: {qualification.supportingDocumentMaxSize} {qualification.supportingDocumentFileSizeUnit}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <AppButton
+                          text="Edit"
+                          onClick={() => handleEditQualification(qualification)}
+                          variant="custom"
+                          className="bg-blue-50 hover:bg-blue-100 text-blue-600 py-2! px-4! text-sm! rounded-2xl!"
+                        />
+                        <AppButton
+                          text="Delete"
+                          onClick={() => handleDeleteQualification(qualification.id)}
+                          variant="custom"
+                          className="bg-red-50 hover:bg-red-100 text-red-600 py-2! px-4! text-sm! rounded-2xl!"
+                        />
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {/* Account Settings Tab */}
           {activeTab === 'settings' && (
             <motion.div
@@ -648,7 +900,7 @@ export default function OrganizationSettings() {
                     <button
                       onClick={() => setAccountSettings(prev => ({...prev, twoFactorAuth: !prev.twoFactorAuth}))}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        accountSettings.twoFactorAuth ? 'bg-[var(--buttonPrimary)]' : 'bg-gray-200'
+                        accountSettings.twoFactorAuth ? 'bg-(--buttonPrimary)' : 'bg-gray-200'
                       }`}
                     >
                       <span

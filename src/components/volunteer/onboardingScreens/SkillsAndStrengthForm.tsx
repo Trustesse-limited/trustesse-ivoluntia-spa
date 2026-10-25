@@ -8,6 +8,7 @@ import { Skill } from "@/types/api";
 import { VolunteerFormData } from "@/types";
 import { motion } from "framer-motion";
 import { FiAlertCircle } from "react-icons/fi";
+import { useOnboardingStore } from "@/store";
 
 interface SkillsAndStrengthFormProps {
   formData: VolunteerFormData;
@@ -20,6 +21,7 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
   const [skills, setSkills] = useState<Skill[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { updateFormData } = useOnboardingStore();
 
   const fetchSkills = async () => {
     setIsLoading(true);
@@ -42,12 +44,19 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
     fetchSkills();
   }, []);
 
+  // Sync selected state with formData.skills when formData changes
+  useEffect(() => {
+    setSelected(formData.skills || []);
+  }, [formData.skills]);
+
   const toggleSkill = (skill: string) => {
     const updated = selected.includes(skill)
       ? selected.filter((item) => item !== skill)
       : [...selected, skill];
     setSelected(updated);
     setFormData({ ...formData, skills: updated });
+    // Also update the store to persist the selection
+    updateFormData({ skill: { names: updated } } as any);
   };
 
   const displayedSkills = showMore ? skills : skills.slice(0, 24);
@@ -111,12 +120,12 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
       </div>
 
       <div className="max-w-2xl mx-auto space-y-4">
-        <fieldset>
-          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181]">
+        <fieldset className="border-none p-0 m-0">
+          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181] block mb-2">
             (Select all that apply)
           </legend>
 
-          <div className="flex flex-wrap gap-3 justify-center mt-2">
+          <div className="flex flex-wrap gap-3 justify-center">
             {displayedSkills.map((skill) => {
               const isSelected = selected.includes(skill.name);
 
@@ -127,7 +136,7 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
                   variant="custom"
                   onClick={() => toggleSkill(skill.name)}
                   isLoading={false}
-                  className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] text-xs font-normal transition-colors duration-200 ${
+                  className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] h-9 text-xs font-normal transition-colors duration-200 ${
                     isSelected
                       ? "bg-blue-100 text-blue-700"
                       : "bg-[#F3F3F3] text-[#212121]"
@@ -142,7 +151,7 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
                   }`}>{skill.name}</span>
                   <motion.div
                     initial={false}
-                    animate={{ 
+                    animate={{
                       scale: isSelected ? [1, 0.8, 1] : [1, 0.8, 1],
                       rotate: isSelected ? [0, 180] : [180, 0]
                     }}
@@ -164,15 +173,14 @@ const SkillsAndStrengthForm: React.FC<SkillsAndStrengthFormProps> = ({ formData,
 
         {skills.length > 24 && (
           <div className="flex justify-center">
-            <AppButton
+            <button
               type="button"
               onClick={() => setShowMore((prev) => !prev)}
-              isLoading={false}
-              className="text-sm text-[#21537B] bg-transparent shadow-none font-medium hover:underline"
+              className="text-[14px] text-[#21537B] font-semibold hover:underline cursor-pointer bg-transparent border-none p-0"
               aria-expanded={showMore ? true : false}
             >
               {showMore ? "Show less" : "Show more"}
-            </AppButton>
+            </button>
           </div>
         )}
       </div>

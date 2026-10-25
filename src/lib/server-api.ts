@@ -43,6 +43,9 @@ import {
   LeaveProgramRequest,
   DeleteProgramGoalRequest,
   CreateLocationRequest,
+  Qualification,
+  CreateQualificationRequest,
+  UpdateQualificationRequest,
 } from '@/types/api';
 import {
   getServerAccessToken,
@@ -1347,15 +1350,96 @@ export async function uploadFile(file: File): Promise<string> {
 export async function getSkills(): Promise<Skill[]> {
   try {
     logger.log('[API] GET', API_ENDPOINTS.skill.getAll);
-    
+
     const response = await serverAxiosInstance.get<ApiResponse<Skill[]>>(
       API_ENDPOINTS.skill.getAll
     );
-    
+
     // logger.log('[API] Response Status:', response.status);
     // logger.log('[API] Response Data:', JSON.stringify(response.data, null, 2));
-    
+
     return response.data.data || [];
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Get all qualifications
+ * GET /api/Qualification
+ */
+export async function getQualifications(): Promise<Qualification[]> {
+  try {
+    logger.log('[API] GET', API_ENDPOINTS.qualification.getAll);
+
+    const response = await serverAxiosInstance.get<ApiResponse<Qualification[]>>(
+      API_ENDPOINTS.qualification.getAll
+    );
+
+    return response.data.data || [];
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Create qualification
+ * POST /api/Qualification/creation
+ */
+export async function createQualification(
+  data: CreateQualificationRequest
+): Promise<ApiResponse<Qualification>> {
+  try {
+    logger.log('[API] POST', API_ENDPOINTS.qualification.create);
+
+    const response = await serverAxiosInstance.post<ApiResponse<Qualification>>(
+      API_ENDPOINTS.qualification.create,
+      data
+    );
+
+    return response.data;
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Update qualification
+ * PUT /api/Qualification/{qualificationId}
+ */
+export async function updateQualification(
+  qualificationId: string,
+  data: UpdateQualificationRequest
+): Promise<ApiResponse<Qualification>> {
+  try {
+    logger.log('[API] PUT', API_ENDPOINTS.qualification.update(qualificationId));
+
+    const response = await serverAxiosInstance.put<ApiResponse<Qualification>>(
+      API_ENDPOINTS.qualification.update(qualificationId),
+      data
+    );
+
+    return response.data;
+  } catch (error) {
+    throw handleServerError(error);
+  }
+}
+
+/**
+ * Delete qualification
+ * DELETE /api/Qualification/{qualificationId}
+ */
+export async function deleteQualification(
+  qualificationId: string
+): Promise<ApiResponse<unknown>> {
+  try {
+    logger.log('[API] DELETE', API_ENDPOINTS.qualification.delete(qualificationId));
+
+    const response = await serverAxiosInstance.delete<ApiResponse<unknown>>(
+      API_ENDPOINTS.qualification.delete(qualificationId)
+    );
+
+    return response.data;
   } catch (error) {
     throw handleServerError(error);
   }

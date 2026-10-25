@@ -46,17 +46,6 @@ export default function ProgramCard({
     e.stopPropagation();
   };
 
-  const handleCardClick = (e?: React.MouseEvent | React.TouchEvent) => {
-    // Don't navigate if clicking on the favorite button or learn more button
-    if (e) {
-      const target = e.target as HTMLElement;
-      if (target.closest('button')) {
-        return;
-      }
-    }
-    router.push(`/home/programs/${program.id}`);
-  };
-
   const handleLearnMore = (e: React.MouseEvent) => {
     e.stopPropagation();
     router.push(`/home/programs/${program.id}`);
@@ -77,7 +66,7 @@ export default function ProgramCard({
   };
 
   return (
-    <RippleEffect onClick={handleCardClick} className="bg-white border border-black rounded-2xl p-4 hover:shadow-lg transition-shadow duration-300 cursor-pointer">
+    <RippleEffect className="bg-white border border-black rounded-2xl p-4 hover:shadow-lg transition-shadow duration-300">
       {/* Header with favourite button */}
       <div className="flex justify-between items-start mb-3">
         <h3 className="text-lg font-semibold text-black flex-1 mr-2">
@@ -158,7 +147,7 @@ export default function ProgramCard({
       <div className="flex justify-center">
         <button
           onClick={handleLearnMore}
-          className="px-6 py-2 border border-blue-500 text-blue-500 rounded-md hover:bg-blue-50 transition-colors font-medium text-sm"
+          className="px-6 py-2 border cursor-pointer border-blue-500 text-blue-500 rounded-md hover:bg-blue-50 transition-colors font-medium text-sm"
         >
           Learn More
         </button>
