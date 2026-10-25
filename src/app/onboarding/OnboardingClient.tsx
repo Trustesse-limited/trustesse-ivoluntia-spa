@@ -77,6 +77,7 @@ const steps: StepConfig[] = [
       position: "bottom-left",
       width: 425,
       height: 167,
+      className: "w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 xl:w-80 xl:h-80 2xl:w-96 2xl:h-96",
     },
   },
   {
@@ -88,7 +89,7 @@ const steps: StepConfig[] = [
       position: "bottom-left",
       width: 500,
       height: 183,
-      className: "md:w-1/3 lg:w-1/2",
+      className: "w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 xl:w-80 xl:h-80 2xl:w-96 2xl:h-96",
     },
   },
   {
@@ -169,7 +170,7 @@ const steps: StepConfig[] = [
       position: "bottom-center",
       width: 1038,
       height: 150,
-      className: "",
+      className: "w-full h-auto",
     },
   },
   {
@@ -181,7 +182,7 @@ const steps: StepConfig[] = [
       position: "bottom-center",
       width: 1038,
       height: 150,
-      className: "",
+      className: "w-full h-auto",
     },
   },
 ];
@@ -374,8 +375,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
                  (volunteerData.sex || "") !== "" &&
                  (volunteerData.dob || "") !== "";
         case "location":
-          return (volunteerData.address?.trim() || "") !== "" &&
-                 (volunteerData.city?.trim() || "") !== "" &&
+          return (volunteerData.city?.trim() || "") !== "" &&
                  (volunteerData.country?.trim() || "") !== "" &&
                  (volunteerData.state?.trim() || "") !== "";
         case "interest":
@@ -396,8 +396,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
                  (orgData.category?.trim() || "") !== "" &&
                  (orgData.mission?.trim() || "") !== "";
         case "orgLocation":
-          return (orgData.address?.trim() || "") !== "" &&
-                 (orgData.city?.trim() || "") !== "" &&
+          return (orgData.city?.trim() || "") !== "" &&
                  (orgData.country?.trim() || "") !== "" &&
                  (orgData.state?.trim() || "") !== "";
         case "causes":
@@ -528,7 +527,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'FoundationLocationDto.FoundationCountry': orgData.countryName,
           'FoundationLocationDto.FoundationState': orgData.state,
           'CauseDto.Names': orgData.causes || [],
-          'ProfileLogo.LogoUrl': orgData.logo || undefined,
+          'ProfileLogo.LogoUrl': orgData.logo || "https://ivoluntia.com/images/dummy-avatar.jpg",
           'Disclaimer.HasAgreedToDisclaimer': orgData.disclaimerAgreed || false,
         };
         apiResult = await organizationOnboarding(orgRequest);
@@ -685,7 +684,7 @@ const OnboardingContent: React.FC<OnboardingClientProps> = ({ accountTypeFromCoo
           'FoundationLocationDto.FoundationCountry': orgData.countryName,
           'FoundationLocationDto.FoundationState': orgData.state,
           'CauseDto.Names': orgData.causes || [],
-          'ProfileLogo.LogoUrl': orgData.logo || undefined,
+          'ProfileLogo.LogoUrl': orgData.logo || "https://ivoluntia.com/images/dummy-avatar.jpg",
           'Disclaimer.HasAgreedToDisclaimer': orgData.disclaimerAgreed || false,
         };
         await organizationOnboarding(orgRequest);

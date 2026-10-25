@@ -213,7 +213,7 @@ const LocationForm: React.FC<FormProps> = ({ formData, setFormData }) => {
 
           <div className="space-y-2">
             <Label htmlFor="zip" className="text-[#212121] font-normal text-sm">
-              Zip Code <span className="text-[#EF5350]">*</span>
+              Zip Code
             </Label>
             <Input
               id="zip"

@@ -166,7 +166,7 @@ export default function ProgramDetailPage() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-full px-4 sm:px-6 lg:px-8 pt-6 pb-10 space-y-4 bg-white text-black"
+        className="w-full max-w-full min-h-screen px-4 sm:px-6 lg:px-8 pt-6 pb-10 space-y-4 bg-white text-black"
       >
         <div className="flex items-center justify-start gap-4">
           <BackButton to="/org/programs" />
