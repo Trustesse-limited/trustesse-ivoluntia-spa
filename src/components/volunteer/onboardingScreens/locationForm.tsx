@@ -109,19 +109,19 @@ const LocationForm: React.FC<FormProps> = ({ formData, setFormData }) => {
   }, [states, formData.stateName, formData.state, formData.country, hasMatchedState]);
 
   return (
-    <form className="space-y-6 pb-16 sm:px-6 md:px-8 max-w-6xl mx-auto">
+    <form className="space-y-[2vh] pb-[4vh] sm:px-6 md:px-8 max-w-6xl mx-auto">
       <div className="mx-auto w-full text-center">
         <h2 className="text-2xl font-normal text-[#161616]">Location</h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           Let us know where you are so we can connect you with meaningful
           volunteer opportunities in your area.
         </p>
       </div>
 
-      <div className="max-w-3xl w-full mx-auto space-y-6">
+      <div className="max-w-3xl w-full mx-auto space-y-[2vh]">
         {/* Country + State */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-[2vh] gap-x-10">
+          <div className="space-y-[0.5vh]">
             <Label
               htmlFor="country"
               className="text-[#212121] font-normal text-sm"
@@ -159,7 +159,7 @@ const LocationForm: React.FC<FormProps> = ({ formData, setFormData }) => {
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-[0.5vh]">
             <Label
               htmlFor="state"
               className="text-[#212121] font-normal text-sm"
@@ -192,8 +192,8 @@ const LocationForm: React.FC<FormProps> = ({ formData, setFormData }) => {
         </div>
 
         {/* City + Zip Code */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-[2vh] gap-x-10">
+          <div className="space-y-[0.5vh]">
             <Label
               htmlFor="city"
               className="text-[#212121] font-normal text-sm"
@@ -211,9 +211,9 @@ const LocationForm: React.FC<FormProps> = ({ formData, setFormData }) => {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-[0.5vh]">
             <Label htmlFor="zip" className="text-[#212121] font-normal text-sm">
-              Zip Code <span className="text-[#EF5350]">*</span>
+              Zip Code
             </Label>
             <Input
               id="zip"

@@ -93,7 +93,7 @@ const OtpInput: React.FC<OtpInputProps> = ({ length = 6, onChangeOtp, onComplete
   onChange={e => handleChange(e, i)}
   onKeyDown={e => handleKeyDown(e, i)}
   onPaste={handlePaste}
-  className="sm:w-12 w-10  h-12 text-center border rounded-md text-xl  focus:outline-none focus:ring-2 mt-8  focus:ring-blue-500"
+  className="sm:w-12 w-10  h-12 text-center border rounded-md text-xl  focus:outline-none focus:ring-2  focus:ring-blue-500"
 />
 
       ))}

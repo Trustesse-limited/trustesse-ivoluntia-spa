@@ -38,18 +38,18 @@ const AboutOrgForm: React.FC<OrganizationFormProps> = ({ formData, setFormData }
   }, []);
 
   return (
-    <form className="space-y-6 max-w-6xl pb-8 mx-auto">
+    <form className="space-y-[2vh] max-w-6xl pb-[2vh] mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">
           About your Organization
         </h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           This helps volunteers understand your focus areas, values, and how
           they can contribute to your cause
         </p>
       </div>
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="space-y-2">
+      <div className="max-w-2xl mx-auto space-y-[2vh]">
+        <div className="space-y-[0.5vh]">
           <Label
             htmlFor="name"
             className="text-[#212121] font-normal text-sm"
@@ -68,7 +68,7 @@ const AboutOrgForm: React.FC<OrganizationFormProps> = ({ formData, setFormData }
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-[0.5vh]">
           <Label
             htmlFor="category"
             className="text-[#212121] font-normal text-sm"
@@ -109,7 +109,7 @@ const AboutOrgForm: React.FC<OrganizationFormProps> = ({ formData, setFormData }
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-[0.5vh]">
           <Label
             htmlFor="website"
             className="text-[#212121] font-normal text-sm"
@@ -127,7 +127,7 @@ const AboutOrgForm: React.FC<OrganizationFormProps> = ({ formData, setFormData }
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-[0.5vh]">
           <Label
             htmlFor="mission"
             className="text-[#212121] font-normal text-sm"

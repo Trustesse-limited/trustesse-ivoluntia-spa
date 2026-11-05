@@ -14,26 +14,26 @@ const SetupProfileForm: React.FC<ProfileFormProps> = ({
   setFormData,
 }) => {
   return (
-    <form className="space-y-6 max-w-6xl mx-auto pb-20">
+    <form className="space-y-[2vh] max-w-6xl mx-auto pb-[5vh]">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-semibold text-[#161616">
           Setup your profile{" "}
           <span className="font-bold text-[#818181] text-base">(Optional)</span>
         </h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           Upload a photo and write a short bio so we can introduce you to causes
           and opportunities that fit your personality and passion.
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-[2vh]">
         <ImageUpload
           label="Profile Photo"
           initialUrl={formData.photo as string}
           onChange={(url: string | null) => setFormData({ ...formData, photo: url })}
         />
 
-        <div className="space-y-2">
+        <div className="space-y-[0.5vh]">
           <Label htmlFor="bio" className="text-[#424242] font-medium text-sm">
             Bio
           </Label>

@@ -325,10 +325,10 @@ export default function VolunteerHomePage() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8"
+      className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-8"
     >
       {/* Welcome Header */}
-      <div className="mb-8">
+      <div className="mb-4 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
           Hello, {displayName}
         </h1>
