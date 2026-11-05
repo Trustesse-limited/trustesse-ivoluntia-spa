@@ -50,19 +50,19 @@ const SkillsAndStrengthForm: React.FC = () => {
   const displayedSkills = showMore ? allSkills : allSkills.slice(0, 24);
 
   return (
-    <form className="space-y-6 max-w-6xl pb-20 mx-auto">
+    <form className="space-y-[2vh] max-w-6xl pb-[5vh] mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">
           Skills and Strength
         </h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           {`Tell us what you're good at, and we’ll help you find the right place to use it for good.`}
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div className="max-w-2xl mx-auto space-y-[1vh]">
         <fieldset className="border-none p-0 m-0">
-          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181] block mb-2">
+          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181] block mb-[0.5vh]">
             (Select all that apply)
           </legend>
 

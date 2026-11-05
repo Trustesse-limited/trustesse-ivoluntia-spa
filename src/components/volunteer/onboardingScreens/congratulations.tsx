@@ -8,13 +8,13 @@ interface CongratulationsProps {
 
 export default function Congratulations({ onLaunch }: CongratulationsProps) {
     return (
-      <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-3 pb-20">
+      <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-[1vh] pb-[5vh]">
         <Image
           src={"/success.svg"}
           alt="success"
           height={200}
           width={200}
-          className="mb-2"
+          className="mb-[0.5vh]"
         />
         <b className="font-bold text-3xl md:text-4xl text-[#2C2C2C]">Congratulations</b>
         <p className="text-center font-semibold text-[#818181] text-base sm:text-lg">

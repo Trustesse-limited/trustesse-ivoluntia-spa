@@ -284,10 +284,10 @@ function VerifyContent() {
 
   return (
     <>
-    <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md px-6 sm:px-4 md:mx-auto mt-20 grow'>
-        <h1 className='text-xl sm:text-2xl md:text-3xl text-center font-medium sm:mt-16'>Verify email</h1>
-        <p className='text-sm text-[#424242] text-left pt-3'>
+    <div className='flex flex-col items-center w-full h-screen pt-[5vh] md:pt-[20vh] overflow-hidden'>
+      <div className='flex flex-col items-center w-full max-w-md px-6 sm:px-4 md:mx-auto shrink-0'>
+        <h1 className='text-xl sm:text-2xl md:text-3xl text-center font-medium mt-[3vh]'>Verify email</h1>
+        <p className='text-sm text-[#424242] text-left pt-[1.5vh]'>
           We sent an OTP code to {maskedEmail}. Please enter it below to continue
         </p>
 
@@ -296,7 +296,7 @@ function VerifyContent() {
           onChangeOtp={handleOtpChange}
           onComplete={handleVerify}
         />
-           <div className='w-full flex flex-col justify-center mt-9'>
+           <div className='w-full flex flex-col justify-center mt-[2vh]'>
           <AppButton
             text="Verify"
             onClick={handleVerify}
@@ -304,8 +304,8 @@ function VerifyContent() {
             isLoading={isVerifying}
           />
           </div>
-        <p className='text-sm font-light text-center pt-4 '>
-          Yet to receive? <span 
+        <p className='text-sm font-light text-center pt-[1.5vh] '>
+          Yet to receive? <span
             className={`font-medium ${canResend && !isResending ? 'text-[#319F43] cursor-pointer' : 'text-gray-400 cursor-not-allowed'}`}
             onClick={canResend && !isResending ? handleResendOtp : undefined}
           >
@@ -313,7 +313,9 @@ function VerifyContent() {
           </span>
         </p>
       </div>
-      <Image src='/bgframe.svg' alt='bgframe' width={1920} height={350}  className='w-full h-[25vh] object-contain pointer-events-none'/>
+      <div className='grow w-full flex items-end justify-center min-h-[25vh]'>
+        <Image src='/bgframe.svg' alt='bgframe' width={1920} height={350}  className='w-full h-auto max-h-[25vh] object-contain pointer-events-none'/>
+      </div>
     </div>
     </>
   );

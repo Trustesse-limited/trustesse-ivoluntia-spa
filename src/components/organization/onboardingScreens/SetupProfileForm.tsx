@@ -12,18 +12,18 @@ const SetupProfileForm: React.FC<LogoFormProps> = ({
   setFormData,
 }) => {
   return (
-    <form className="space-y-6 max-w-6xl mx-auto pb-20">
+    <form className="space-y-[2vh] max-w-6xl mx-auto pb-[5vh]">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">
           {`Upload Organization's logo`}{" "}
           <span className="font-normal text-[#818181] text-base">(optional)</span>
         </h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           This helps potential volunteers find you based on shared interests and values, making every collaboration more impactful.
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-[2vh]">
         <ImageUpload
           label="Organization Logo"
           initialUrl={formData.logo as string}

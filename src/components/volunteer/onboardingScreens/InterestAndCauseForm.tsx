@@ -63,17 +63,17 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
 
   if (isLoading) {
     return (
-      <form className="space-y-6 max-w-6xl pb-16 mx-auto">
+      <form className="space-y-[2vh] max-w-6xl pb-[4vh] mx-auto">
         <div className="mx-auto w-fit text-center">
           <h2 className="text-2xl font-normal text-[#161616]">
             Interests and Causes
           </h2>
-          <p className="text-sm font-normal mt-1 text-[#161616]">
+          <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
             Tell us what you care about most so we can connect you with volunteer
             opportunities that align with your passions and value.
           </p>
         </div>
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="max-w-2xl mx-auto space-y-[1vh]">
           <div className="flex flex-wrap justify-center gap-3">
             {[...Array(12)].map((_, i) => (
               <div
@@ -89,7 +89,7 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
 
   if (error) {
     return (
-      <form className="space-y-6 max-w-6xl pb-16 mx-auto">
+      <form className="space-y-[2vh] max-w-6xl pb-[4vh] mx-auto">
         <div className="mx-auto w-fit text-center">
           <h2 className="text-2xl font-normal text-[#161616]">
             Interests and Causes
@@ -105,20 +105,20 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
   }
 
   return (
-    <form className="space-y-6 max-w-6xl pb-16 mx-auto">
+    <form className="space-y-[2vh] max-w-6xl pb-[4vh] mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">
           Interests and Causes
         </h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           Tell us what you care about most so we can connect you with volunteer
           opportunities that align with your passions and value.
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div className="max-w-2xl mx-auto space-y-[1vh]">
         <fieldset className="border-none p-0 m-0">
-          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181] block mb-2">
+          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181] block mb-[0.5vh]">
             (Select all that apply)
           </legend>
 

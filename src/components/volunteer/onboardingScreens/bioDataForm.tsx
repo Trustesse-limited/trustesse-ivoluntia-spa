@@ -146,15 +146,15 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
   };
 
   return (
-    <form className="space-y-6 max-w-6xl pb-8 mx-auto">
+    <form className="space-y-[2vh] max-w-6xl pb-[2vh] mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">Bio Data</h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           This information helps us tailor your journey, connect you with the
           right resources, and ensure smooth integration into our community.
         </p>
       </div>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-[2vh]">
         <div className="space-y-2">
           <Label
             htmlFor="firstName"
@@ -216,7 +216,7 @@ const BioDataForm: React.FC<FormProps> = ({ formData, setFormData }) => {
           />
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 w-full">
+        <div className="flex flex-col md:flex-row gap-[1vh] w-full">
           {/* Sex Field */}
           <div className="flex-1 space-y-2">
             <Label htmlFor="sex" className="text-[#212121] font-normal text-sm">

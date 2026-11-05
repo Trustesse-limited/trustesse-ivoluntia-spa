@@ -148,11 +148,11 @@ const LoginPageClient = () => {
 
   return (
     <>
-    <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md mx-auto px-6 sm:px-4 flex-grow'>
-      <h1 className='md:text-[32px] text-xl sm:text-2xl text-center font-[600] sm:mt-16'>Welcome Back</h1>
+    <div className='flex flex-col items-center w-full h-screen pt-[5vh] overflow-hidden'>
+      <div className='flex flex-col items-center w-full max-w-md mx-auto px-6 sm:px-4 shrink-0'>
+      <h1 className='md:text-[32px] text-xl sm:text-2xl text-center font-semibold mt-[3vh]'>Welcome Back</h1>
       <p className='text-center text-sm sm:text-base'>Please enter your details</p>
-      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-6 mt-9 md:mx-auto'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[2vh] mt-[2vh] md:mx-auto'>
          <InputComponent
                   label="Email Address"
                   placeholder="Enter email address"
@@ -182,19 +182,21 @@ const LoginPageClient = () => {
          </div>
         <AppButton text='Sign In' type='submit' isLoading={isLoading} disabled={isLoading || !isFormValid} />
         </form>
-        <div className="flex items-center w-full max-w-md mt-4 mx-auto">
-        <div className="flex-grow border-t-2 border-black"></div>
+        <div className="flex items-center w-full max-w-md mt-[1.5vh] mx-auto">
+        <div className="grow border-t-2 border-black"></div>
         <span className="mx-3 text-black font-medium whitespace-nowrap">Or continue with</span>
-        <div className="flex-grow border-t-2 border-black"></div>
+        <div className="grow border-t-2 border-black"></div>
       </div>
       <SocialLogin icons={socialIcons}/>
-       <p className='text-center text-[16px] font-medium mt-4'>No Account yet?{" "}
+       <p className='text-center text-[16px] font-medium mt-[1.5vh]'>No Account yet?{" "}
        <span className='text-[#2C6EA3]'>
          <Link href="/" className="hover:underline">Sign Up</Link>
        </span>
        </p>
       </div>
-      <Image src='/pep.svg' alt='pep-svg'  width={1920} height={350} className='w-full h-[25vh] object-contain pointer-events-none' />
+      <div className='grow w-full flex items-end justify-center min-h-[25vh]'>
+        <Image src='/pep.svg' alt='pep-svg' width={1920} height={350} className='w-full h-auto max-h-[25vh] object-contain pointer-events-none' />
+      </div>
     </div>
   </>
   );

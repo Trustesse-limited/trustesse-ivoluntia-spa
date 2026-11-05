@@ -45,21 +45,21 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   const progress = totalSteps > 0 ? ((step + 1) / totalSteps) * 100 : 0;
 
   return (
-    <div className="flex items-center justify-center w-full h-screen p-4 overflow-hidden">
-      <div className="relative w-full h-full border-4 border-[#F0EEEE] rounded-[20px] p-4 overflow-hidden flex flex-col">
+    <div className="flex items-center justify-center w-full h-screen p-[1vh] overflow-hidden">
+      <div className="relative w-full h-full border-4 border-[#F0EEEE] rounded-[20px] p-[1vh] overflow-hidden flex flex-col">
         {/* Top Container: Header + Progress Bar */}
-        <div className="md:px-8 py-2 text-left shrink-0 relative">
-          <h1 className="text-2xl md:text-3xl font-semibold mb-1 text-[#212121]">
+        <div className="md:px-6 py-[1vh] text-left shrink-0 relative">
+          <h1 className="text-2xl md:text-3xl font-semibold mb-[0.5vh] text-[#212121]">
             {isOrg ? "Organization Onboarding" : "Volunteer Onboarding"}
           </h1>
-          <p className="text-[#2C2C2C] font-semibold text-sm mb-4">
+          <p className="text-[#2C2C2C] font-semibold text-sm mb-[1vh]">
             {isOrg
               ? "We are excited to help you find passionate volunteers and donors who align with your mission and vision"
               : "Your gateway to meaningful impact. Let's get to know you so we can match you with the right opportunities."}
           </p>
 
           {/* Continuous Progress Bar - Centered, under texts */}
-          <div className="pb-2">
+          <div className="pb-[0.5vh]">
             <div className="w-full bg-[#D9EDFD] h-2 rounded-full overflow-hidden">
               <div
                 className={`h-2 rounded-full transition-all duration-500 ${
@@ -71,11 +71,11 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
           </div>
 
           {/* Top fade indicator - at bottom of top container */}
-          <div className="absolute -bottom-8 left-0 right-0 h-8 bg-linear-to-b from-white via-white/95 to-transparent pointer-events-none z-10" />
+          <div className="hidden absolute -bottom-8 left-0 right-0 h-8 bg-linear-to-b from-white via-white/95 to-transparent pointer-events-none z-10" />
         </div>
 
         {/* Main Content with animation - Scrollable area with calculated height */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide relative">
+        <div className="flex-1 md:overflow-hidden overflow-y-auto scrollbar-hide relative">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -83,16 +83,16 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
-              className="min-h-full flex flex-col pt-4 md:px-8"
+              className="h-full flex flex-col pt-[1vh] md:px-6"
             >
               {/* Form Content */}
               <div className="flex-1">
                 {children}
               </div>
 
-              {/* Illustration - always at bottom of scrollable area */}
+              {/* Illustration - always at bottom, viewport-based height */}
               {illustration && (
-                <div className={`${illustration.position === 'bottom-center' ? 'self-center' : 'self-start'} ${illustration.className || 'w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 xl:w-56 xl:h-56 2xl:w-64 2xl:h-64'}`}>
+                <div className={`${illustration.position === 'bottom-center' ? 'self-center' : 'self-start'} h-[15vh] w-auto`}>
                   <Image
                     src={illustration.src}
                     alt="illustration"
@@ -109,7 +109,7 @@ const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
 
         {/* Floating Navigation Buttons - Fixed at bottom */}
         {step < totalSteps - 1 && !isCongratulations && (
-          <div className="absolute bottom-4 right-4 md:bottom-6 md:right-8 flex gap-2 sm:gap-4 z-20">
+          <div className="absolute bottom-[1vh] right-[1vh] md:bottom-[1.5vh] md:right-[2vh] flex gap-[0.5vh] sm:gap-[1vh] z-20">
             {step > 0 && (
               <Button
                 onClick={onBack}
