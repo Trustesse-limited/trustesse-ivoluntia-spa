@@ -26,13 +26,11 @@ export default function Illustration({
   className,
 }: IllustrationProps) {
   return (
-    <div className={`absolute bottom-4 ${positionClasses[position]} ${className}`}>
+    <div className={`absolute bottom-4 ${positionClasses[position]} ${className} w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48`}>
       <Image
         src={src}
         alt={alt}
-        width={width}
-              height={height}
-              layout="responsive"
+        fill
         className="object-contain"
         priority
       />

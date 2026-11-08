@@ -152,11 +152,11 @@ const Page = () => {
       };
   return (
     <>
-    <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md mx-auto px-6 sm:px-4 flex-grow'>
-      <h1 className='text-center md:text-[32px] text-xl sm:text-2xl font-semibold sm:mt-16'>Reset Password</h1>
+    <div className='flex flex-col items-center w-full h-screen pt-[5vh] md:pt-[20vh] overflow-hidden'>
+      <div className='flex flex-col items-center w-full max-w-md mx-auto px-6 sm:px-4 shrink-0'>
+      <h1 className='text-center md:text-[32px] text-xl sm:text-2xl font-semibold mt-[3vh]'>Reset Password</h1>
       <p className='text-center text-sm sm:text-base'>Enter your new password below</p>
-      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[24px] mt-9 mx-4 md:mx-auto'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md flex flex-col gap-[2vh] mt-[2vh] mx-4 md:mx-auto'>
         <div>
           <InputComponent
             label="New Password"
@@ -169,7 +169,7 @@ const Page = () => {
           />
           {passwordError && <p className='text-red-500 text-sm mt-1'>{passwordError}</p>}
         </div>
-        
+
         <div>
           <InputComponent
             label="Confirm Password"
@@ -185,7 +185,9 @@ const Page = () => {
         <AppButton text='Reset Password' type='submit' disabled={!isFormValid} isLoading={isLoading} />
       </form>
       </div>
-      <Image src='/resetbg.svg' alt='pep-svg'  width={1920} height={350} className='w-full h-[25vh] object-contain pointer-events-none' />
+      <div className='grow w-full flex items-end justify-center min-h-[25vh]'>
+        <Image src='/resetbg.svg' alt='pep-svg'  width={1920} height={350} className='w-full h-auto max-h-[25vh] object-contain pointer-events-none' />
+      </div>
     </div>
     </>
   )

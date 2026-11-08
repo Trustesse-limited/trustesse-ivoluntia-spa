@@ -88,9 +88,7 @@ export function validateLocationForm(formData: {
     errors.city = "City is required";
   }
 
-  if (!formData.zip.trim()) {
-    errors.zip = "ZIP code is required";
-  }
+  // Zip code is optional, so no validation for it
 
   if (!formData.country) {
     errors.country = "Country is required";
@@ -125,9 +123,7 @@ export function validateOrgAboutForm(formData: {
     errors.category = "Category is required";
   }
 
-  if (!formData.website.trim()) {
-    errors.website = "Website is required";
-  }
+  // Website is optional, so no validation for it
 
   if (!formData.mission.trim()) {
     errors.mission = "Mission is required";

@@ -76,32 +76,32 @@ export default function ProgramTable({
       <table className="min-w-full divide-y divide-gray-200 table-fixed">
         <thead className="bg-[#F7F7F7]">
           <tr>
-            <th className="w-[180px] px-4 py-3 text-left text-sm font-semibold text-[#818181] whitespace-nowrap">
+            <th className="w-45 px-4 py-3 text-left text-sm font-semibold text-[#818181] whitespace-nowrap">
               Program Name
             </th>
-            <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+            <th className="w-30 px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
               Start Date
             </th>
-            <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+            <th className="w-30 px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
               End Date
             </th>
-            <th className="w-[160px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+            <th className="w-40 px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
               Location
             </th>
-            <th className="w-[140px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+            <th className="w-35 px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
               Donation Target
             </th>
             {showStatus && (
-              <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+              <th className="w-30 px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
                 Status
               </th>
             )}
             {showProgress && (
-              <th className="w-[120px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+              <th className="w-30 px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
                 Progress
               </th>
             )}
-            <th className="w-[160px] px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
+            <th className="w-40 px-4 py-3 text-center text-sm font-semibold text-[#818181] whitespace-nowrap">
               Action
             </th>
           </tr>
@@ -110,38 +110,38 @@ export default function ProgramTable({
           {isLoading ? (
             [1, 2, 3].map((row) => (
               <tr key={row} className="bg-white">
-                <td className="w-[180px] px-4 py-2 whitespace-nowrap overflow-hidden">
+                <td className="w-45 px-4 py-2 whitespace-nowrap overflow-hidden">
                   <div
                     aria-hidden="true"
-                    className="h-4 w-full max-w-[140px] bg-shimmer animate-shimmer rounded-sm"
+                    className="h-4 w-full max-w-35 bg-shimmer animate-shimmer rounded-sm"
                   />
                 </td>
-                <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
-                  <div
-                    aria-hidden="true"
-                    className="h-4 w-[72px] mx-auto bg-shimmer animate-shimmer rounded-sm"
-                  />
-                </td>
-                <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                <td className="w-30 px-4 py-2 whitespace-nowrap text-center">
                   <div
                     aria-hidden="true"
                     className="h-4 w-[72px] mx-auto bg-shimmer animate-shimmer rounded-sm"
                   />
                 </td>
-                <td className="w-[160px] px-4 py-2 whitespace-nowrap text-center">
+                <td className="w-30 px-4 py-2 whitespace-nowrap text-center">
+                  <div
+                    aria-hidden="true"
+                    className="h-4 w-[72px] mx-auto bg-shimmer animate-shimmer rounded-sm"
+                  />
+                </td>
+                <td className="w-40 px-4 py-2 whitespace-nowrap text-center">
                   <div
                     aria-hidden="true"
                     className="h-4 w-[112px] mx-auto bg-shimmer animate-shimmer rounded-sm"
                   />
                 </td>
-                <td className="w-[140px] px-4 py-2 whitespace-nowrap text-center">
+                <td className="w-35 px-4 py-2 whitespace-nowrap text-center">
                   <div
                     aria-hidden="true"
                     className="h-4 w-[84px] mx-auto bg-shimmer animate-shimmer rounded-sm"
                   />
                 </td>
                 {showStatus && (
-                  <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                  <td className="w-30 px-4 py-2 whitespace-nowrap text-center">
                     <div
                       aria-hidden="true"
                       className="h-4 w-[60px] mx-auto bg-shimmer animate-shimmer rounded-sm"
@@ -149,7 +149,7 @@ export default function ProgramTable({
                   </td>
                 )}
                 {showProgress && (
-                  <td className="w-[120px] px-4 py-2 whitespace-nowrap text-center">
+                  <td className="w-30 px-4 py-2 whitespace-nowrap text-center">
                     <div aria-hidden="true" className="flex flex-col items-center gap-1">
                       <div
                         aria-hidden="true"
@@ -162,22 +162,22 @@ export default function ProgramTable({
                     </div>
                   </td>
                 )}
-                <td className="w-[160px] px-4 py-2 whitespace-nowrap text-center">
+                <td className="w-40 px-4 py-2 whitespace-nowrap text-center">
                   <div aria-hidden="true" className="flex justify-center gap-2">
                     <div
                       aria-hidden="true"
-                      className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-[6px]"
+                      className="h-8 w-30 bg-shimmer animate-shimmer rounded-[6px]"
                     />
                     {showEnrollButton && (
                       <div
                         aria-hidden="true"
-                        className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-[6px]"
+                        className="h-8 w-30 bg-shimmer animate-shimmer rounded-[6px]"
                       />
                     )}
                     {showCertificate && (
                       <div
                         aria-hidden="true"
-                        className="h-8 w-[120px] bg-shimmer animate-shimmer rounded-[6px]"
+                        className="h-8 w-30 bg-shimmer animate-shimmer rounded-[6px]"
                       />
                     )}
                   </div>
@@ -187,25 +187,25 @@ export default function ProgramTable({
           ) : (
             data.map((program, index) => (
               <tr key={index}>
-              <td className="w-[180px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap overflow-hidden">
+              <td className="w-45 px-4 py-2 text-sm text-[#818181] whitespace-nowrap overflow-hidden">
                 <span className="block truncate text-left w-50">
                   {program.title}
                 </span>
               </td>
-              <td className="w-[120px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
+              <td className="w-30 px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
                 {formatDate(program.startDate)}
               </td>
-              <td className="w-[120px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
+              <td className="w-30 px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
                 {formatDate(program.endDate)}
               </td>
-              <td className="w-[160px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
+              <td className="w-40 px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
                 {program.location}
               </td>
-              <td className="w-[140px] px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
+              <td className="w-35 px-4 py-2 text-sm text-[#818181] whitespace-nowrap text-center">
                 {formatNumberWithCommas(program.donationTarget)}
               </td>
               {showStatus && (
-                <td className="w-[120px] px-4 py-2 text-sm text-center font-semibold whitespace-nowrap">
+                <td className="w-30 px-4 py-2 text-sm text-center font-semibold whitespace-nowrap">
                   <span
                     className={
                       program.status === "completed"
@@ -224,7 +224,7 @@ export default function ProgramTable({
                 </td>
               )}
               {showProgress && (
-                <td className="w-[120px] px-4 py-2 text-sm text-center whitespace-nowrap">
+                <td className="w-30 px-4 py-2 text-sm text-center whitespace-nowrap">
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-[#0E68DC] h-2 rounded-full transition-all duration-300"
@@ -236,12 +236,12 @@ export default function ProgramTable({
                   </span>
                 </td>
               )}
-              <td className="w-[160px] px-4 py-2 whitespace-nowrap text-center space-x-2">
+              <td className="w-40 px-4 py-2 whitespace-nowrap text-center space-x-2">
                 <button
                   onClick={() =>
                     onViewDetails
                       ? onViewDetails(program, index)
-                      : router.push(`/programs/${index}`)
+                      : router.push(`/programs/${program.id}`)
                   }
                   className="px-4 py-2 text-sm bg-[#0E68DC] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer"
                 >
@@ -265,7 +265,7 @@ export default function ProgramTable({
                 )}
                 {showCertificate && program.status === "completed" && (
                   <button
-                    onClick={() => router.push(`/programs/${index}/certificate`)}
+                    onClick={() => router.push(`/programs/${program.id}/certificate`)}
                     className="px-4 py-2 text-sm bg-[#9C27B0] text-white rounded-[6px] hover:opacity-90 transition-class cursor-pointer"
                   >
                     Certificate

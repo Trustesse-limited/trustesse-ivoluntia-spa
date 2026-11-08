@@ -4,16 +4,16 @@ import { Label } from "@/components/ui/label";
 
 const Disclaimer: React.FC<OrganizationFormProps> = ({ formData, setFormData }) => {
   return (
-    <form className="space-y-6 max-w-6xl pb-32 mx-auto">
+    <form className="space-y-[2vh] max-w-6xl pb-[8vh] mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">Disclaimer</h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           {`We encourage you to take time to review this disclaimer. By registering, your organization agrees to;`}
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-6">
-        <ul className="space-y-3 list-disc list-inside text-sm text-[#212121]">
+      <div className="max-w-2xl mx-auto space-y-[2vh]">
+        <ul className="space-y-[1vh] list-disc list-inside text-sm text-[#212121]">
           <li className="font-semibold">
             Manage donations transparently and use funds solely for declared causes.
           </li>
@@ -31,7 +31,7 @@ const Disclaimer: React.FC<OrganizationFormProps> = ({ formData, setFormData }) 
           </li>
         </ul>
 
-        <div className="flex items-center gap-2 pt-4">
+        <div className="flex items-center gap-2 pt-[1vh]">
           <input
             type="checkbox"
             id="disclaimerAgreed"

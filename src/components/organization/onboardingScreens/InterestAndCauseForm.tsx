@@ -8,6 +8,7 @@ import { getCausesAction } from "@/app/actions/auth";
 import { Cause } from "@/types/api";
 import { motion } from "framer-motion";
 import { FiAlertCircle } from "react-icons/fi";
+import { useOnboardingStore } from "@/store";
 
 const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFormData }) => {
   const [selected, setSelected] = useState<string[]>(formData.causes || []);
@@ -15,6 +16,7 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
   const [causes, setCauses] = useState<Cause[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { updateFormData } = useOnboardingStore();
 
   const fetchCauses = async () => {
     setIsLoading(true);
@@ -37,33 +39,40 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
     fetchCauses();
   }, []);
 
+  // Sync selected state with formData.causes when formData changes
+  useEffect(() => {
+    setSelected(formData.causes || []);
+  }, [formData.causes]);
+
   const toggleInterest = (interest: string) => {
     const updated = selected.includes(interest)
       ? selected.filter((item) => item !== interest)
       : [...selected, interest];
     setSelected(updated);
     setFormData({ ...formData, causes: updated });
+    // Also update the store to persist the selection
+    updateFormData({ orgData: { causes: updated } } as any);
   };
 
-  const displayedCauses = showMore ? causes : causes.slice(0, 24);
+  const displayedCauses = showMore ? causes : causes.slice(0, 20);
 
   if (isLoading) {
     return (
-      <form className="space-y-6 max-w-6xl pb-16 mx-auto">
+      <form className="space-y-[2vh] max-w-6xl pb-[4vh] mx-auto">
         <div className="mx-auto w-fit text-center">
           <h2 className="text-2xl font-normal text-[#161616]">
             Causes you support
           </h2>
-          <p className="text-sm font-normal mt-1 text-[#161616]">
+          <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
             This helps potential volunteers find you based on shared interests and values, making every collaboration more impactful.
           </p>
         </div>
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="max-w-2xl mx-auto space-y-[1vh]">
           <fieldset>
             <legend className="text-xs w-fit mx-auto font-semibold text-[#818181]">
               (Select all that apply)
             </legend>
-            <div className="flex flex-wrap gap-3 justify-center mt-2">
+            <div className="flex flex-wrap gap-3 justify-center mt-[0.5vh]">
               {[...Array(12)].map((_, i) => (
                 <div
                   key={i}
@@ -79,7 +88,7 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
 
   if (error) {
     return (
-      <form className="space-y-6 max-w-6xl pb-16 mx-auto">
+      <form className="space-y-[2vh] max-w-6xl pb-[4vh] mx-auto">
         <div className="mx-auto w-fit text-center">
           <h2 className="text-2xl font-normal text-[#161616]">
             Causes you support
@@ -95,23 +104,23 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
   }
 
   return (
-    <form className="space-y-6 max-w-6xl pb-16 mx-auto">
+    <form className="space-y-[2vh] max-w-6xl pb-[4vh] mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">
           Causes you support
         </h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           This helps potential volunteers find you based on shared interests and values, making every collaboration more impactful.
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-4">
-        <fieldset>
-          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181]">
+      <div className="max-w-2xl mx-auto space-y-[1vh]">
+        <fieldset className="border-none p-0 m-0">
+          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181] block mb-[0.5vh]">
             (Select all that apply)
           </legend>
 
-          <div className="flex flex-wrap gap-3 justify-center mt-2">
+          <div className="flex flex-wrap gap-3 justify-center">
             {displayedCauses.map((cause) => {
               const isSelected = selected.includes(cause.name);
 
@@ -122,7 +131,7 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
                   variant="custom"
                   onClick={() => toggleInterest(cause.name)}
                   isLoading={false}
-                  className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] text-xs font-normal transition-colors duration-200 ${
+                  className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] h-9 text-xs font-normal transition-colors duration-200 ${
                     isSelected
                       ? "bg-blue-100 text-blue-700"
                       : "bg-[#F3F3F3] text-[#212121]"
@@ -137,7 +146,7 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
                   }`}>{cause.name}</span>
                   <motion.div
                     initial={false}
-                    animate={{ 
+                    animate={{
                       scale: isSelected ? [1, 0.8, 1] : [1, 0.8, 1],
                       rotate: isSelected ? [0, 180] : [180, 0]
                     }}
@@ -157,17 +166,16 @@ const InterestAndCauseForm: React.FC<OrganizationFormProps> = ({ formData, setFo
           </div>
         </fieldset>
 
-        {causes.length > 24 && (
+        {causes.length > 20 && (
           <div className="flex justify-center">
-            <AppButton
+            <button
               type="button"
               onClick={() => setShowMore((prev) => !prev)}
-              isLoading={false}
-              className="text-sm text-[#21537B] bg-transparent shadow-none font-medium hover:underline"
+              className="text-[14px] text-[#21537B] font-semibold hover:underline cursor-pointer bg-transparent border-none p-0"
               aria-expanded={showMore ? true : false}
             >
               {showMore ? "Show less" : "Show more"}
-            </AppButton>
+            </button>
           </div>
         )}
       </div>

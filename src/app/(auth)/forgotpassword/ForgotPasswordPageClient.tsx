@@ -50,11 +50,11 @@ const ForgotPasswordPageClient = () => {
 
   return (
     <>
-    <div className='flex flex-col items-center w-full min-h-screen pt-20'>
-      <div className='flex flex-col items-center w-full max-w-md px-6 sm:px-4 md:mx-auto mt-20 grow'>
-        <h1 className='text-center md:text-[32px] text-xl sm:text-2xl font-semibold sm:mt-16'>Forgot Password?</h1>
+    <div className='flex flex-col items-center w-full h-screen pt-[5vh] md:pt-[20vh] overflow-hidden'>
+      <div className='flex flex-col items-center w-full max-w-md px-6 sm:px-4 md:mx-auto shrink-0'>
+        <h1 className='text-center md:text-[32px] text-xl sm:text-2xl font-semibold mt-[3vh]'>Forgot Password?</h1>
         <p className='text-center text-sm sm:text-base'>Don&apos;t worry, we will send you a reset code</p>
-        <form onSubmit={handleEmailSubmit} className='w-full max-w-md flex flex-col gap-6 mt-9 md:mx-auto'>
+        <form onSubmit={handleEmailSubmit} className='w-full max-w-md flex flex-col gap-[2vh] mt-[2vh] md:mx-auto'>
           <InputComponent
             label="Email Address"
             placeholder="Enter email address"
@@ -67,7 +67,9 @@ const ForgotPasswordPageClient = () => {
           <AppButton text="Send OTP" type='submit' isLoading={isLoading} disabled={isLoading || !isEmailValid} />
         </form>
       </div>
-      <Image src='/passwordbg.svg' alt='pep-svg'  width={1920} height={350} className='w-full h-[25vh] object-contain pointer-events-none' />
+      <div className='grow w-full flex items-end justify-center min-h-[25vh]'>
+        <Image src='/passwordbg.svg' alt='pep-svg'  width={1920} height={350} className='w-full h-auto max-h-[25vh] object-contain pointer-events-none' />
+      </div>
     </div>
     </>
   )

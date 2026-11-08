@@ -29,7 +29,7 @@ export default function RootLayout({
     <html lang="en" className={openSans.variable}>
       <body className="antialiased font-sans">
         <AuthProvider>
-          <div className="font-openSans min-h-screen flex flex-col justify-start items-center relative w-full">
+          <div className="font-openSans flex flex-col justify-start items-center relative w-full">
             <SessionProvider>{children}</SessionProvider>
           </div>
         </AuthProvider>

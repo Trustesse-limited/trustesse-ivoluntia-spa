@@ -32,19 +32,21 @@ export default function ProgramDetailPage() {
         const response = await getProgramByIdAction(Array.isArray(id) ? id[0] : id);
         
         if (response.success && response.data) {
-          const programData = response.data as ProgramApiResponse;
+          // API returns an array, take the first item
+          const dataArray = Array.isArray(response.data) ? response.data : [response.data];
+          const programData = dataArray[0] as ProgramApiResponse;
           const mappedProgram: ProgramItem = {
             id: programData.id || (Array.isArray(id) ? id[0] : id),
             title: programData.title || programData.name || '',
             startDate: programData.startDate || '',
             endDate: programData.endDate || '',
-            location: formatProgramLocation(programData.location || programData.city),
+            location: formatProgramLocation(programData.location),
             donationTarget: programData.donationTarget || programData.targetAmount || 0,
             raised: programData.raised || programData.raisedAmount || 0,
-            category: programData.category || programData.foundationCategory || '',
+            category: programData.cause?.name || programData.category || programData.foundationCategory || '',
             goals: programData.goals || '',
             description: programData.description || programData.mission || '',
-            image: programData.image || programData.logo || '',
+            image: programData.bannerImage || programData.image || programData.logo || '',
             volunteers: programData.volunteers || 0,
             status: normalizeProgramStatus(programData.status),
             organization: programData.organization || programData.organizationName || '',
@@ -92,15 +94,17 @@ export default function ProgramDetailPage() {
 
   if (!program) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Program Not Found
-          </h2>
-          <p className="text-gray-600 mb-4">
-            The program you&apos;re looking for doesn&apos;t exist.
-          </p>
-          <BackButton to="/home" />
+      <div className="px-4 sm:px-6 lg:px-8 pt-6">
+        <BackButton to="/home" />
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Program Not Found
+            </h2>
+            <p className="text-gray-600">
+              The program you&apos;re looking for doesn&apos;t exist.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -186,7 +190,7 @@ export default function ProgramDetailPage() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="w-full max-w-full px-4 sm:px-6 lg:px-8 pt-6 pb-10 space-y-4 bg-white text-black"
+      className="w-full max-w-full min-h-screen px-4 sm:px-6 lg:px-8 pt-6 pb-10 space-y-4 bg-white text-black"
     >
       <div className="flex items-center justify-start gap-4">
         <BackButton to="/home" />
@@ -263,11 +267,14 @@ export default function ProgramDetailPage() {
       <div className="space-y-2">
         <h3 className="text-lg font-bold">Goals</h3>
         {programGoals.length > 0 ? (
-          <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
             {programGoals.map((goal, index) => (
-              <div key={goal.id || index} className="bg-gray-50 p-3 rounded-lg">
-                <span className="text-sm">{goal.goal}</span>
-              </div>
+              <span
+                key={goal.id || index}
+                className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#0E68DC]/10 border border-[#0E68DC]/20 text-[#0E68DC] text-xs font-medium"
+              >
+                {goal.goal}
+              </span>
             ))}
           </div>
         ) : (
@@ -283,14 +290,14 @@ export default function ProgramDetailPage() {
           text="Join Program"
           onClick={handleJoin}
           disabled={isJoining}
-          className="py-3! px-8! rounded-xl! text-base! font-medium!"
+          className="text-sm! py-2! px-4!"
         />
         <AppButton
           text="Leave Program"
           onClick={handleLeave}
           disabled={isLeaving}
           variant="outline"
-          className="py-3! px-8! rounded-xl! text-base! font-medium!"
+          className="text-sm! py-2! px-4!"
         />
       </div>
     </motion.section>

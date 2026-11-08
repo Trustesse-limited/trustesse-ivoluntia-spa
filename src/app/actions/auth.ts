@@ -40,6 +40,10 @@ import {
   removeFavoriteProgram,
   getAllFavoritePrograms,
   getOrganizations,
+  getQualifications,
+  createQualification,
+  updateQualification,
+  deleteQualification,
 } from '@/lib/server-api';
 import { refreshToken } from '@/lib/server-api';
 import {
@@ -67,6 +71,9 @@ import {
   UpdateProgramRequest,
   UpdateProgramStatusRequest,
   CreateLocationRequest,
+  Qualification,
+  CreateQualificationRequest,
+  UpdateQualificationRequest,
   ProgramsPagination,
 } from '@/types/api';
 import { cookies } from 'next/headers';
@@ -1960,6 +1967,111 @@ export async function getSkillsAction(): Promise<{
 }
 
 /**
+ * Server Action to Get All Qualifications
+ * This can be called from client components but executes on the server
+ * GET /api/Qualification
+ */
+export async function getQualificationsAction(): Promise<{
+  success: boolean;
+  data?: Qualification[];
+  error?: string;
+}> {
+  try {
+    const qualifications = await getQualifications();
+
+    return {
+      success: true,
+      data: qualifications,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to fetch qualifications',
+    };
+  }
+}
+
+/**
+ * Server Action to Create Qualification
+ * This can be called from client components but executes on the server
+ * POST /api/Qualification/creation
+ */
+export async function createQualificationAction(data: CreateQualificationRequest): Promise<{
+  success: boolean;
+  data?: Qualification;
+  error?: string;
+}> {
+  try {
+    const qualification = await createQualification(data);
+
+    return {
+      success: true,
+      data: qualification.data,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to create qualification',
+    };
+  }
+}
+
+/**
+ * Server Action to Update Qualification
+ * This can be called from client components but executes on the server
+ * PUT /api/Qualification/{qualificationId}
+ */
+export async function updateQualificationAction(
+  qualificationId: string,
+  data: UpdateQualificationRequest
+): Promise<{
+  success: boolean;
+  data?: Qualification;
+  error?: string;
+}> {
+  try {
+    const qualification = await updateQualification(qualificationId, data);
+
+    return {
+      success: true,
+      data: qualification.data,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to update qualification',
+    };
+  }
+}
+
+/**
+ * Server Action to Delete Qualification
+ * This can be called from client components but executes on the server
+ * DELETE /api/Qualification/{qualificationId}
+ */
+export async function deleteQualificationAction(qualificationId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    await deleteQualification(qualificationId);
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    const apiError = error as ApiError;
+    return {
+      success: false,
+      error: apiError.message || 'Failed to delete qualification',
+    };
+  }
+}
+
+/**
  * Server Action to Get All Categories
  * This can be called from client components but executes on the server
  * GET /api/Category/get-all-category
@@ -2067,7 +2179,7 @@ export async function getProgramsAction(params?: {
     const response = await getPrograms(
       Object.keys(query).length > 0 ? query : undefined
     );
-    logger.log('[GET PROGRAMS ACTION] API Response:', response);
+    logger.log('[GET PROGRAMS ACTION] API Response:', JSON.stringify(response, null, 2));
 
     const parsed = parseProgramsResponse(response);
 

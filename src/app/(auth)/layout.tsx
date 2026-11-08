@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const backTo = pathname === "/login" ? "/" : undefined;
 
   return (
-    <div className='font-openSans min-h-screen relative w-full py-8'>
+    <div className='font-openSans relative w-full h-screen overflow-hidden'>
       <div className="absolute top-0 left-0 z-20 p-4 sm:p-6 md:p-8">
         <BackButton to={backTo} />
       </div>

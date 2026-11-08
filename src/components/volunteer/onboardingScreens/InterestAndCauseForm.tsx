@@ -8,6 +8,7 @@ import { Interest } from "@/types/api";
 import { VolunteerFormData } from "@/types";
 import { motion } from "framer-motion";
 import { FiAlertCircle } from "react-icons/fi";
+import { useOnboardingStore } from "@/store";
 
 interface InterestAndCauseFormProps {
   formData: VolunteerFormData;
@@ -20,6 +21,7 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
   const [interests, setInterests] = useState<Interest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { updateFormData } = useOnboardingStore();
 
   const fetchInterests = async () => {
     setIsLoading(true);
@@ -42,29 +44,36 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
     fetchInterests();
   }, []);
 
+  // Sync selected state with formData.interests when formData changes
+  useEffect(() => {
+    setSelected(formData.interests || []);
+  }, [formData.interests]);
+
   const toggleInterest = (interest: string) => {
     const updated = selected.includes(interest)
       ? selected.filter((item) => item !== interest)
       : [...selected, interest];
     setSelected(updated);
     setFormData({ ...formData, interests: updated });
+    // Also update the store to persist the selection
+    updateFormData({ interest: { names: updated } } as any);
   };
 
-  const displayedInterests = showMore ? interests : interests.slice(0, 24);
+  const displayedInterests = showMore ? interests : interests.slice(0, 20);
 
   if (isLoading) {
     return (
-      <form className="space-y-6 max-w-6xl pb-16 mx-auto">
+      <form className="space-y-[2vh] max-w-6xl pb-[4vh] mx-auto">
         <div className="mx-auto w-fit text-center">
           <h2 className="text-2xl font-normal text-[#161616]">
             Interests and Causes
           </h2>
-          <p className="text-sm font-normal mt-1 text-[#161616]">
+          <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
             Tell us what you care about most so we can connect you with volunteer
             opportunities that align with your passions and value.
           </p>
         </div>
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="max-w-2xl mx-auto space-y-[1vh]">
           <div className="flex flex-wrap justify-center gap-3">
             {[...Array(12)].map((_, i) => (
               <div
@@ -80,7 +89,7 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
 
   if (error) {
     return (
-      <form className="space-y-6 max-w-6xl pb-16 mx-auto">
+      <form className="space-y-[2vh] max-w-6xl pb-[4vh] mx-auto">
         <div className="mx-auto w-fit text-center">
           <h2 className="text-2xl font-normal text-[#161616]">
             Interests and Causes
@@ -96,24 +105,24 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
   }
 
   return (
-    <form className="space-y-6 max-w-6xl pb-16 mx-auto">
+    <form className="space-y-[2vh] max-w-6xl pb-[4vh] mx-auto">
       <div className="mx-auto w-fit text-center">
         <h2 className="text-2xl font-normal text-[#161616]">
           Interests and Causes
         </h2>
-        <p className="text-sm font-normal mt-1 text-[#161616]">
+        <p className="text-sm font-normal mt-[0.25vh] text-[#161616]">
           Tell us what you care about most so we can connect you with volunteer
           opportunities that align with your passions and value.
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-4">
-        <fieldset>
-          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181]">
+      <div className="max-w-2xl mx-auto space-y-[1vh]">
+        <fieldset className="border-none p-0 m-0">
+          <legend className="text-xs w-fit mx-auto font-semibold text-[#818181] block mb-[0.5vh]">
             (Select all that apply)
           </legend>
 
-          <div className="flex flex-wrap gap-3 justify-center mt-2">
+          <div className="flex flex-wrap gap-3 justify-center">
             {displayedInterests.map((interest) => {
               const isSelected = selected.includes(interest.name);
 
@@ -124,7 +133,7 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
                   variant="custom"
                   onClick={() => toggleInterest(interest.name)}
                   isLoading={false}
-                  className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px]  transition-colors duration-200 ${
+                  className={`flex items-center justify-center cursor-pointer gap-2 px-3 py-1.5 rounded-[6px] h-9 transition-colors duration-200 ${
                     isSelected
                       ? "bg-blue-100 text-blue-700"
                       : "bg-[#F3F3F3] text-[#161616]"
@@ -159,17 +168,16 @@ const InterestAndCauseForm: React.FC<InterestAndCauseFormProps> = ({ formData, s
           </div>
         </fieldset>
 
-        {interests.length > 24 && (
+        {interests.length > 20 && (
           <div className="flex justify-center">
-            <AppButton
+            <button
               type="button"
               onClick={() => setShowMore((prev) => !prev)}
-              isLoading={false}
-              className="text-sm text-[#21537B] bg-transparent shadow-none font-medium hover:underline"
+              className="text-[14px] text-[#21537B] font-semibold hover:underline cursor-pointer bg-transparent border-none p-0"
               aria-expanded={showMore ? true : false}
             >
               {showMore ? "Show less" : "Show more"}
-            </AppButton>
+            </button>
           </div>
         )}
       </div>
