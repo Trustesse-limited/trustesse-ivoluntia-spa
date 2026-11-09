@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { Open_Sans } from "next/font/google";
 import "./globals.css";
-import { BRAND_NAME } from "./data";
+import { BRAND_NAME } from "../../constants";
+import { Toaster } from "@/components/Toaster";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { SessionProvider } from "@/components/SessionProvider";
+import CookieConsent from "@/components/CookieConsent";
+import OnboardingProgress from "@/components/OnboardingProgress";
 
 const openSans = Open_Sans({
   subsets: ["latin"],
@@ -23,9 +28,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={openSans.variable}>
       <body className="antialiased font-sans">
-        <div className="max-w-[1538px] font-openSans min-h-screen flex flex-col justify-start items-center relative  px-2  w-[100%]">
-          {children}
-        </div>
+        <AuthProvider>
+          <div className="font-openSans flex flex-col justify-start items-center relative w-full">
+            <SessionProvider>{children}</SessionProvider>
+          </div>
+        </AuthProvider>
+        <Toaster />
+        <CookieConsent />
+        <OnboardingProgress />
       </body>
     </html>
   );

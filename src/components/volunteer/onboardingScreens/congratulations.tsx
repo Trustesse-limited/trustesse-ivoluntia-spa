@@ -1,0 +1,35 @@
+import Image from "next/image";
+import { BRAND_NAME } from "@/constants";
+import { AppButton } from "@/components/AppButton";
+
+interface CongratulationsProps {
+  onLaunch?: () => void;
+}
+
+export default function Congratulations({ onLaunch }: CongratulationsProps) {
+    return (
+      <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-[1vh] pb-[5vh]">
+        <Image
+          src={"/success.svg"}
+          alt="success"
+          height={200}
+          width={200}
+          className="mb-[0.5vh]"
+        />
+        <b className="font-bold text-3xl md:text-4xl text-[#2C2C2C]">Congratulations</b>
+        <p className="text-center font-semibold text-[#818181] text-base sm:text-lg">
+          You have completed onboarding, your account is under review. Go ahead
+          and explore {BRAND_NAME}
+        </p>
+        {onLaunch && (
+          <AppButton
+            variant="default"
+            className="font-bold text-white w-full h-12 text-lg"
+            onClick={onLaunch}
+          >
+            Launch
+          </AppButton>
+        )}
+      </div>
+    );
+}

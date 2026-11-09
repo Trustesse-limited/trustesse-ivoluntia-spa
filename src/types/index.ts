@@ -5,15 +5,98 @@ export interface VolunteerFormData {
   sex: string;
   dob: string;
   country: string;
+  countryName: string;
   state: string;
+  stateName: string;
   city: string;
   zip: string;
   address: string;
   bio?: string;
-  photo?: File | null; 
+  photo?: string | null;
+  interests: string[];
+  skills: string[];
 }
 
 export interface FormProps {
   formData: VolunteerFormData;
   setFormData: React.Dispatch<React.SetStateAction<VolunteerFormData>>;
+  onLaunch?: () => void | Promise<void>;
+  isLoading?: boolean;
 }
+
+export interface OrganizationFormData {
+  name: string;
+  category: string;
+  website: string;
+  mission: string;
+  country: string;
+  countryName: string;
+  state: string;
+  stateName: string;
+  city: string;
+  zip: string;
+  address: string;
+  causes: string[];
+  logo?: string | null;
+  disclaimerAgreed: boolean;
+}
+
+export interface OrganizationFormProps {
+  formData: OrganizationFormData;
+  setFormData: React.Dispatch<React.SetStateAction<OrganizationFormData>>;
+}
+
+export interface ProgramItem {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  donationTarget: number;
+  raised: number;
+  category: string;
+  goals: string;
+  description: string;
+  image?: string;
+  volunteers: number;
+  status: string;
+  foundationId?: string;
+  organization: string;
+  isFavourited?: boolean;
+  duration?: string;
+  targetVolunteers?: number;
+}
+
+// Re-export API types for convenience
+export type { ProgramApiResponse } from './api';;
+export interface Volunteer {
+  name: string;
+  location: string;
+  email: string;
+  phone: string;
+  status: string;
+};
+
+
+export type Donor = {
+  name: string;
+  email: string;
+  amount: number;
+  date: string; 
+  paymentMethod: string;
+  status: string;
+  comment: string;
+  profilePic: string; 
+  location: string;
+};
+export type Donation = {
+  name: string;
+  email: string;
+  amount: number;
+  date: string;
+  paymentMethod: string;
+  status: string;
+  comment: string;
+  profilePic: string; 
+  location: string;
+};

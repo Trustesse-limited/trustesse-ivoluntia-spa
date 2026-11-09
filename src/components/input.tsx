@@ -14,24 +14,24 @@ import { useState } from "react";
        onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     }
 
-    export function InputComponent({
+    export const InputComponent = ({
       label,
       placeholder,
       name,
       htmlFor,
       type = "text",
       value,
-       onChange ,
-    }: InputComponentProps) {
+       onChange,
+    }: InputComponentProps) => {
       const [showPassword, setShowPassword] = useState(false);
       const isPassword = type === "password";
 
       return (
         <div className="grid gap-2 relative">
-          <Label htmlFor={htmlFor} className="font-normal text-[#000000]">
+          <Label htmlFor={htmlFor} className="font-medium text-[#000000]">
             {label}
           </Label>
-          <div className="relative ">
+          <div className="relative">
             <Input
               id={htmlFor}
               name={name}
@@ -45,7 +45,7 @@ import { useState } from "react";
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-2 top-0 bottom-0 text-gray-500 hover:text-gray-700"
+                className="absolute right-2 top-0 bottom-0 text-gray-500 hover:text-gray-700 min-h-12 min-w-12 flex items-center justify-center touch-manipulation"
               >
                 {showPassword ? <EyeOff size={20}  color="black" /> : <Eye size={28} stroke="white" fill='black' />}
               </button>
@@ -53,4 +53,4 @@ import { useState } from "react";
           </div>
         </div>
       );
-    }
+    };
